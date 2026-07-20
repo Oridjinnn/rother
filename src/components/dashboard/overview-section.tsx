@@ -58,6 +58,9 @@ import { ReviewRecencyHeatmap } from "./review-recency-heatmap";
 import { ReviewWordCloud } from "./review-word-cloud";
 import { CompetitorGrowthRate } from "./competitor-growth-rate";
 import { RunComparisonCard } from "./run-comparison-card";
+import { TopReviewers } from "./top-reviewers";
+import { ScrapeSchedule } from "./scrape-schedule";
+import { ReviewLanguageDistribution } from "./review-language-distribution";
 import { formatTimestamp } from "@/lib/gbp/format";
 import type { OverviewResponse } from "@/lib/gbp/types";
 
@@ -540,14 +543,17 @@ export function OverviewSection({
         </Card>
       </div>
 
-      {/* Run health panel */}
-      <RunHealthPanel
-        data={data}
-        onRefresh={onRefresh}
-        autoRefresh={autoRefresh}
-        onToggleAutoRefresh={onToggleAutoRefresh}
-        autoRefreshSeconds={autoRefreshSeconds}
-      />
+      {/* Run health panel + Scrape schedule — side-by-side on lg+ */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <RunHealthPanel
+          data={data}
+          onRefresh={onRefresh}
+          autoRefresh={autoRefresh}
+          onToggleAutoRefresh={onToggleAutoRefresh}
+          autoRefreshSeconds={autoRefreshSeconds}
+        />
+        <ScrapeSchedule />
+      </div>
 
       {/* Charts grid */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -743,6 +749,12 @@ export function OverviewSection({
           data={data.competitorStats}
           loading={loading}
         />
+      </div>
+
+      {/* Top reviewers + Review language distribution — side-by-side on lg+ */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <TopReviewers refreshKey={refreshKey} />
+        <ReviewLanguageDistribution refreshKey={refreshKey} />
       </div>
     </motion.div>
   );

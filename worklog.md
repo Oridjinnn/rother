@@ -1038,3 +1038,102 @@ I implemented 3 of the 5 round-7 recommendations (skipping #1 react-query migrat
 - Rule 4 (zero-cost, no AI/LLM): ✓ — all new features are pure UI/UX + data-layer additions, no AI/LLM calls, no paid dependencies. The word cloud uses static stopword filtering (not AI), the growth rate uses arithmetic (not AI), the run comparison uses set operations (not AI).
 - Rule 5 (no fake progress): ✓ — every feature is verified end-to-end via agent-browser (word cloud 40 words + sample verified, growth rate 3 rows + values verified, run comparison empty state verified as correct behavior).
 - Rule 9 (documentation): ✓ — this worklog entry is the documentation; no Python files changed so the Python CHANGELOG was not modified.
+
+---
+Task ID: CRON-R9 (webDevReview round 9)
+Agent: main (orchestrator) — recurring webDevReview cron job (round 9)
+Task: Assess project status, perform QA via agent-browser, implement round-8 recommendations + new features, improve styling, update worklog.
+
+## Current Project Status (assessment)
+
+The project is **stable and production-ready** after round 8. Round 8 added 3 features (review word cloud, competitor growth rate metric, scraper run comparison view) — all verified working. QA this round confirmed no regressions: zero errors in dev log, 7 charts, 6 tabs, lint clean, all round-8 features intact (40 word cloud words, 3 freshness badges, leaderboard, heatmap with 91 cells, health sparkline).
+
+## QA Performed This Round
+
+- **Dev log check**: zero errors, zero hydration mismatches, zero warnings.
+- **Element audit via agent-browser**: 7 charts, 6 tabs, 40 word cloud words, 3 freshness badges, leaderboard present, heatmap present, health sparkline present, no horizontal scroll.
+- **Lint check**: `bun run lint` passes clean.
+
+## Work Focus Selected
+
+I implemented 3 of the 5 round-8 recommendations (skipping #1 react-query migration — a pure refactor, and #2 rating trend over time chart — requires Python-side changes). The 3 selected items all deliver immediate user value: a new reviewer analysis widget, a new schedule visualization with live countdown, and a new language distribution chart.
+
+### Feature 1: Top Reviewers Widget (recommendation #4 — new feature)
+
+- **What**: A widget on the Overview tab showing the top 10 reviewers by review count across all monitored competitors. Each row shows: rank badge (gold/silver/bronze for top 3), reviewer name, star rating, review count, and an animated activity bar. Reviewers who have reviewed multiple competitors get an amber "N comp" badge + amber-colored bar (cross-competitor flag). Tooltip shows the full breakdown (reviews, competitors, branches, latest date).
+- **New component**: `src/components/dashboard/top-reviewers.tsx` — a `TopReviewers` component with:
+  - Self-fetches from `/api/reviews?page=1&pageSize=100` (reuses existing API)
+  - Groups reviews by cleaned reviewer name (strips ", original" suffix)
+  - Computes per-reviewer: reviewCount, avgRating, competitors Set, branches Set, latestDate
+  - Sorts by reviewCount descending, top 10
+  - Identifies "cross-competitor" reviewers (reviewed >1 competitor) — highlighted in amber
+  - Animated bars (framer-motion) + staggered row entrance
+- **Wired into**: `src/components/dashboard/overview-section.tsx` — rendered in a 2-column grid alongside the Review Language Distribution (both are reviewer/text analysis widgets).
+- **Verified**: 10 reviewers listed, sorted by count. Top 5 names verified: "Tom Baker", "Anna Kowalski", "Raj Patel", "Charlotte Dubois", "Made Wijaya" (real reviewer names from the fixtures). Each has 1 review (no cross-competitor reviewers in this dataset — correct, since each reviewer only appears once).
+
+### Feature 2: Scrape Schedule Visualization (recommendation #5 — new feature)
+
+- **What**: A card on the Overview tab showing the GitHub Actions cron schedule with a **live countdown** to the next scheduled run. Displays: a large countdown timer (updates every second), the next run date + time in WITA, the cron expression (`0 22 * * *`), the local WITA time (06:00 daily), and the next run in UTC. Has a green "Scheduled" badge with an animated ping dot.
+- **Rule 4 compliance**: Pure date arithmetic — no AI/LLM, no API calls. The schedule is a known constant from the GitHub Actions workflow.
+- **New component**: `src/components/dashboard/scrape-schedule.tsx` — a `ScrapeSchedule` component with:
+  - A 1-second `setInterval` to update the countdown live
+  - `useMemo` that computes the next 22:00 UTC (the cron time) and the countdown string (Xd Yh Zm Ws format, auto-scaling to the most significant units)
+  - Converts to WITA (UTC+8) for display
+  - A green "Scheduled" badge with `animate-ping` dot
+  - A 2-column grid showing the cron expression + local WITA time
+- **Wired into**: `src/components/dashboard/overview-section.tsx` — rendered in a 2-column grid alongside the Run Health panel (both are status/health widgets that pair well at the top of the page).
+- **Verified**: "Scrape Schedule" title + "Scheduled" badge rendered. Countdown shows "10h 5m 34s" (live, ticking — re-read 2.5s later showed "10h 5m 31s", confirming the 1s interval works). Next run date "Tue 21 Jul · 06:00 WITA" displayed. Cron "0 22 * * *" shown.
+
+### Feature 3: Review Language Distribution Chart (recommendation #3 — new feature)
+
+- **What**: A horizontal bar chart on the Overview tab showing the distribution of review languages detected via Unicode character-set heuristics. Detects 6 script families: Latin (EN/ID/EU), CJK (Chinese/Japanese), Korean (Hangul), Cyrillic (RU/etc.), Arabic, Devanagari (HI/etc.), plus "Unknown" for empty text. Each language is a colored bar with count + percentage. Animated bars + staggered entrance.
+- **Rule 4 compliance**: This is **NOT AI/LLM** — it's pure Unicode code-point range checking. The description explicitly states "Script-based detection (Unicode ranges) — no AI/LLM" for transparency.
+- **New component**: `src/components/dashboard/review-language-distribution.tsx` — a `ReviewLanguageDistribution` component with:
+  - A `detectLanguage()` function that checks Unicode ranges: CJK (U+4E00–U+9FFF, U+3400–U+4DBF, U+3040–U+309F, U+30A0–U+30FF), Hangul (U+AC00–U+D7AF), Cyrillic (U+0400–U+04FF), Arabic (U+0600–U+06FF), Devanagari (U+0900–U+097F), with Latin as the fallback
+  - A `LANG_META` map with label + color per script
+  - Self-fetches from `/api/reviews?page=1&pageSize=100` (reuses existing API)
+  - Aggregates per-language counts + percentages
+- **Wired into**: `src/components/dashboard/overview-section.tsx` — rendered in a 2-column grid alongside the Top Reviewers widget.
+- **Verified**: "Review Languages" title + description rendered. 1 language detected: "Latin (EN/ID/EU): 20" (all 20 reviews are in Latin script — correct for English-language reviews). Bar + percentage displayed.
+
+## Files Created / Modified
+
+**Created (3 files):**
+- `src/components/dashboard/top-reviewers.tsx` — top 10 reviewers by review count
+- `src/components/dashboard/scrape-schedule.tsx` — cron schedule + live countdown
+- `src/components/dashboard/review-language-distribution.tsx` — script-based language detection
+
+**Modified (1 file):**
+- `src/components/dashboard/overview-section.tsx` — imported + rendered all 3 new components. Added the Scrape Schedule in a 2-col grid with the Run Health panel (at the top), and the Top Reviewers + Language Distribution in a 2-col grid at the bottom.
+
+## Verification Results
+
+- **Lint**: `bun run lint` passes clean (zero warnings, zero errors).
+- **Dev log**: zero errors, zero hydration mismatches, zero warnings throughout.
+- **agent-browser QA**:
+  - Top reviewers: 10 reviewers listed, top 5 names verified (Tom Baker, Anna Kowalski, Raj Patel, Charlotte Dubois, Made Wijaya), each with 1 review ✓
+  - Scrape schedule: "Scrape Schedule" title + "Scheduled" badge + live countdown ("10h 5m 34s" → "10h 5m 31s" over 2.5s, confirming the 1s tick) + next run date "Tue 21 Jul · 06:00 WITA" + cron "0 22 * * *" ✓
+  - Language distribution: "Review Languages" title + 1 language "Latin (EN/ID/EU): 20" (all reviews in Latin script — correct) ✓
+  - No horizontal scroll, no regressions ✓
+
+## Unresolved Issues / Risks
+
+1. **Round 2 recommendation #1 (react-query migration)** — 9 rounds deferred. Deliberately skipped each round because it's a pure refactor that doesn't satisfy the mandatory "improve styling + add features" requirements. The QueryClientProvider is wired up and ready for a future dedicated refactoring round.
+2. **Round 4 recommendation #3 (rating trend over time line chart)** — still not attempted. Requires Python-side changes to snapshot average_rating per run. Larger scope.
+3. **Language detection is script-based, not language-based** — we can detect "Latin script" but can't distinguish English from Indonesian from French without a dictionary or AI. The label "Latin (EN/ID/EU)" is honest about this limitation. A future enhancement could add a simple dictionary-based detector for the top languages.
+4. **Top reviewers all have 1 review each** — because the fixture dataset has 20 unique reviewers with 1 review each. No cross-competitor reviewers exist in the current data. The feature is ready for when real data with repeat reviewers arrives.
+5. **Scrape schedule assumes the cron runs exactly at 22:00 UTC** — if the GitHub Actions runner is delayed (common on the free tier), the actual run time may differ. The countdown is to the scheduled time, not the guaranteed run time. Documented as "scheduled" not "guaranteed".
+
+## Priority Recommendations for Next Round
+
+1. **Migrate the manual `fetch + useState + refreshKey` pattern to `@tanstack/react-query` `useQuery` hooks** — 9 rounds deferred. Recommend a dedicated refactoring round where the user explicitly asks for it.
+2. **Add a "rating trend over time" line chart** — requires Python-side changes to snapshot average_rating per run. Larger scope, Python + frontend.
+3. **Add a "review sentiment over time" area chart** — track the positive rate (★4-5 %) over multiple runs. Would show whether competitor sentiment is improving or declining. Requires the Python-side rating-per-run snapshot (same as #2).
+4. **Add a "competitor correlation" matrix** — a heatmap showing which competitors have similar rating distributions or review patterns. Uses existing data, client-side computation.
+5. **Add a "data export dashboard"** — a dedicated section or dialog combining all export options (reviews CSV/JSON, history CSV/JSON) in one place with a "download all" button. Improves discoverability of the export features.
+
+## Rule Compliance
+
+- Rule 4 (zero-cost, no AI/LLM): ✓ — all new features are pure UI/UX + data-layer additions, no AI/LLM calls, no paid dependencies. The top reviewers uses Set operations (not AI), the scrape schedule uses date arithmetic (not AI), the language distribution uses Unicode range checks (not AI).
+- Rule 5 (no fake progress): ✓ — every feature is verified end-to-end via agent-browser (top reviewers 10 items + names verified, scrape schedule live countdown ticking confirmed, language distribution 1 lang + count verified).
+- Rule 9 (documentation): ✓ — this worklog entry is the documentation; no Python files changed so the Python CHANGELOG was not modified.
