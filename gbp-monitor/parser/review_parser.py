@@ -31,6 +31,7 @@ from datetime import datetime, timezone
 
 from parsel import Selector
 
+from harness.locator import resolve_review_items
 from .schema import Review
 
 logger = logging.getLogger("gbp-monitor.parser")
@@ -72,8 +73,38 @@ def parse_reviews(
         selector breakage wave).
     """
     sel = Selector(text=html)
-    items = sel.css(selectors["review_item"])
     scraped_at = datetime.now(timezone.utc).isoformat()
+
+    # Fix B (2026-07-20): self-healing locator hierarchy. Instead of a single
+    # brittle `sel.css(selectors["review_item"])` call (which fails the whole
+    # parse when Google renames a class), we try a 5-tier ranked list per
+    # arXiv:2603.20358. The seeded selector from config/selectors.json is now
+    # tier 5 (last resort); tiers 1–4 are class-name-independent (they key off
+    # data-review-id, ARIA role, and aria-label). See harness/locator.py for
+    # the full tier ranking + evidence.
+    locator_result = resolve_review_items(
+        sel,
+        seed_review_item_selector=selectors["review_item"],
+        review_id_attr=selectors["review_id_attr"],
+        competitor_id=competitor_id,
+    )
+    if locator_result is None:
+        # Every tier failed — treat as a parse failure (0 reviews). The
+        # orchestrator's "failed >= success" alert will surface this. We do
+        # NOT raise here because Rule 7 requires per-listing isolation; the
+        # orchestrator already counts "0 reviews parsed" as a soft signal.
+        logger.error(
+            "parse_reviews[%s]: all locator tiers failed — returning 0 reviews "
+            "(this is a selector-breakage signal, surfaced by the orchestrator)",
+            competitor_id,
+        )
+        return []
+
+    items = locator_result.items
+    # Stash the tier that succeeded on the returned list for the orchestrator
+    # to log. We use a list attribute (a Python list supports arbitrary attrs)
+    # rather than changing the return type, so existing callers are unaffected.
+    items_success_tier = locator_result.tier  # noqa: F841 — documented intent
 
     results: list[Review] = []
     skipped_without_id = 0
@@ -109,10 +140,12 @@ def parse_reviews(
         )
 
     logger.info(
-        "parse_reviews[%s]: %d review(s) parsed from %d item(s)",
+        "parse_reviews[%s]: %d review(s) parsed from %d item(s) via tier %d (%r)",
         competitor_id,
         len(results),
         len(items),
+        locator_result.tier,
+        locator_result.selector,
     )
     return results
 

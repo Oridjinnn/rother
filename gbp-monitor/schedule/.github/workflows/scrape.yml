@@ -54,6 +54,26 @@ jobs:
         # across runs by the playwright-installer.
         run: playwright install --with-deps chromium
 
+      - name: Rotate run.log if it exceeds 5 MB
+        working-directory: gbp-monitor
+        # Fix D (2026-07-20): data/run.log is append-only across daily cron
+        # runs (per CHANGELOG 2026-07-20T08:32:00 risk note). Without
+        # rotation the file grows unbounded over months. We rotate (rename)
+        # it to a date-stamped archive BEFORE the scrape step runs, so:
+        #   - the new run starts with a fresh, small run.log
+        #   - the previous content is preserved in data/run.log.YYYYMMDD
+        #     (and committed by the bot alongside the new run.log)
+        #   - the dashboard's "tail last N lines" stays fast
+        # 5 MB ≈ a few months of daily runs at the current ~40 INFO lines/run.
+        # `stat -c%s` is GNU-coreutils (ubuntu-latest) — returns bytes.
+        run: |
+          if [ -f data/run.log ] && [ "$(stat -c%s data/run.log 2>/dev/null || echo 0)" -gt 5242880 ]; then
+            mv "data/run.log" "data/run.log.$(date -u +%Y%m%d)"
+            echo "rotated run.log to data/run.log.$(date -u +%Y%m%d)"
+          else
+            echo "run.log rotation not needed (file missing or under 5 MB)"
+          fi
+
       - name: Run scraper
         working-directory: gbp-monitor
         # Always exits 0 per the design (Rule 7 — failure isolation). The
@@ -66,7 +86,9 @@ jobs:
         run: |
           git config user.name "gbp-monitor-bot"
           git config user.email "bot@localhost"
-          git add data/snapshots data/reviews_new data/run.log data/run_summary.json
+          # Fix D: also stage rotated log archives (data/run.log.YYYYMMDD).
+          # The glob `data/run.log*` matches both run.log and any run.log.DATE.
+          git add data/snapshots data/reviews_new data/run.log* data/run_summary.json
           # `|| true` because there may be nothing to commit on a no-delta
           # run (no new reviews). The plan's example uses `|| echo` for
           # the same effect — we use `|| true` for cross-shell safety.
