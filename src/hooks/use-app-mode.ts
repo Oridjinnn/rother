@@ -12,11 +12,14 @@ import { readModeFromUrl, getText, type AppMode, type TextMap } from "@/lib/app-
  * user navigates between `/?mode=client` and `/?mode=dev`.
  */
 export function useAppMode(): { mode: AppMode; T: TextMap } {
-  const [mode, setMode] = React.useState<AppMode>(() => readModeFromUrl());
+  // Initialize as null — the mode is read from window.location which is only
+  // available on the client. During SSR, we default to "client" mode.
+  // After mount, the effect reads the actual mode from the URL.
+  const [mode, setMode] = React.useState<AppMode | null>(null);
 
   React.useEffect(() => {
     const update = () => setMode(readModeFromUrl());
-    update(); // sync on mount
+    update(); // sync on mount — reads the actual URL (?mode=dev or default)
     window.addEventListener("popstate", update);
     // Also listen for pushstate (when we programmatically change the URL)
     const origPush = window.history.pushState;
@@ -31,8 +34,11 @@ export function useAppMode(): { mode: AppMode; T: TextMap } {
     };
   }, []);
 
-  const T = React.useMemo(() => getText(mode), [mode]);
-  return { mode, T };
+  // During SSR (mode === null), use "client" as the default to match the
+  // server's rendering. After mount, use the actual mode from the URL.
+  const effectiveMode = mode ?? "client";
+  const T = React.useMemo(() => getText(effectiveMode), [effectiveMode]);
+  return { mode: effectiveMode, T };
 }
 
 /** Navigate to the given mode by updating the URL query parameter. */

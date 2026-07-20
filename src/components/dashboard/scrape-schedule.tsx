@@ -25,16 +25,29 @@ import { Badge } from "@/components/ui/badge";
  * date arithmetic + display.
  */
 export function ScrapeSchedule() {
-  const [now, setNow] = React.useState(() => Date.now());
+  // Initialize as null — only set on the client to prevent hydration mismatch
+  // (server time + timezone differ from client).
+  const [now, setNow] = React.useState<number | null>(null);
 
   React.useEffect(() => {
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Compute the next scheduled run: 22:00 UTC = 05:00 WITA (UTC+8) the next day.
+  // Compute the next scheduled run: 22:00 UTC = 06:00 WITA (UTC+8) the next day.
   // The cron is `0 22 * * *`, so the next run is the next 22:00 UTC.
   const { nextRunUtc, nextRunWita, countdown, isToday } = React.useMemo(() => {
+    if (now === null) {
+      // Placeholder during SSR — return a safe default that won't mismatch
+      const placeholder = new Date(0); // epoch
+      return {
+        nextRunUtc: placeholder,
+        nextRunWita: placeholder,
+        countdown: "—",
+        isToday: false,
+      };
+    }
     const d = new Date(now);
     const next = new Date(d);
     next.setUTCHours(22, 0, 0, 0);

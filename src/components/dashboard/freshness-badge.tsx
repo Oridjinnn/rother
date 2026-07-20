@@ -109,7 +109,21 @@ export function FreshnessBadge({
   size = "sm",
   className,
 }: FreshnessBadgeProps) {
-  const info = computeFreshness(lastScrapedAt);
+  // Use a mounted flag to avoid hydration mismatch — computeFreshness()
+  // calls Date.now() which differs between server and client.
+  // During SSR + first paint, render a neutral placeholder; after mount,
+  // compute the actual freshness.
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
+  const info = mounted ? computeFreshness(lastScrapedAt) : {
+    level: "unknown" as const,
+    label: "—",
+    dotClass: "bg-muted-foreground/50",
+    textClass: "text-muted-foreground",
+    bgClass: "bg-muted/30 border-border/40",
+    daysAgo: null,
+  };
   const isFresh = info.level === "fresh";
 
   return (

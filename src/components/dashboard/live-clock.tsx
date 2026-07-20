@@ -32,14 +32,22 @@ interface LiveClockProps {
  *     stays fresh when the user resizes to desktop.
  */
 export function LiveClock({ lastRunAt, isRunning, className }: LiveClockProps) {
-  const [now, setNow] = React.useState(() => Date.now());
+  // Initialize as null — the time is ONLY computed on the client (in the
+  // useEffect below). This prevents hydration mismatches because the server
+  // renders a static placeholder ("--:--:--") and the client replaces it
+  // after mount. Date.now() / toLocaleTimeString() produce different values
+  // on the server vs the client (different timezone, different request time).
+  const [now, setNow] = React.useState<number | null>(null);
 
   React.useEffect(() => {
+    // Set the initial time immediately on mount, then tick every second.
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
   const timeStr = React.useMemo(() => {
+    if (now === null) return "--:--:--"; // placeholder during SSR + first paint
     const d = new Date(now);
     return d.toLocaleTimeString([], {
       hour: "2-digit",
@@ -50,7 +58,7 @@ export function LiveClock({ lastRunAt, isRunning, className }: LiveClockProps) {
   }, [now]);
 
   const agoStr = React.useMemo(() => {
-    if (!lastRunAt) return null;
+    if (now === null || !lastRunAt) return null;
     const then = new Date(lastRunAt).getTime();
     if (Number.isNaN(then)) return null;
     const diffMs = now - then;
@@ -65,6 +73,12 @@ export function LiveClock({ lastRunAt, isRunning, className }: LiveClockProps) {
     return `${day}d ago`;
   }, [lastRunAt, now]);
 
+  // Use a stable placeholder for aria-label during SSR to avoid mismatch.
+  // Once mounted (now !== null), the real time is used.
+  const ariaLabel = now === null
+    ? "Current time"
+    : `Current time: ${timeStr}${agoStr ? `, last scrape: ${agoStr}` : ""}`;
+
   return (
     <TooltipProvider delayDuration={300}>
       <Tooltip>
@@ -76,7 +90,7 @@ export function LiveClock({ lastRunAt, isRunning, className }: LiveClockProps) {
               className,
             )}
             role="timer"
-            aria-label={`Current time: ${timeStr}${agoStr ? `, last scrape: ${agoStr}` : ""}`}
+            aria-label={ariaLabel}
           >
             <Clock
               className={cn("size-3", isRunning && "animate-spin-slow")}
@@ -95,11 +109,11 @@ export function LiveClock({ lastRunAt, isRunning, className }: LiveClockProps) {
         </TooltipTrigger>
         <TooltipContent side="bottom">
           <p className="font-semibold">
-            {isRunning ? "Scraper running…" : "Current time (live)"}
+            {isRunning ? "Updating…" : "Current time (live)"}
           </p>
           <p className="text-xs opacity-90">
             {timeStr}
-            {agoStr && !isRunning && ` · last scrape: ${agoStr}`}
+            {agoStr && !isRunning && ` · last update: ${agoStr}`}
           </p>
         </TooltipContent>
       </Tooltip>
