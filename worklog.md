@@ -661,3 +661,102 @@ I implemented 3 of the 5 round-3 recommendations (skipping #1 react-query migrat
 - Rule 4 (zero-cost, no AI/LLM): ✓ — all new features are pure UI/UX + data-layer additions, no AI/LLM calls, no paid dependencies. The radar chart uses a deterministic normalization + recency heuristic, not AI.
 - Rule 5 (no fake progress): ✓ — every feature is verified end-to-end via agent-browser (health indicator text + aria, live clock ticking confirmed with 2 readings, radar chart polygon count + polar angle ticks).
 - Rule 9 (documentation): ✓ — this worklog entry is the documentation; no Python files changed so the Python CHANGELOG was not modified.
+
+---
+Task ID: CRON-R5 (webDevReview round 5)
+Agent: main (orchestrator) — recurring webDevReview cron job (round 5)
+Task: Assess project status, perform QA via agent-browser, implement round-4 recommendations + new features, improve styling, update worklog.
+
+## Current Project Status (assessment)
+
+The project is **stable and production-ready** after round 4. Round 4 added 3 features (footer health indicator, header live clock, competitor comparison radar chart) — all verified working. QA this round confirmed no regressions: zero errors in dev log, 6 charts rendering, lint clean, all routes returning 200, live clock ticking, health indicator showing "Healthy · 3 ok".
+
+## QA Performed This Round
+
+- **Dev log check**: zero errors, zero hydration mismatches, zero warnings.
+- **Element audit via agent-browser**: 6 charts, 3 radar polygons, live clock present (text "11:19:57·21m ago"), health indicator present (text "Healthy · 3 ok"), reviews badge present (text "20"), no horizontal scroll.
+- **Lint check**: `bun run lint` passes clean.
+
+## Work Focus Selected
+
+I implemented 3 of the 5 round-4 recommendations (skipping #1 react-query migration as a large refactor, and #3 rating trend over time chart as it requires Python-side changes). The 3 selected items deliver immediate value: a new export endpoint, a styling polish for the bar chart, and a whole new tab.
+
+### Feature 1: CSV/JSON export for the run history timeline (recommendation #5)
+
+- **What**: Added a download button to the Run History timeline card header that exports the full run history as CSV or JSON. The CSV flattens the nested per-competitor breakdown into one row per (run, competitor) pair — more useful for spreadsheet analysis than the nested JSON shape. The JSON keeps the nested structure with breakdown arrays.
+- **New API route**: `GET /api/history/export?format=csv|json` — same data as `/api/history` but with `Content-Disposition` header for download. CSV has 9 columns (run_timestamp, total_new_reviews, competitors_with_new, branches_affected_count, competitor_id, competitor_name, branch_id, branch_name, new_reviews_for_competitor). RFC 4180 compliant (commas/quotes properly escaped).
+- **New component**: `HistoryExportButton` added inline to `run-history-timeline.tsx` — a compact dropdown menu (Download icon → CSV / JSON options with descriptions), loading state, sonner toast on success/failure. Disabled when totalRuns === 0.
+- **Wired into**: `src/components/dashboard/run-history-timeline.tsx` — rendered next to the existing Refresh button in the card header.
+- **Verified**: API returns 200 for both formats. CSV content validated with Python — 3 rows (one per competitor in the single run), 9 columns, correct data. Clicked the export button → dropdown opened with CSV + JSON options → clicked CSV → toast "CSV export ready · 1 run → gbp-history-...csv" → file downloaded (473 bytes) → content matches expected shape.
+
+### Feature 2: Recharts custom shape for 0-value bars (recommendation #2 — styling polish)
+
+- **What**: The "New Reviews per Branch" chart previously showed empty bar slots for the 3 branches with 0 reviews (Uluwatu, Nusa Dua, Sanur). Now those 0-value bars render as a hatched "no data" placeholder bar at ~18% of the chart height, with a diagonal-line SVG pattern (`<pattern id="hatch-no-data">`) on a muted background. The bar has a dashed border for extra distinction. The LabelList now shows "—" instead of "" for 0-value bars so the branch name on the X axis has a visual anchor.
+- **Where**: `src/components/dashboard/charts.tsx` — the `NewReviewsPerBranchChart` component now has a `renderBar` custom shape function that checks `payload.count`: if > 0, renders a normal rounded rect with the gradient fill; if === 0, renders a hatched rect at the bottom. Added the `<pattern>` definition to the `<defs>` block. Added `shape={renderBar as never}` to the `<Bar>` element.
+- **Verified**: `agent-browser eval` confirmed `hatchPatternDefs: 1` (the pattern definition exists) and `hatchedBars: 3` (exactly 3 hatched bars rendered — the 3 branches with 0 reviews). The real data bars (Seminyak +7, Ubud +7, Canggu +6) still render normally with the gradient fill.
+
+### Feature 3: "Compare" tab — side-by-side branch comparison (recommendation #4 — new feature)
+
+- **What**: A new dedicated "Compare" tab showing all 6 Copenhagen Bali branches as side-by-side cards in a responsive grid (1 col mobile, 2 col tablet, 3 col desktop). Each card shows:
+  - A rank badge (#1–#6) in the top-right, color-coded (gold for #1, silver for #2, muted for #3-6)
+  - The branch short name (e.g. "Seminyak") + branch_id
+  - 3 stat pills: Reviews (total), Avg (average rating across competitors with data), New (new reviews count)
+  - The 2 competitors listed in compact cards with star ratings, review counts, and "+N new" badges
+  - A "Last scraped: Xm ago" footer
+- **New component**: `src/components/dashboard/branch-comparison-section.tsx` — a self-contained `BranchComparisonSection` that takes the same `BranchesResponse` data as the existing Branches tab (no new API needed). Includes a `BranchComparisonCard` sub-component + a `StatPill` helper. Uses framer-motion for staggered card entrance animations (delay = rank * 0.05s).
+- **Wired into**: `src/app/page.tsx` — added "compare" to the `TabValue` union + `TABS` array (with `Columns3` icon), added `BranchComparisonSection` import, added `<TabsContent value="compare">` between Branches and Reviews. Also added `g m` keyboard shortcut (m for "coMpare" — c is taken by Config) + updated the ShortcutsHelpDialog.
+- **Verified**: 
+  - Compare tab present (ref @e15), 6 total tabs (was 5) ✓
+  - "Branch Comparison" title + summary ("6 branches · 12 competitors · 20 reviews monitored") ✓
+  - 6 branch cards with rank badges #1–#6 ✓
+  - Correct ordering by total reviews: Seminyak (#1, 7), Ubud (#2, 7), Canggu (#3, 6), Uluwatu (#4, 0), Nusa Dua (#5, 0), Sanur (#6, 0) ✓
+  - Stat pills show Reviews/Avg/New correctly ✓
+  - Competitors with "no data" badge for those without fixtures ✓
+  - "Last scraped: 25 minutes ago" footer ✓
+  - `g m` keyboard shortcut works (switches to Compare tab) ✓
+
+## Files Created / Modified
+
+**Created (3 files):**
+- `src/app/api/history/export/route.ts` — history export API endpoint
+- `src/components/dashboard/branch-comparison-section.tsx` — side-by-side branch comparison tab
+
+**Modified (4 files):**
+- `src/components/dashboard/run-history-timeline.tsx` — added `HistoryExportButton` component + Download/FileJson/FileSpreadsheet/Loader2 imports + DropdownMenu imports + rendered the button next to Refresh
+- `src/components/dashboard/charts.tsx` — added `renderBar` custom shape to `NewReviewsPerBranchChart` + `<pattern id="hatch-no-data">` SVG def + `shape` prop on `<Bar>` + LabelList formatter shows "—" for 0 values
+- `src/app/page.tsx` — added `Columns3` icon import + `BranchComparisonSection` import + "compare" to TabValue + TABS array + TabsContent + `g m` shortcut in SHORTCUT_TAB_MAP
+- `src/components/dashboard/shortcuts-help-dialog.tsx` — added `{ keys: ["g", "m"], description: "Go to Compare tab" }` to the tab navigation group
+
+## Verification Results
+
+- **Lint**: `bun run lint` passes clean (zero warnings, zero errors).
+- **Dev log**: zero errors, zero hydration mismatches, zero warnings throughout.
+- **agent-browser QA**:
+  - History export API: CSV returns 200 with correct 9-column shape, JSON returns 200 with nested runs ✓
+  - History export button: dropdown opens with CSV + JSON options, CSV click triggers download (473 bytes), toast "CSV export ready · 1 run → gbp-history-...csv" ✓
+  - Hatched bars: `hatchPatternDefs: 1`, `hatchedBars: 3` (exactly the 3 branches with 0 reviews) ✓
+  - Compare tab: 6 total tabs (was 5), "Branch Comparison" title, 6 branch cards with rank badges #1–#6, correct ordering (Seminyak/Ubud/Canggu first, then the 0-review branches) ✓
+  - `g m` shortcut: switches to Compare tab ✓
+  - No horizontal scroll, no regressions ✓
+- **CSV content validation**: parsed with Python's csv.DictReader — 3 rows, 9 columns, correct data (run=2026-07-20T08:35:48Z, competitor=Crate Cafe Canggu, new=6).
+
+## Unresolved Issues / Risks
+
+1. **Round 2 recommendation #1 (react-query migration)** — still not attempted after 4 rounds. The QueryClientProvider is wired up; the migration would give automatic background refetch + request deduplication. Priority: low (current pattern works correctly, and the refactor risks introducing regressions in a stable codebase).
+2. **Round 4 recommendation #3 (rating trend over time line chart)** — still not attempted. Requires Python-side changes to snapshot average_rating per run. Larger scope, deferred.
+3. **The hatched bar custom shape uses `shape={renderBar as never}`** — the `as never` type assertion is a workaround for recharts' complex Bar shape prop typing. A future recharts upgrade or a migration to visx would give better type safety. Documented as a known minor type-safety gap.
+4. **Compare tab shares the same `branches` data as the Branches tab** — both fetch from `/api/branches`. This is intentional (one fetch, two views) but means switching between the two tabs doesn't trigger a refetch. If the user runs a scrape while on the Compare tab, they need to switch tabs or click Refresh. A future react-query migration would solve this automatically.
+
+## Priority Recommendations for Next Round
+
+1. **Migrate the manual `fetch + useState + refreshKey` pattern to `@tanstack/react-query` `useQuery` hooks** — the QueryClientProvider is already wired up. This is the highest-value remaining refactor (5 rounds deferred). It would give automatic background refetch, request deduplication, stale-while-revalidate, and would fix the "Compare tab doesn't refetch on scrape" issue noted above.
+2. **Add a "rating trend over time" line chart** — requires the Python scraper to snapshot average_rating per run (currently only review count is tracked). Python-side enhancement + new chart. Larger scope.
+3. **Add a "review text length" distribution chart** — a histogram showing how long reviews tend to be (short/medium/long). Uses existing review data, no new API needed. Would help identify which competitors get detailed vs. terse reviews.
+4. **Add a "competitor detail" dialog** — clicking a competitor card in the Compare tab opens a dialog showing that competitor's full review list, rating distribution, and recent reviews. Extends the existing Sheet pattern from the Branches tab.
+5. **Add a "scraper health" mini-chart to the footer** — a tiny sparkline showing the last 7 runs' success/failure ratio. Visual at-a-glance trend without opening the Overview tab.
+
+## Rule Compliance
+
+- Rule 4 (zero-cost, no AI/LLM): ✓ — all new features are pure UI/UX + data-layer additions, no AI/LLM calls, no paid dependencies.
+- Rule 5 (no fake progress): ✓ — every feature is verified end-to-end via agent-browser (export button click + toast + downloaded file content validated with Python, hatched bar count confirmed = 3, Compare tab rank badges + ordering verified, `g m` shortcut tested).
+- Rule 9 (documentation): ✓ — this worklog entry is the documentation; no Python files changed so the Python CHANGELOG was not modified.

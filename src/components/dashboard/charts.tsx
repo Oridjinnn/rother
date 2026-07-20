@@ -289,6 +289,65 @@ export function NewReviewsPerBranchChart({ data }: NewReviewsPerBranchChartProps
   const shorten = (name: string) =>
     name.replace(/^Copenhagen Bali\s*-\s*/i, "").trim() || name;
   const sorted = [...data].sort((a, b) => b.count - a.count);
+  // Max count for the "no data" bar height — 0-value bars render at ~20% of
+  // the chart height so the hatched pattern is visible but clearly distinct
+  // from real data.
+  const maxCount = Math.max(1, ...sorted.map((d) => d.count));
+
+  // Custom bar shape: renders a normal rounded bar for count > 0, and a
+  // hatched "no data" placeholder bar for count === 0. The hatched bar sits
+  // at a fixed small height (20% of the chart) so the branch name on the
+  // X axis has a visual anchor rather than empty space.
+  const renderBar = (props: Record<string, unknown>) => {
+    // recharts passes a complex props object; we extract what we need.
+    const { x, y, width, height } = props as {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+    const payload = (props as { payload?: { count?: number } }).payload;
+    const count = payload?.count ?? 0;
+    if (count > 0) {
+      // Normal bar — render as a rounded rectangle with the gradient fill.
+      return (
+        <g>
+          <rect
+            x={x}
+            y={y}
+            width={width}
+            height={height}
+            rx={6}
+            ry={6}
+            fill="url(#grad-branch-new)"
+          />
+        </g>
+      );
+    }
+    // 0-value bar — render a hatched "no data" placeholder.
+    // Height = 20% of the chart's bar area, positioned at the bottom.
+    const chartBarAreaHeight = (props as { background?: { height?: number } })
+      .background?.height ?? height;
+    const noDataHeight = Math.max(8, chartBarAreaHeight * 0.18);
+    const noDataY = y + height - noDataHeight;
+    return (
+      <g>
+        <rect
+          x={x}
+          y={noDataY}
+          width={width}
+          height={noDataHeight}
+          rx={4}
+          ry={4}
+          fill="url(#hatch-no-data)"
+          stroke="var(--muted-foreground)"
+          strokeOpacity={0.25}
+          strokeWidth={0.5}
+          strokeDasharray="2 2"
+        />
+      </g>
+    );
+  };
 
   return (
     <div className="h-[260px] w-full">
@@ -299,6 +358,31 @@ export function NewReviewsPerBranchChart({ data }: NewReviewsPerBranchChartProps
               <stop offset="0%" stopColor="oklch(0.70 0.15 75)" stopOpacity={0.95} />
               <stop offset="100%" stopColor="oklch(0.70 0.15 75)" stopOpacity={0.55} />
             </linearGradient>
+            {/* Hatched pattern for 0-value "no data" bars — diagonal lines
+                on a muted background, clearly distinct from real data bars. */}
+            <pattern
+              id="hatch-no-data"
+              patternUnits="userSpaceOnUse"
+              width={6}
+              height={6}
+              patternTransform="rotate(45)"
+            >
+              <rect
+                width={6}
+                height={6}
+                fill="var(--muted)"
+                fillOpacity={0.3}
+              />
+              <line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2={6}
+                stroke="var(--muted-foreground)"
+                strokeWidth={1.5}
+                strokeOpacity={0.35}
+              />
+            </pattern>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
           <XAxis
@@ -328,12 +412,13 @@ export function NewReviewsPerBranchChart({ data }: NewReviewsPerBranchChartProps
             fill="url(#grad-branch-new)"
             radius={[6, 6, 0, 0]}
             animationDuration={700}
+            shape={renderBar as never}
           >
             <LabelList
               dataKey="count"
               position="top"
               style={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 600 }}
-              formatter={(v: number) => (v === 0 ? "" : `+${v}`)}
+              formatter={(v: number) => (v === 0 ? "—" : `+${v}`)}
             />
           </Bar>
         </BarChart>

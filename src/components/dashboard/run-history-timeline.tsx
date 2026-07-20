@@ -4,7 +4,11 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import {
   Clock,
+  Download,
+  FileJson,
+  FileSpreadsheet,
   GitCommitVertical,
+  Loader2,
   MapPin,
   RefreshCw,
   Store,
@@ -21,6 +25,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 import { formatTimestamp } from "@/lib/gbp/format";
 import type { HistoryResponse, HistoryRun } from "@/lib/gbp/types";
@@ -43,6 +56,107 @@ const POLL_MS = 30_000; // 30s — less aggressive than the logs tail
  *
  * Falls back to an empty state if no runs have produced deltas yet.
  */
+/** Compact CSV/JSON export dropdown for the run history timeline. */
+function HistoryExportButton({ totalRuns }: { totalRuns: number }) {
+  const [isExporting, setIsExporting] = React.useState<"csv" | "json" | null>(
+    null,
+  );
+  const doExport = async (format: "csv" | "json") => {
+    if (totalRuns === 0) {
+      toast.info("Nothing to export", {
+        description: "No scraper runs have produced new reviews yet.",
+      });
+      return;
+    }
+    setIsExporting(format);
+    try {
+      const res = await fetch(`/api/history/export?format=${format}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || `export failed (${res.status})`);
+      }
+      const cd = res.headers.get("Content-Disposition") || "";
+      const m = cd.match(/filename="?([^";]+)"?/);
+      const filename = m?.[1] || `gbp-history.${format}`;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`${format.toUpperCase()} export ready`, {
+        description: `${totalRuns} run${totalRuns === 1 ? "" : "s"} → ${filename}`,
+      });
+    } catch (err) {
+      toast.error("Export failed", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setIsExporting(null);
+    }
+  };
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={isExporting !== null || totalRuns === 0}
+          className="text-xs text-muted-foreground hover:text-foreground"
+          aria-label="Export run history"
+        >
+          {isExporting !== null ? (
+            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <Download className="size-3.5" aria-hidden="true" />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuLabel className="text-xs text-muted-foreground">
+          Export {totalRuns} run{totalRuns === 1 ? "" : "s"}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => doExport("csv")}
+          className="gap-2 cursor-pointer"
+        >
+          <FileSpreadsheet
+            className="size-4 text-emerald-600 dark:text-emerald-400"
+            aria-hidden="true"
+          />
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">CSV</span>
+            <span className="text-[10px] text-muted-foreground">
+              One row per run × competitor
+            </span>
+          </div>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => doExport("json")}
+          className="gap-2 cursor-pointer"
+        >
+          <FileJson
+            className="size-4 text-teal-600 dark:text-teal-400"
+            aria-hidden="true"
+          />
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">JSON</span>
+            <span className="text-[10px] text-muted-foreground">
+              Nested runs with breakdown
+            </span>
+          </div>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function RunHistoryTimeline({ refreshKey }: RunHistoryTimelineProps) {
   const [data, setData] = React.useState<HistoryResponse | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -168,15 +282,18 @@ export function RunHistoryTimeline({ refreshKey }: RunHistoryTimelineProps) {
               every 30s
             </CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={fetchHistory}
-            className="text-xs text-muted-foreground hover:text-foreground"
-            aria-label="Refresh run history"
-          >
-            <RefreshCw className="size-3.5" aria-hidden="true" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <HistoryExportButton totalRuns={data.totalRuns} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchHistory}
+              className="text-xs text-muted-foreground hover:text-foreground"
+              aria-label="Refresh run history"
+            >
+              <RefreshCw className="size-3.5" aria-hidden="true" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

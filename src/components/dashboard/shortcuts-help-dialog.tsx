@@ -36,6 +36,7 @@ const SHORTCUT_GROUPS: { title: string; shortcuts: Shortcut[] }[] = [
     shortcuts: [
       { keys: ["g", "o"], description: "Go to Overview tab" },
       { keys: ["g", "b"], description: "Go to Branches tab" },
+      { keys: ["g", "m"], description: "Go to Compare tab" },
       { keys: ["g", "v"], description: "Go to Reviews tab" },
       { keys: ["g", "l"], description: "Go to Run Logs tab" },
       { keys: ["g", "c"], description: "Go to Config tab" },

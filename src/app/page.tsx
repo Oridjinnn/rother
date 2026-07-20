@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import {
   Activity,
+  Columns3,
   LayoutDashboard,
   MessageSquare,
   ScrollText,
@@ -23,6 +24,7 @@ import { Header } from "@/components/dashboard/header";
 import { Footer } from "@/components/dashboard/footer";
 import { OverviewSection } from "@/components/dashboard/overview-section";
 import { BranchesSection } from "@/components/dashboard/branches-section";
+import { BranchComparisonSection } from "@/components/dashboard/branch-comparison-section";
 import { ReviewsSection } from "@/components/dashboard/reviews-section";
 import { LogsSection } from "@/components/dashboard/logs-section";
 import { ConfigSection } from "@/components/dashboard/config-section";
@@ -41,6 +43,7 @@ import type {
 type TabValue =
   | "overview"
   | "branches"
+  | "compare"
   | "reviews"
   | "logs"
   | "config";
@@ -57,6 +60,12 @@ const TABS: { value: TabValue; label: string; icon: typeof Activity; description
     label: "Branches",
     icon: Store,
     description: "6 branches × 2 competitors, expandable per branch.",
+  },
+  {
+    value: "compare",
+    label: "Compare",
+    icon: Columns3,
+    description: "Side-by-side branch cards for at-a-glance comparison.",
   },
   {
     value: "reviews",
@@ -240,6 +249,7 @@ export default function Home() {
   //   g r → Run Now (scrape trigger)
   //   g o → Overview tab
   //   g b → Branches tab
+  //   g m → Compare tab (m for "coMpare" — c is taken by Config)
   //   g v → Reviews tab (v for "reViews" — r is taken by Run Now)
   //   g l → Run Logs tab
   //   g c → Config tab
@@ -249,6 +259,7 @@ export default function Home() {
   const SHORTCUT_TAB_MAP: Record<string, TabValue> = {
     o: "overview",
     b: "branches",
+    m: "compare",
     v: "reviews",
     l: "logs",
     c: "config",
@@ -401,6 +412,14 @@ export default function Home() {
                 loading={branchesLoading}
                 error={branchesError}
                 refreshKey={refreshKey}
+              />
+            </TabsContent>
+
+            <TabsContent value="compare" className="mt-0 focus-visible:outline-none">
+              <BranchComparisonSection
+                data={branches}
+                loading={branchesLoading}
+                error={branchesError}
               />
             </TabsContent>
 
