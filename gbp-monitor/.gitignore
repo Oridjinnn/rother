@@ -1,0 +1,29 @@
+# GBP Monitor .gitignore
+#
+# Per GBP_MONITOR_PLAN.md Section 3 the raw_html/ directory is gitignored
+# (raw captured pages are too large + may contain reviewer PII). The
+# snapshots/ and reviews_new/ directories ARE committed (they're the
+# dashboard's data source) — see schedule/.github/workflows/scrape.yml
+# which `git add`s them.
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Playwright
+playwright-report/
+
+# Captured raw HTML (per Section 3 — large + potentially PII)
+data/raw_html/
+
+# Local-only Python version manager files
+.python-version
+
+# Editor
+.vscode/
+.idea/
+*.swp

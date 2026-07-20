@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<!--
+  Fixture: comp-seminyak-01 (Revolver Espresso Seminyak)
+  Purpose: Static HTML mimicking a Google Maps reviews panel. Used by
+    `python -m orchestration.run_all --fixtures` to PROVE the parser +
+    storage + delta pipeline end-to-end without hitting Google Maps.
+  This is a TEST FIXTURE, not live-scraped data (per EXECUTION_RULES.md
+  Rule 5). Reviews below are synthetic but realistic for a Bali tourist
+  cafe context.
+  Selectors used (must match config/selectors.json):
+    - review_container: div.m6QErb.DxyBCb.kA9KIf.dS8AEf
+    - review_item:      div.jftiEf.fontBodyMedium
+    - review_id_attr:   data-review-id
+    - reviewer_name_attr: aria-label
+    - rating_selector:  span.kvMYJc (aria-label like "Rated 4 out of 5")
+    - review_text_selector: span.wiI7pd
+    - relative_date_selector: span.rsqaWe
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Revolver Espresso Seminyak — Reviews (fixture)</title>
+</head>
+<body>
+  <div class="m6QErb DxyBCb kA9KIf dS8AEf" aria-label="Reviews list">
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-seminyak-01-aaa" aria-label="Budi Santoso, original">
+      <span class="kvMYJc" aria-label="Rated 5 out of 5" role="img">★★★★★</span>
+      <span class="rsqaWe">3 days ago</span>
+      <span class="wiI7pd">Best coffee in Seminyak, hands down. The cold brew was smooth and the staff remembered my name on day two. Will be back every morning of my trip.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-seminyak-01-bbb" aria-label="Sarah Chen, original">
+      <span class="kvMYJc" aria-label="Rated 4 out of 5" role="img">★★★★☆</span>
+      <span class="rsqaWe">a week ago</span>
+      <span class="wiI7pd">Great flat white and the avocado toast is generous. Lost a star because the queue at 8am was out the door — get there early or after 10.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-seminyak-01-ccc" aria-label="James O'Brien, original">
+      <span class="kvMYJc" aria-label="Rated 5 out of 5" role="img">★★★★★</span>
+      <span class="rsqaWe">2 weeks ago</span>
+      <span class="wiI7pd">Worth the hype. Magic coffee (Australia-style) was excellent, beans sold by the bag. Outdoor seating only — bring a fan.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-seminyak-01-ddd" aria-label="Putri Ayu, original">
+      <span class="kvMYJc" aria-label="Rated 4 out of 5" role="img">★★★★☆</span>
+      <span class="rsqaWe">3 weeks ago</span>
+      <span class="wiI7pd">Kopi susu mereka enak, porsi croissant besar. Tempat duduk terbatas, jadi datang sebelum jam 8 kalau mau duduk di dalam.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-seminyak-01-eee" aria-label="Marcus Lindqvist, original">
+      <span class="kvMYJc" aria-label="Rated 5 out of 5" role="img">★★★★★</span>
+      <span class="rsqaWe">a month ago</span>
+      <span class="wiI7pd">As a Swede who takes coffee seriously: this is the only place in Seminyak that pulled a Cortado correctly. Brunch plate was generous too.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-seminyak-01-fff" aria-label="Yuki Tanaka, original">
+      <span class="kvMYJc" aria-label="Rated 3 out of 5" role="img">★★★☆☆</span>
+      <span class="rsqaWe">a month ago</span>
+      <span class="wiI7pd">Coffee was good but the music was too loud for a morning chat. Maybe acceptable for digital nomads with headphones.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-seminyak-01-ggg" aria-label="Liam Walker, original">
+      <span class="kvMYJc" aria-label="Rated 4 out of 5" role="img">★★★★☆</span>
+      <span class="rsqaWe">2 months ago</span>
+      <span class="wiI7pd">Solid espresso, friendly baristas. Cash only some days so bring rupiah just in case. Vibe is hipster-minimalist.</span>
+    </div>
+  </div>
+</body>
+</html>

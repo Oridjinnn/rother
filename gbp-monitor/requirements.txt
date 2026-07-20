@@ -1,0 +1,10 @@
+# GBP-Monitor Python dependencies — zero-cost only, no paid APIs (per EXECUTION_RULES.md Rule 4)
+playwright>=1.40.0
+parsel>=1.8.1
+# Note: Scrapy is intentionally NOT pinned here because the plan uses `parsel.Selector`
+# (Scrapy's selector library, available standalone) rather than full Scrapy.
+# If a future phase needs Scrapy's engine (concurrency, pipelines), add `scrapy>=2.11`.
+# Spider is used only for the optional `discovery/validate_listing.py` pre-check;
+# if Spider's local Python binding is unavailable, a plain `requests` HEAD/GET is the
+# documented fallback (Section 5.7). `requests` is included for that fallback.
+requests>=2.31.0

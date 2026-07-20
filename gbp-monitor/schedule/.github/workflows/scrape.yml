@@ -1,0 +1,74 @@
+# GBP Review Monitor — daily scrape workflow.
+# Per GBP_MONITOR_PLAN.md Section 7. Runs once a day at 05:00 WITA (UTC+8),
+# which is 22:00 UTC the previous day. Also exposed as a manual trigger via
+# workflow_dispatch so the operator can run an ad-hoc scrape from the
+# Actions tab without waiting for the cron.
+#
+# Cost: zero (GitHub Actions free tier, public repo). If the repo is made
+# private, minutes count against the 2,000/mo free allotment — still zero
+# cost for a single 5–10 minute daily job.
+#
+# Output: any changed files under data/snapshots/, data/reviews_new/, and
+# data/run.log are committed back to the repo by the bot identity. The
+# Next.js dashboard (separate phase) reads these files to render the UI.
+
+name: GBP Review Monitor
+
+on:
+  schedule:
+    # 05:00 WITA daily = 22:00 UTC previous day. WITA is UTC+8 year-round
+    # (no DST in Indonesia). Section 7 of the plan specifies this slot.
+    - cron: '0 22 * * *'
+  workflow_dispatch: {}
+
+# Prevent overlapping runs if the previous day's job is still going (a
+# listing could hang on a slow Google response). The second run is
+# cancelled; the first one completes and commits.
+concurrency:
+  group: gbp-monitor-scrape
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'              # cache pip wheels based on requirements.txt
+          cache-dependency-path: gbp-monitor/requirements.txt
+
+      - name: Install Python dependencies
+        working-directory: gbp-monitor
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright Chromium
+        working-directory: gbp-monitor
+        # `--with-deps` installs OS-level libs Chromium needs (libnss3,
+        # libatk1.0, etc.). On ubuntu-latest this is ~150MB but cached
+        # across runs by the playwright-installer.
+        run: playwright install --with-deps chromium
+
+      - name: Run scraper
+        working-directory: gbp-monitor
+        # Always exits 0 per the design (Rule 7 — failure isolation). The
+        # dashboard reads data/run_summary.json to see per-listing
+        # failures. We do NOT want CI to abort on a single broken listing.
+        run: python -m orchestration.run_all
+
+      - name: Commit results
+        working-directory: gbp-monitor
+        run: |
+          git config user.name "gbp-monitor-bot"
+          git config user.email "bot@localhost"
+          git add data/snapshots data/reviews_new data/run.log data/run_summary.json
+          # `|| true` because there may be nothing to commit on a no-delta
+          # run (no new reviews). The plan's example uses `|| echo` for
+          # the same effect — we use `|| true` for cross-shell safety.
+          git commit -m "chore: scraper run $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+          git push

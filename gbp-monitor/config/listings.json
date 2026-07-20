@@ -1,0 +1,101 @@
+{
+  "_comment": "Sample/mock listings for Copenhagen Bali — 6 branches with 2 competitors each. Real competitor URLs (M1 milestone) are a client data-entry blocker; these mock URLs are used for development and dashboard seeding per GBP_MONITOR_PLAN.md Section 8.",
+  "branches": [
+    {
+      "branch_id": "cph-seminyak",
+      "branch_name": "Copenhagen Bali - Seminyak",
+      "competitors": [
+        {
+          "competitor_id": "comp-seminyak-01",
+          "name": "Revolver Espresso Seminyak",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_revolver_seminyak"
+        },
+        {
+          "competitor_id": "comp-seminyak-02",
+          "name": "Anomali Coffee Seminyak",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_anomali_seminyak"
+        }
+      ]
+    },
+    {
+      "branch_id": "cph-canggu",
+      "branch_name": "Copenhagen Bali - Canggu",
+      "competitors": [
+        {
+          "competitor_id": "comp-canggu-01",
+          "name": "Crate Cafe Canggu",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_crate_canggu"
+        },
+        {
+          "competitor_id": "comp-canggu-02",
+          "name": "The Shady Shack Canggu",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_shadyshack_canggu"
+        }
+      ]
+    },
+    {
+      "branch_id": "cph-ubud",
+      "branch_name": "Copenhagen Bali - Ubud",
+      "competitors": [
+        {
+          "competitor_id": "comp-ubud-01",
+          "name": "Seniman Coffee Studio Ubud",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_seniman_ubud"
+        },
+        {
+          "competitor_id": "comp-ubud-02",
+          "name": "Kafe Ubud",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_kafe_ubud"
+        }
+      ]
+    },
+    {
+      "branch_id": "cph-uluwatu",
+      "branch_name": "Copenhagen Bali - Uluwatu",
+      "competitors": [
+        {
+          "competitor_id": "comp-uluwatu-01",
+          "name": "Single Fin Uluwatu",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_singlefin_uluwatu"
+        },
+        {
+          "competitor_id": "comp-uluwatu-02",
+          "name": "Suluban Cliffs Uluwatu",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_suluban_uluwatu"
+        }
+      ]
+    },
+    {
+      "branch_id": "cph-nusadua",
+      "branch_name": "Copenhagen Bali - Nusa Dua",
+      "competitors": [
+        {
+          "competitor_id": "comp-nusadua-01",
+          "name": "Bumbu Bali Nusa Dua",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_bumbu_nusadua"
+        },
+        {
+          "competitor_id": "comp-nusadua-02",
+          "name": "Salsa Nusa Dua",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_salsa_nusadua"
+        }
+      ]
+    },
+    {
+      "branch_id": "cph-sanur",
+      "branch_name": "Copenhagen Bali - Sanur",
+      "competitors": [
+        {
+          "competitor_id": "comp-sanur-01",
+          "name": "Byrd House Sanur",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_byrdhouse_sanur"
+        },
+        {
+          "competitor_id": "comp-sanur-02",
+          "name": "Lilla Pantai Sanur",
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_lilla_sanur"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!--
+  Fixture: comp-ubud-01 (Seniman Coffee Studio Ubud)
+  Purpose: Static HTML mimicking a Google Maps reviews panel. Used by
+    `python -m orchestration.run_all --fixtures` to PROVE the parser +
+    storage + delta pipeline end-to-end without hitting Google Maps.
+  SPECIAL: This fixture contains one review WITHOUT a `data-review-id`
+    attribute (the 4th item) to verify the parser's "skip without ID"
+    behavior per Section 5.5. That item must NOT appear in the parsed
+    output. The parser logs an INFO line for each skipped item so the
+    orchestration layer can detect selector breakage (a wave of skipped
+    items = `review_id_attr` selector is broken).
+  This is a TEST FIXTURE, not live-scraped data (per EXECUTION_RULES.md
+  Rule 5). Reviews below are synthetic but realistic for a Bali tourist
+  cafe context.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Seniman Coffee Studio Ubud — Reviews (fixture)</title>
+</head>
+<body>
+  <div class="m6QErb DxyBCb kA9KIf dS8AEf" aria-label="Reviews list">
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-ubud-01-aaa" aria-label="Olivia Brown, original">
+      <span class="kvMYJc" aria-label="Rated 5 out of 5" role="img">★★★★★</span>
+      <span class="rsqaWe">2 days ago</span>
+      <span class="wiI7pd">Single-origin Bali Kintamani was eye-opening — citrusy and bright. The staff cupping session was a highlight of my Ubud trip.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-ubud-01-bbb" aria-label="Hendrik Müller, original">
+      <span class="kvMYJc" aria-label="Rated 4 out of 5" role="img">★★★★☆</span>
+      <span class="rsqaWe">a week ago</span>
+      <span class="wiI7pd">Syphon brew was theatre and the cup was clean. Seating is on floor cushions which I found charming but my knees disagreed.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-ubud-01-ccc" aria-label="Made Wijaya, original">
+      <span class="kvMYJc" aria-label="Rated 5 out of 5" role="img">★★★★★</span>
+      <span class="rsqaWe">2 weeks ago</span>
+      <span class="wiI7pd">Kopi Bali yang dipanggang sendiri, rasanya konsisten. Kursus cupping mereka worth it sekali untuk coffee geek.</span>
+    </div>
+    <!-- DELIBERATELY NO data-review-id — must be skipped by parser per
+         Section 5.5 ("Skip items without review_id"). -->
+    <div class="jftiEf fontBodyMedium" aria-label="Anonymous Reviewer, original">
+      <span class="kvMYJc" aria-label="Rated 4 out of 5" role="img">★★★★☆</span>
+      <span class="rsqaWe">3 weeks ago</span>
+      <span class="wiI7pd">Nice coffee, would recommend. (This review has no review-id and should be skipped by the parser.)</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-ubud-01-eee" aria-label="Charlotte Dubois, original">
+      <span class="kvMYJc" aria-label="Rated 5 out of 5" role="img">★★★★★</span>
+      <span class="rsqaWe">3 weeks ago</span>
+      <span class="wiI7pd">Cold brew with coconut milk — perfection. The shop's design (reclaimed wood + jazz) makes it easy to spend 2 hours here.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-ubud-01-fff" aria-label="Raj Patel, original">
+      <span class="kvMYJc" aria-label="Rated 4 out of 5" role="img">★★★★☆</span>
+      <span class="rsqaWe">a month ago</span>
+      <span class="wiI7pd">Good coffee, knowledgeable baristas. A bit pricier than other Ubud cafes but the quality justifies it. Avoid lunch rush.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-ubud-01-ggg" aria-label="Anna Kowalski, original">
+      <span class="kvMYJc" aria-label="Rated 5 out of 5" role="img">★★★★★</span>
+      <span class="rsqaWe">a month ago</span>
+      <span class="wiI7pd">Came for the coffee, stayed for the chocolate-tasting plate. Seniman understands that "small producer" matters — every cup has a story.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-ubud-01-hhh" aria-label="Tom Baker, original">
+      <span class="kvMYJc" aria-label="Rated 3 out of 5" role="img">★★★☆☆</span>
+      <span class="rsqaWe">2 months ago</span>
+      <span class="wiI7pd">Coffee is excellent but the queue moves slowly and there is no AC. Bring a fan and patience.</span>
+    </div>
+  </div>
+</body>
+</html>

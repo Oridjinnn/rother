@@ -1,0 +1,253 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Bali-inspired palette: deep emerald/teal primary, warm amber accent,
+   terracotta/cream neutrals. Designed for a coffee-shop monitoring tool,
+   not a corporate SaaS. */
+:root {
+  --radius: 0.75rem;
+
+  /* Surfaces */
+  --background: oklch(0.985 0.012 95);          /* warm cream */
+  --foreground: oklch(0.22 0.025 165);          /* deep emerald-tinted charcoal */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.025 165);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.025 165);
+
+  /* Primary — deep emerald */
+  --primary: oklch(0.55 0.13 165);
+  --primary-foreground: oklch(0.985 0.012 95);
+
+  /* Secondary — muted teal */
+  --secondary: oklch(0.94 0.025 175);
+  --secondary-foreground: oklch(0.30 0.05 165);
+
+  /* Muted — sandstone */
+  --muted: oklch(0.96 0.015 90);
+  --muted-foreground: oklch(0.50 0.025 165);
+
+  /* Accent — amber */
+  --accent: oklch(0.92 0.07 75);
+  --accent-foreground: oklch(0.35 0.10 60);
+
+  /* Semantic */
+  --destructive: oklch(0.58 0.22 27);
+  --success: oklch(0.62 0.14 155);
+  --success-foreground: oklch(0.985 0.012 95);
+  --warning: oklch(0.78 0.16 75);
+  --warning-foreground: oklch(0.30 0.10 60);
+
+  --border: oklch(0.90 0.015 95);
+  --input: oklch(0.92 0.012 95);
+  --ring: oklch(0.55 0.13 165);
+
+  /* Chart palette — warm Bali sunset/jungle */
+  --chart-1: oklch(0.55 0.13 165);    /* emerald */
+  --chart-2: oklch(0.70 0.15 75);     /* amber */
+  --chart-3: oklch(0.62 0.14 35);     /* terracotta */
+  --chart-4: oklch(0.55 0.10 200);    /* teal */
+  --chart-5: oklch(0.65 0.18 320);    /* frangipani pink */
+
+  --sidebar: oklch(0.985 0.012 95);
+  --sidebar-foreground: oklch(0.22 0.025 165);
+  --sidebar-primary: oklch(0.55 0.13 165);
+  --sidebar-primary-foreground: oklch(0.985 0.012 95);
+  --sidebar-accent: oklch(0.94 0.025 175);
+  --sidebar-accent-foreground: oklch(0.30 0.05 165);
+  --sidebar-border: oklch(0.90 0.015 95);
+  --sidebar-ring: oklch(0.55 0.13 165);
+}
+
+.dark {
+  /* Dark mode — deep jungle night */
+  --background: oklch(0.18 0.02 165);
+  --foreground: oklch(0.95 0.012 95);
+  --card: oklch(0.22 0.025 165);
+  --card-foreground: oklch(0.95 0.012 95);
+  --popover: oklch(0.22 0.025 165);
+  --popover-foreground: oklch(0.95 0.012 95);
+
+  --primary: oklch(0.72 0.13 165);
+  --primary-foreground: oklch(0.18 0.02 165);
+
+  --secondary: oklch(0.28 0.03 170);
+  --secondary-foreground: oklch(0.92 0.012 95);
+
+  --muted: oklch(0.27 0.02 165);
+  --muted-foreground: oklch(0.72 0.025 95);
+
+  --accent: oklch(0.40 0.10 75);
+  --accent-foreground: oklch(0.95 0.05 75);
+
+  --destructive: oklch(0.68 0.20 27);
+  --success: oklch(0.72 0.14 155);
+  --success-foreground: oklch(0.18 0.02 165);
+  --warning: oklch(0.72 0.15 75);
+  --warning-foreground: oklch(0.18 0.02 165);
+
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.72 0.13 165);
+
+  --chart-1: oklch(0.72 0.13 165);
+  --chart-2: oklch(0.78 0.15 75);
+  --chart-3: oklch(0.70 0.18 35);
+  --chart-4: oklch(0.70 0.12 200);
+  --chart-5: oklch(0.75 0.18 320);
+
+  --sidebar: oklch(0.22 0.025 165);
+  --sidebar-foreground: oklch(0.95 0.012 95);
+  --sidebar-primary: oklch(0.72 0.13 165);
+  --sidebar-primary-foreground: oklch(0.18 0.02 165);
+  --sidebar-accent: oklch(0.28 0.03 170);
+  --sidebar-accent-foreground: oklch(0.92 0.012 95);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.72 0.13 165);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11";
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+   Custom scrollbar styling — applied to .gbp-scrollbar elements and the
+   body globally. Slim, theme-aware, hover-interactive.
+   ────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .gbp-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted-foreground) transparent;
+  }
+  .gbp-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .gbp-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .gbp-scrollbar::-webkit-scrollbar-thumb {
+    background-color: oklch(from var(--muted-foreground) l c h / 0.35);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  .gbp-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: oklch(from var(--muted-foreground) l c h / 0.55);
+  }
+
+  .gbp-scrollbar-lg {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+  }
+  .gbp-scrollbar-lg::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .gbp-scrollbar-lg::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .gbp-scrollbar-lg::-webkit-scrollbar-thumb {
+    background-color: oklch(from var(--primary) l c h / 0.4);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  .gbp-scrollbar-lg::-webkit-scrollbar-thumb:hover {
+    background-color: oklch(from var(--primary) l c h / 0.65);
+  }
+}
+
+/* Subtle card hover lift used across the dashboard */
+@layer components {
+  .gbp-card-hover {
+    transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  }
+  .gbp-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 10px 30px -12px oklch(from var(--primary) l c h / 0.18),
+      0 4px 10px -4px oklch(from var(--foreground) l c h / 0.08);
+    border-color: oklch(from var(--primary) l c h / 0.35);
+  }
+}
+
+/* Recharts override — let our tooltips use card styles */
+.recharts-tooltip-wrapper:focus,
+.recharts-tooltip-wrapper:focus-visible {
+  outline: none;
+}
+.recharts-default-tooltip {
+  background-color: var(--popover) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 6px 20px -6px oklch(from var(--foreground) l c h / 0.15) !important;
+  color: var(--popover-foreground) !important;
+  padding: 0.5rem 0.75rem !important;
+}
+.recharts-tooltip-label {
+  color: var(--popover-foreground) !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.25rem !important;
+}
+.recharts-tooltip-item {
+  color: var(--popover-foreground) !important;
+}
+
+/* Hide focus ring on non-keyboard nav */
+.recharts-surface:focus,
+.recharts-wrapper:focus {
+  outline: none;
+}

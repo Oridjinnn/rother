@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--
+  Fixture: comp-canggu-01 (Crate Cafe Canggu)
+  Purpose: Static HTML mimicking a Google Maps reviews panel. Used by
+    `python -m orchestration.run_all --fixtures` to PROVE the parser +
+    storage + delta pipeline end-to-end without hitting Google Maps.
+  This is a TEST FIXTURE, not live-scraped data (per EXECUTION_RULES.md
+  Rule 5). Reviews below are synthetic but realistic for a Bali tourist
+  cafe context.
+  Selectors used (must match config/selectors.json) — same set as the
+  other fixtures; the parser is selector-driven, not branch-driven.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Crate Cafe Canggu — Reviews (fixture)</title>
+</head>
+<body>
+  <div class="m6QErb DxyBCb kA9KIf dS8AEf" aria-label="Reviews list">
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-canggu-01-aaa" aria-label="Emily Carter, original">
+      <span class="kvMYJc" aria-label="Rated 5 out of 5" role="img">★★★★★</span>
+      <span class="rsqaWe">5 days ago</span>
+      <span class="wiI7pd">Acai bowl was the best I've had in Bali. Came back three days in a row. The line moves fast and the staff are quick.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-canggu-01-bbb" aria-label="Wayan Artha, original">
+      <span class="kvMYJc" aria-label="Rated 4 out of 5" role="img">★★★★☆</span>
+      <span class="rsqaWe">a week ago</span>
+      <span class="wiI7pd">Tempat nongkrong anak bule, kopinya oke, smoothie bowl-nya besar. Parkir motor agak susah di pagi hari.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-canggu-01-ccc" aria-label="Daniel Kim, original">
+      <span class="kvMYJc" aria-label="Rated 5 out of 5" role="img">★★★★★</span>
+      <span class="rsqaWe">2 weeks ago</span>
+      <span class="wiI7pd">Big breakfast plate for two was plenty. Cold brew on tap. Open at 7am — perfect for surfers coming back from Echo Beach.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-canggu-01-ddd" aria-label="Sophie Martin, original">
+      <span class="kvMYJc" aria-label="Rated 4 out of 5" role="img">★★★★☆</span>
+      <span class="rsqaWe">3 weeks ago</span>
+      <span class="wiI7pd">Loved the banana bread and the peanut butter smoothie. Knocked off one star because the Wi-Fi was spotty and the music was loud.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-canggu-01-eee" aria-label="Alessandro Rossi, original">
+      <span class="kvMYJc" aria-label="Rated 5 out of 5" role="img">★★★★★</span>
+      <span class="rsqaWe">a month ago</span>
+      <span class="wiI7pd">Pancake stack was incredible, the caramelized banana on top was perfect. Long queue at 9am but worth waiting 15 minutes.</span>
+    </div>
+    <div class="jftiEf fontBodyMedium" data-review-id="rev-canggu-01-fff" aria-label="Nina Petrova, original">
+      <span class="kvMYJc" aria-label="Rated 3 out of 5" role="img">★★★☆☆</span>
+      <span class="rsqaWe">a month ago</span>
+      <span class="wiI7pd">Food was decent but overpriced for the portion. The vibe is great if you want to be seen, less great if you want to work.</span>
+    </div>
+  </div>
+</body>
+</html>

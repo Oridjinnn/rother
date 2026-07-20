@@ -1,0 +1,16 @@
+{
+  "last_verified": "2026-07-20",
+  "verified_by": "seed",
+  "_verification_note": "Selectors seeded from public reference implementations (gaspa93/googlemaps-scraper et al.) known to be ~2023 vintage. UNPROVEN against current Google Maps DOM per EXECUTION_RULES.md Rule 3. A browser_agent verification pass is required before production use; until then, parse failures are expected and must be surfaced loudly by the orchestration layer (see Section 6 of GBP_MONITOR_PLAN.md).",
+  "cookie_reject_button": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
+  "reviews_tab_button": "button[aria-label*='Reviews']",
+  "review_container": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
+  "review_item": "div.jftiEf.fontBodyMedium",
+  "review_id_attr": "data-review-id",
+  "reviewer_name_attr": "aria-label",
+  "review_text_selector": "span.wiI7pd",
+  "rating_selector": "span.kvMYJc",
+  "rating_attr": "aria-label",
+  "relative_date_selector": "span.rsqaWe",
+  "expand_text_button": "button.w8nwRe.kyuRq"
+}
