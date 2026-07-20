@@ -35,6 +35,7 @@ import {
 import { StarRating } from "./star-rating";
 import { EmptyState } from "./empty-state";
 import { CompetitorDetailDialog } from "./competitor-detail-dialog";
+import { FreshnessBadge } from "./freshness-badge";
 import { formatTimestamp } from "@/lib/gbp/format";
 import type { BranchesResponse, BranchWithStats, CompetitorStats } from "@/lib/gbp/types";
 
@@ -264,7 +265,10 @@ function BranchComparisonCard({
                     </div>
                   </div>
                   {comp.total_reviews > 0 ? (
-                    <StarRating rating={comp.average_rating} size="sm" />
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <StarRating rating={comp.average_rating} size="sm" />
+                      <FreshnessBadge lastScrapedAt={comp.last_scraped_at} />
+                    </div>
                   ) : (
                     <Badge
                       variant="outline"

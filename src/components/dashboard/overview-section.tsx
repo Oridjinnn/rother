@@ -52,6 +52,9 @@ import { AutoRefreshToggle } from "./auto-refresh-toggle";
 import { RunHistoryTimeline } from "./run-history-timeline";
 import { ReviewsOverTimeCard } from "./reviews-over-time-card";
 import { ReviewLengthsCard } from "./review-lengths-card";
+import { CompetitorLeaderboard } from "./competitor-leaderboard";
+import { FreshnessBadge } from "./freshness-badge";
+import { ReviewRecencyHeatmap } from "./review-recency-heatmap";
 import { formatTimestamp } from "@/lib/gbp/format";
 import type { OverviewResponse } from "@/lib/gbp/types";
 
@@ -631,60 +634,70 @@ export function OverviewSection({
       {/* Review text length distribution — full-width bar chart */}
       <ReviewLengthsCard refreshKey={refreshKey} />
 
-      {/* Quick recent-reviews preview (a taste of the Reviews tab) */}
-      {hasReviews && data.competitorStats.length > 0 && (
-        <Card className="gbp-card-hover">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FileText className="size-4 text-primary" aria-hidden="true" />
-              Snapshot at a Glance
-            </CardTitle>
-            <CardDescription>
-              Per-competitor review counts and average ratings — open the Branches &amp; Competitors tab for full details.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {data.competitorStats
-                .filter((c) => c.total_reviews > 0)
-                .map((c) => (
-                  <div
-                    key={c.competitor_id}
-                    className="rounded-lg border border-border/60 bg-muted/30 p-3 transition-colors hover:border-primary/30 hover:bg-primary/5"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-foreground">
-                          {c.name}
+      {/* Snapshot at a Glance + Competitor Leaderboard — side-by-side on lg+ */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Quick recent-reviews preview (a taste of the Reviews tab) */}
+        {hasReviews && data.competitorStats.length > 0 && (
+          <Card className="gbp-card-hover">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileText className="size-4 text-primary" aria-hidden="true" />
+                Snapshot at a Glance
+              </CardTitle>
+              <CardDescription>
+                Per-competitor review counts and average ratings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {data.competitorStats
+                  .filter((c) => c.total_reviews > 0)
+                  .map((c) => (
+                    <div
+                      key={c.competitor_id}
+                      className="rounded-lg border border-border/60 bg-muted/30 p-3 transition-colors hover:border-primary/30 hover:bg-primary/5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-foreground">
+                            {c.name}
+                          </div>
+                          <div className="truncate text-[11px] text-muted-foreground">
+                            {c.branch_name}
+                          </div>
                         </div>
-                        <div className="truncate text-[11px] text-muted-foreground">
-                          {c.branch_name}
-                        </div>
+                        {c.new_reviews_count > 0 && (
+                          <Badge className="shrink-0 gap-1 border-amber-500/40 bg-amber-500/15 px-1.5 py-0 text-[10px] font-semibold text-amber-700 dark:text-amber-300" variant="outline">
+                            +{c.new_reviews_count}
+                          </Badge>
+                        )}
                       </div>
-                      {c.new_reviews_count > 0 && (
-                        <Badge className="shrink-0 gap-1 border-amber-500/40 bg-amber-500/15 px-1.5 py-0 text-[10px] font-semibold text-amber-700 dark:text-amber-300" variant="outline">
-                          +{c.new_reviews_count}
-                        </Badge>
-                      )}
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <StarRating rating={c.average_rating} size="sm" />
+                        <FreshnessBadge lastScrapedAt={c.last_scraped_at} />
+                        <span className="ml-auto text-xs font-medium tabular-nums text-muted-foreground">
+                          {c.total_reviews} review{c.total_reviews === 1 ? "" : "s"}
+                        </span>
+                      </div>
                     </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <StarRating rating={c.average_rating} size="sm" />
-                      <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                        {c.total_reviews} review{c.total_reviews === 1 ? "" : "s"}
-                      </span>
-                    </div>
+                  ))}
+                {data.competitorStats.filter((c) => c.total_reviews > 0).length ===
+                  0 && (
+                  <div className="col-span-full text-center text-sm text-muted-foreground py-6">
+                    No competitors have reviews yet.
                   </div>
-                ))}
-              {data.competitorStats.filter((c) => c.total_reviews > 0).length ===
-                0 && (
-                <div className="col-span-full text-center text-sm text-muted-foreground py-6">
-                  No competitors have reviews yet.
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Competitor Leaderboard — sortable ranked list */}
+        <CompetitorLeaderboard
+          data={data.competitorStats}
+          loading={loading}
+        />
+      </div>
 
       {/* Competitor comparison radar chart — top 3 competitors across 4
           normalized dimensions (Reviews, Rating, New, Recency). Full-width. */}
@@ -710,6 +723,9 @@ export function OverviewSection({
       {/* Run history timeline — newest-first list of every run that produced
           new reviews. Auto-polls every 30s. */}
       <RunHistoryTimeline refreshKey={refreshKey} />
+
+      {/* Review recency heatmap — GitHub-style contribution graph */}
+      <ReviewRecencyHeatmap refreshKey={refreshKey} />
     </motion.div>
   );
 }
