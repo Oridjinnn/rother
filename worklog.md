@@ -570,3 +570,94 @@ I implemented 3 of the 5 round-2 recommendations (skipping #1 react-query migrat
 - Rule 4 (zero-cost, no AI/LLM): ✓ — all new features are pure UI/UX + data-layer additions, no AI/LLM calls, no paid dependencies.
 - Rule 5 (no fake progress): ✓ — every feature is verified end-to-end via agent-browser (copy button click + toast, tab navigation shortcuts, help dialog open/close, area chart rendering + API data).
 - Rule 9 (documentation): ✓ — this worklog entry is the documentation; no Python files changed so the Python CHANGELOG was not modified.
+
+---
+Task ID: CRON-R4 (webDevReview round 4)
+Agent: main (orchestrator) — recurring webDevReview cron job (round 4)
+Task: Assess project status, perform QA via agent-browser, implement round-3 recommendations + new features, improve styling, update worklog.
+
+## Current Project Status (assessment)
+
+The project is **stable and production-ready** after round 3. Round 3 added 3 features (copy review ID button, keyboard shortcuts for tab navigation + help dialog, reviews-over-time area chart) — all verified working. QA this round confirmed no regressions: zero errors in dev log, 5 charts rendering, lint clean, all routes returning 200.
+
+## QA Performed This Round
+
+- **Dev log check**: zero errors, zero hydration mismatches, zero warnings.
+- **Element audit via agent-browser**: 5 charts (before this round's additions), 12 buttons, 5 tabs, reviews badge present (text "20"), keyboard help button present, no horizontal scroll.
+- **Lint check**: `bun run lint` passes clean.
+
+## Work Focus Selected
+
+I implemented 3 of the 5 round-3 recommendations (skipping #1 react-query migration as a large refactor, and #2 recharts custom shape for 0-value bars as a smaller cosmetic item). The 3 selected items deliver immediate visual + functional value and include both new visualizations (radar chart) and at-a-glance status indicators (health dot, live clock).
+
+### Feature 1: Health check indicator in the footer (recommendation #4)
+
+- **What**: A colored dot + label in the footer showing the overall system health: green (animated ping) = healthy (0 failures), amber = warning (some failures but failed < success), red = critical (failed ≥ success). The dot has a tooltip showing the full breakdown (N listings · X success · Y failed · Z skipped + the last run timestamp).
+- **Where**: `src/components/dashboard/footer.tsx` — added a `health` prop (`{success, failed, skipped, lastRunAt}`) + a `computeHealth()` function that returns the level/label/dotClass/textClass. The footer renders a pill-shaped indicator with `role=status` + `aria-label` for accessibility. The green dot has an `animate-ping` ring (subtle pulsing) so "healthy" feels alive. `src/app/page.tsx` — passes `overview.runSummary` data to the Footer.
+- **Verified**: `hasHealthIndicator: true`, `healthText: "Healthy · 3 ok"`, `role=status` element with `aria-label="System health: Healthy · 3 ok"`. The animated ping ring renders on the green dot.
+
+### Feature 2: "Last updated" live clock in the header (recommendation #5)
+
+- **What**: A live clock in the header that ticks every second, showing the current time (HH:MM:SS) + a relative "Xm ago" indicator for the last scrape run. When a scrape is running, the clock icon spins slowly (3s period, custom `animate-spin-slow` keyframe) and the label changes to "running…". Hidden on mobile (`hidden sm:inline-flex`) to keep the mobile header uncluttered.
+- **New component**: `src/components/dashboard/live-clock.tsx` — uses a 1s `setInterval` (not rAF — 1s resolution is enough and cheaper), computes the relative time (Xs/Xm/Xh/Xd ago), and has a tooltip with the full current time + last scrape info.
+- **New CSS**: `src/app/globals.css` — added `@keyframes spin-slow` (3s linear rotation) + `.animate-spin-slow` utility class for the gentle ticking effect.
+- **Wired into**: `src/components/dashboard/header.tsx` — added `lastRunAt` prop, rendered `<LiveClock>` before the ThemeToggle. `src/app/page.tsx` — passes `overview.runSummary.finished_at ?? started_at` to the Header.
+- **Verified**: `hasLiveClock: true`, `liveClockText: "11:17:19·18m ago"`. Ticking confirmed: read at 11:17:36, re-read 2.5s later at 11:17:39 (3 seconds elapsed — the clock updates every second).
+
+### Feature 3: Competitor comparison radar chart (recommendation #3 — new visualization)
+
+- **What**: A new full-width radar chart on the Overview tab comparing the top 3 competitors (by total reviews) across 4 normalized dimensions (0–100):
+  - **Reviews**: total_reviews normalized to the max across selected competitors
+  - **Rating**: average_rating / 5 * 100
+  - **New**: new_reviews_count normalized to the max
+  - **Recency**: 100 if scraped today, linearly decaying to 0 at 7 days (so a competitor scraped 3.5 days ago scores 50)
+- **New chart component**: `CompetitorRadarChart` in `src/components/dashboard/charts.tsx` — uses recharts `RadarChart` + `Radar` + `PolarGrid` + `PolarAngleAxis`. Each competitor gets a colored radar polygon (emerald/terracotta/amber/teal) with 15% fill opacity so overlaps are visible. Includes a legend below the chart with colored dots + competitor names. Custom tooltip with popover styling.
+- **No new API needed**: uses the existing `overview.competitorStats` data (already fetched by the Overview section).
+- **Wired into**: `src/components/dashboard/overview-section.tsx` — added as a `ChartCard` (full-width) between "Snapshot at a Glance" and "Run History timeline". Uses the `Radar` lucide icon (aliased as `RadarIcon` to avoid collision with the recharts `Radar` component).
+- **Verified**: `totalCharts: 6` (was 5), `radarCharts: 3` (3 competitor polygons), `polarGrids: 1`, `radarPolygonCount: 3`, `polarAngleTickCount: 4` (Reviews, Rating, New, Recency). "Competitor Comparison" title + description rendered correctly.
+
+## Files Created / Modified
+
+**Created (2 files):**
+- `src/components/dashboard/live-clock.tsx` — live ticking clock component
+- (no other new files — the radar chart + health indicator were added to existing files)
+
+**Modified (5 files):**
+- `src/components/dashboard/footer.tsx` — added `health` prop + `computeHealth()` + health indicator pill with animated ping dot + tooltip
+- `src/components/dashboard/header.tsx` — added `lastRunAt` prop + `LiveClock` import + rendered the clock before ThemeToggle
+- `src/app/page.tsx` — passed `health` to Footer + `lastRunAt` to Header
+- `src/components/dashboard/charts.tsx` — added `PolarAngleAxis, PolarGrid, Radar, RadarChart` imports + `CompetitorStats` type import + `CompetitorRadarChart` component + `computeRecencyScore` helper + `RADAR_COLORS` array
+- `src/components/dashboard/overview-section.tsx` — imported `CompetitorRadarChart` + `Radar as RadarIcon` + added the radar ChartCard between Snapshot at a Glance and Run History timeline
+- `src/app/globals.css` — added `@keyframes spin-slow` + `.animate-spin-slow` utility class
+
+## Verification Results
+
+- **Lint**: `bun run lint` passes clean (zero warnings, zero errors).
+- **Dev log**: zero errors, zero hydration mismatches, zero warnings throughout.
+- **agent-browser QA**:
+  - Health indicator: `hasHealthIndicator: true`, `healthText: "Healthy · 3 ok"`, `role=status` with `aria-label="System health: Healthy · 3 ok"` ✓
+  - Live clock: `hasLiveClock: true`, `liveClockText: "11:17:19·18m ago"`, ticking confirmed (36→39 over 2.5s) ✓
+  - Radar chart: `totalCharts: 6` (was 5), `radarCharts: 3`, `polarGrids: 1`, `radarPolygonCount: 3`, `polarAngleTickCount: 4` ✓
+  - "Competitor Comparison" title + description rendered ✓
+  - No horizontal scroll, no regressions ✓
+
+## Unresolved Issues / Risks
+
+1. **Radar chart recency score uses client-side time** — the `computeRecencyScore` function uses `Date.now()` on the client, so the recency dimension shifts over time even without a re-fetch. This is intentional (the radar "ages" visually as time passes) but means the chart is not perfectly deterministic. For a production dashboard, this could be server-computed; for now it's a reasonable client-side heuristic.
+2. **Radar chart normalizes to the max of the selected competitors** — if all 3 competitors have similar review counts, the "Reviews" dimension will show all near 100, which can be misleading. The tooltip shows the raw normalized values so users can see the actual numbers. A future enhancement could show absolute values in the tooltip.
+3. **Round 2 recommendation #1 (react-query migration)** — still not attempted. The QueryClientProvider is wired up; the migration would give automatic background refetch + request deduplication. Priority: low (current pattern works correctly).
+4. **Round 2 recommendation #2 (recharts custom shape for 0-value bars)** — still not attempted. The "New Reviews per Branch" chart shows empty bar slots for 3 of 6 branches. Priority: low (cosmetic).
+
+## Priority Recommendations for Next Round
+
+1. **Migrate the manual `fetch + useState + refreshKey` pattern to `@tanstack/react-query` `useQuery` hooks** — the QueryClientProvider is already wired up. Highest-value remaining refactor for automatic background refetch + request deduplication + stale-while-revalidate.
+2. **Add recharts custom shape for 0-value bars** in the "New Reviews per Branch" chart — show a subtle hatched "no data yet" pattern for branches with 0 reviews.
+3. **Add a "rating trend over time" line chart** — would require the scraper to snapshot average_rating per run (currently only review count is tracked over time). This is a Python-side enhancement + a new chart. Larger scope.
+4. **Add a "branch comparison" tab** — a dedicated tab showing side-by-side branch cards with their competitors, ratings, and review trends. Currently the Branches tab is an accordion; a comparison view would be more useful for at-a-glance analysis.
+5. **Add CSV export for the run history timeline** — let users download the run history as CSV for offline analysis. Extends the existing export pattern.
+
+## Rule Compliance
+
+- Rule 4 (zero-cost, no AI/LLM): ✓ — all new features are pure UI/UX + data-layer additions, no AI/LLM calls, no paid dependencies. The radar chart uses a deterministic normalization + recency heuristic, not AI.
+- Rule 5 (no fake progress): ✓ — every feature is verified end-to-end via agent-browser (health indicator text + aria, live clock ticking confirmed with 2 readings, radar chart polygon count + polar angle ticks).
+- Rule 9 (documentation): ✓ — this worklog entry is the documentation; no Python files changed so the Python CHANGELOG was not modified.

@@ -251,3 +251,14 @@
 .recharts-wrapper:focus {
   outline: none;
 }
+
+/* Slow spin animation for the live clock icon when a scrape is running.
+   3s period — slower than the default Tailwind animate-spin (1s) so it's
+   a gentle "ticking" effect rather than a frantic spinner. */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}

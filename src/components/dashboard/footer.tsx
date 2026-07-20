@@ -2,14 +2,28 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Coffee, Github, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Coffee, Github, ShieldCheck, ShieldAlert, Activity } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { VerifiedBy } from "@/lib/gbp/types";
 
 interface FooterProps {
   verifiedBy: VerifiedBy | null;
   lastVerified: string | null;
+  /** Health indicator props — when provided, a colored dot is shown. */
+  health?: {
+    success: number;
+    failed: number;
+    skipped: number;
+    /** ISO timestamp of the last run's finish time (or start if no finish). */
+    lastRunAt?: string | null;
+  } | null;
 }
 
 const verificationMeta: Record<
@@ -36,10 +50,55 @@ const verificationMeta: Record<
   },
 };
 
+type HealthLevel = "healthy" | "warning" | "critical" | "unknown";
+
+function computeHealth(h: FooterProps["health"]): {
+  level: HealthLevel;
+  label: string;
+  dotClass: string;
+  textClass: string;
+} {
+  if (!h) {
+    return {
+      level: "unknown",
+      label: "No runs yet",
+      dotClass: "bg-muted-foreground/40",
+      textClass: "text-muted-foreground",
+    };
+  }
+  const { success, failed } = h;
+  if (failed === 0) {
+    return {
+      level: "healthy",
+      label: `Healthy · ${success} ok`,
+      dotClass: "bg-emerald-500",
+      textClass: "text-emerald-700 dark:text-emerald-400",
+    };
+  }
+  if (failed >= success && success >= 0) {
+    return {
+      level: "critical",
+      label: `Critical · ${failed} failed ≥ ${success} ok`,
+      dotClass: "bg-destructive",
+      textClass: "text-destructive",
+    };
+  }
+  return {
+    level: "warning",
+    label: `Warning · ${failed} failed`,
+    dotClass: "bg-amber-500",
+    textClass: "text-amber-700 dark:text-amber-400",
+  };
+}
+
 /** Sticky footer per UI/UX rule. Pushed to bottom by min-h-screen flex flex-col. */
-export function Footer({ verifiedBy, lastVerified }: FooterProps) {
+export function Footer({ verifiedBy, lastVerified, health }: FooterProps) {
   const meta = verifiedBy ? verificationMeta[verifiedBy] : null;
   const VIcon = meta?.icon ?? ShieldAlert;
+  const healthInfo = computeHealth(health);
+  const total = health
+    ? health.success + health.failed + health.skipped
+    : 0;
 
   return (
     <footer className="mt-auto border-t border-border/70 bg-muted/30">
@@ -56,6 +115,48 @@ export function Footer({ verifiedBy, lastVerified }: FooterProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {/* Health check indicator — colored dot + label */}
+          {health && (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className={
+                      "inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] font-medium " +
+                      healthInfo.textClass
+                    }
+                    role="status"
+                    aria-label={`System health: ${healthInfo.label}`}
+                  >
+                    <span className="relative flex size-2">
+                      {healthInfo.level === "healthy" && (
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                      )}
+                      <span
+                        className={"relative inline-flex size-2 rounded-full " + healthInfo.dotClass}
+                        aria-hidden="true"
+                      />
+                    </span>
+                    {healthInfo.label}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="font-semibold">Last run health</p>
+                  <p className="text-xs opacity-90">
+                    {total} listing{total === 1 ? "" : "s"} ·{" "}
+                    {health.success} success · {health.failed} failed ·{" "}
+                    {health.skipped} skipped
+                  </p>
+                  {health.lastRunAt && (
+                    <p className="text-[10px] opacity-70">
+                      {new Date(health.lastRunAt).toLocaleString()}
+                    </p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
           {meta && (
             <Badge
               variant="outline"

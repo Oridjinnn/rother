@@ -12,19 +12,22 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ThemeToggle } from "./theme-toggle";
+import { LiveClock } from "./live-clock";
 
 interface HeaderProps {
   onRunNow: () => void;
   isRunning: boolean;
   /** Optional: callback to open the keyboard shortcuts help dialog. */
   onShowShortcuts?: () => void;
+  /** Optional: ISO timestamp of the last scrape run (for the live clock). */
+  lastRunAt?: string | null;
 }
 
 /**
  * Sticky app header: logo + project title + theme toggle + manual run button.
  * Collapses to a compact layout on mobile.
  */
-export function Header({ onRunNow, isRunning, onShowShortcuts }: HeaderProps) {
+export function Header({ onRunNow, isRunning, onShowShortcuts, lastRunAt }: HeaderProps) {
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -53,6 +56,7 @@ export function Header({ onRunNow, isRunning, onShowShortcuts }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <LiveClock lastRunAt={lastRunAt} isRunning={isRunning} />
           <ThemeToggle />
           {onShowShortcuts && (
             <TooltipProvider delayDuration={400}>

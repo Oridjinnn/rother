@@ -322,6 +322,11 @@ export default function Home() {
         onRunNow={handleRunNow}
         isRunning={isRunning}
         onShowShortcuts={() => setShowShortcutsHelp(true)}
+        lastRunAt={
+          overview?.runSummary?.finished_at ??
+          overview?.runSummary?.started_at ??
+          null
+        }
       />
 
       <main
@@ -417,6 +422,18 @@ export default function Home() {
       <Footer
         verifiedBy={selectorVerification?.verified_by ?? null}
         lastVerified={selectorVerification?.last_verified ?? null}
+        health={
+          overview?.runSummary
+            ? {
+                success: overview.runSummary.success,
+                failed: overview.runSummary.failed,
+                skipped: overview.runSummary.skipped,
+                lastRunAt:
+                  overview.runSummary.finished_at ??
+                  overview.runSummary.started_at,
+              }
+            : null
+        }
       />
 
       {/* Keyboard shortcuts help dialog — opens via "?" key or the header button */}

@@ -11,6 +11,7 @@ import {
   FileText,
   MapPin,
   PieChart,
+  Radar as RadarIcon,
   ShieldAlert,
   Sparkles,
   Star,
@@ -40,6 +41,7 @@ import {
 import { KpiCard } from "./kpi-card";
 import { StarRating } from "./star-rating";
 import {
+  CompetitorRadarChart,
   NewReviewsPerBranchChart,
   RatingDistributionChart,
   ReviewsPerCompetitorChart,
@@ -679,6 +681,27 @@ export function OverviewSection({
           </CardContent>
         </Card>
       )}
+
+      {/* Competitor comparison radar chart — top 3 competitors across 4
+          normalized dimensions (Reviews, Rating, New, Recency). Full-width. */}
+      <ChartCard
+        title="Competitor Comparison"
+        icon={RadarIcon}
+        description="Top 3 competitors compared across normalized dimensions (0–100). Reviews, Rating, New, and Recency (7-day decay)."
+        loading={loading}
+        skeletonHeight={320}
+      >
+        {hasReviews ? (
+          <CompetitorRadarChart data={data.competitorStats} topN={3} />
+        ) : (
+          <EmptyState
+            icon={RadarIcon}
+            title="No competitor data yet"
+            description="Run the scraper to populate the competitor comparison."
+            className="h-[320px]"
+          />
+        )}
+      </ChartCard>
 
       {/* Run history timeline — newest-first list of every run that produced
           new reviews. Auto-polls every 30s. */}
