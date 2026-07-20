@@ -194,3 +194,24 @@ export interface ReviewsOverTimeResponse {
   totalPoints: number;
   totalReviews: number;
 }
+
+/** One bucket in the review text length distribution.
+ *  Returned by GET /api/review-lengths. */
+export interface ReviewLengthBucket {
+  label: string;
+  range: string;
+  count: number;
+  color: string;
+}
+
+export interface ReviewLengthsResponse {
+  buckets: ReviewLengthBucket[];
+  stats: {
+    total: number;
+    withText: number;
+    average: number;
+    median: number;
+    min: number;
+    max: number;
+  };
+}

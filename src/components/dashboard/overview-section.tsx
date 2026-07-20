@@ -51,6 +51,7 @@ import { EmptyState } from "./empty-state";
 import { AutoRefreshToggle } from "./auto-refresh-toggle";
 import { RunHistoryTimeline } from "./run-history-timeline";
 import { ReviewsOverTimeCard } from "./reviews-over-time-card";
+import { ReviewLengthsCard } from "./review-lengths-card";
 import { formatTimestamp } from "@/lib/gbp/format";
 import type { OverviewResponse } from "@/lib/gbp/types";
 
@@ -626,6 +627,9 @@ export function OverviewSection({
 
       {/* Reviews count over time — full-width area chart */}
       <ReviewsOverTimeCard refreshKey={refreshKey} />
+
+      {/* Review text length distribution — full-width bar chart */}
+      <ReviewLengthsCard refreshKey={refreshKey} />
 
       {/* Quick recent-reviews preview (a taste of the Reviews tab) */}
       {hasReviews && data.competitorStats.length > 0 && (

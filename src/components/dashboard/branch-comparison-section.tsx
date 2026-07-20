@@ -34,8 +34,9 @@ import {
 
 import { StarRating } from "./star-rating";
 import { EmptyState } from "./empty-state";
+import { CompetitorDetailDialog } from "./competitor-detail-dialog";
 import { formatTimestamp } from "@/lib/gbp/format";
-import type { BranchesResponse, BranchWithStats } from "@/lib/gbp/types";
+import type { BranchesResponse, BranchWithStats, CompetitorStats } from "@/lib/gbp/types";
 
 interface BranchComparisonSectionProps {
   data: BranchesResponse | null;
@@ -58,6 +59,9 @@ export function BranchComparisonSection({
   loading,
   error,
 }: BranchComparisonSectionProps) {
+  const [selectedCompetitor, setSelectedCompetitor] =
+    React.useState<CompetitorStats | null>(null);
+
   if (loading && !data) {
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -112,9 +116,18 @@ export function BranchComparisonSection({
               key={branch.branch_id}
               branch={branch}
               rank={idx + 1}
+              onSelectCompetitor={setSelectedCompetitor}
             />
           ))}
       </div>
+
+      {/* Competitor detail dialog — opens when a competitor card is clicked */}
+      <CompetitorDetailDialog
+        competitor={selectedCompetitor}
+        onOpenChange={(open) => {
+          if (!open) setSelectedCompetitor(null);
+        }}
+      />
     </motion.div>
   );
 }
@@ -122,9 +135,11 @@ export function BranchComparisonSection({
 function BranchComparisonCard({
   branch,
   rank,
+  onSelectCompetitor,
 }: {
   branch: BranchWithStats;
   rank: number;
+  onSelectCompetitor: (c: CompetitorStats) => void;
 }) {
   const shortName = branch.branch_name.replace(/^Copenhagen Bali\s*-\s*/i, "").trim();
   const competitorsWithReviews = branch.competitors.filter(
@@ -232,9 +247,12 @@ function BranchComparisonCard({
               </span>
             </div>
             {branch.competitors.map((comp) => (
-              <div
+              <button
+                type="button"
                 key={comp.competitor_id}
-                className="rounded-md border border-border/40 bg-muted/20 p-2.5 transition-colors hover:border-primary/30 hover:bg-primary/5"
+                onClick={() => onSelectCompetitor(comp)}
+                className="w-full cursor-pointer rounded-md border border-border/40 bg-muted/20 p-2.5 text-left transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                aria-label={`View details for ${comp.name}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -270,7 +288,7 @@ function BranchComparisonCard({
                     )}
                   </div>
                 )}
-              </div>
+              </button>
             ))}
           </div>
 

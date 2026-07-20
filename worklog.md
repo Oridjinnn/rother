@@ -760,3 +760,94 @@ I implemented 3 of the 5 round-4 recommendations (skipping #1 react-query migrat
 - Rule 4 (zero-cost, no AI/LLM): ✓ — all new features are pure UI/UX + data-layer additions, no AI/LLM calls, no paid dependencies.
 - Rule 5 (no fake progress): ✓ — every feature is verified end-to-end via agent-browser (export button click + toast + downloaded file content validated with Python, hatched bar count confirmed = 3, Compare tab rank badges + ordering verified, `g m` shortcut tested).
 - Rule 9 (documentation): ✓ — this worklog entry is the documentation; no Python files changed so the Python CHANGELOG was not modified.
+
+---
+Task ID: CRON-R6 (webDevReview round 6)
+Agent: main (orchestrator) — recurring webDevReview cron job (round 6)
+Task: Assess project status, perform QA via agent-browser, implement round-5 recommendations + new features, improve styling, update worklog.
+
+## Current Project Status (assessment)
+
+The project is **stable and production-ready** after round 5. Round 5 added 3 features (history CSV export, hatched 0-value bar pattern, Compare tab) — all verified working. QA this round confirmed no regressions: zero errors in dev log, 6 charts rendering, 6 tabs, lint clean, live clock ticking, health indicator showing "Healthy · 3 ok".
+
+## QA Performed This Round
+
+- **Dev log check**: zero errors, zero hydration mismatches, zero warnings.
+- **Element audit via agent-browser**: 6 charts, 6 tabs, live clock present (text "11:27:01·28m ago"), health indicator present (text "Healthy · 3 ok"), no horizontal scroll.
+- **Lint check**: `bun run lint` passes clean.
+
+## Work Focus Selected
+
+I implemented 3 of the 5 round-5 recommendations (skipping #1 react-query migration — a pure refactor that doesn't satisfy the mandatory "improve styling + add features" requirements, and #2 rating trend over time chart — requires Python-side changes). The 3 selected items all deliver immediate user value: a new visualization, a new interaction pattern, and a new at-a-glance indicator.
+
+### Feature 1: Review Text Length Distribution Chart (recommendation #3 — new feature + new API)
+
+- **What**: A new full-width bar chart on the Overview tab showing the distribution of review text lengths across 5 buckets: Empty (0 chars), Short (1–80), Medium (81–200), Long (201–400), Very Long (401+). Each bucket is a colored bar. Below the chart, a 4-column stats footer shows the average, median, min, and max character counts.
+- **New API route**: `GET /api/review-lengths` — reads all snapshots, computes the text length distribution + stats (average, median, min, max). Returns `{ buckets: [{label, range, count, color}], stats: {total, withText, average, median, min, max} }`.
+- **New component**: `src/components/dashboard/review-lengths-card.tsx` — a self-contained `ReviewLengthsCard` that fetches `/api/review-lengths` on mount + when refreshKey changes. Uses recharts `BarChart` with per-bucket colored `Cell`s, a custom tooltip showing the bucket label + count + char range, and a stats footer with 4 `Stat` sub-components. Same pattern as `ReviewsOverTimeCard`.
+- **New types**: `ReviewLengthBucket` + `ReviewLengthsResponse` in `src/lib/gbp/types.ts`.
+- **Wired into**: `src/components/dashboard/overview-section.tsx` — rendered as a full-width card between the ReviewsOverTimeCard and the "Snapshot at a Glance" section.
+- **Verified**: API returns `{total: 20, withText: 20, average: 121, median: 120}` with all 20 reviews in the "Medium (81–200)" bucket. Chart renders on the Overview tab with "Review Text Length" title, "20 reviews" badge, all 5 bucket labels (Empty/Short/Medium/Long/Very Long), and AVG/MEDIAN stats footer. Total charts on the page: 7 (was 6).
+
+### Feature 2: Competitor Detail Dialog (recommendation #4 — new feature)
+
+- **What**: Clicking any competitor card in the Compare tab now opens a modal dialog showing that competitor's full details: header (name, branch, competitor_id, gmaps_url link), 3-column stats row (Reviews/Avg Rating/New), a rating distribution mini-bar (1★–5★ counts as colored segments + per-star counts), "Last scraped" + "View on Google Maps" link, and a scrollable full review list (reviewer name + copy review ID button + star rating + review text + relative date).
+- **New component**: `src/components/dashboard/competitor-detail-dialog.tsx` — a `CompetitorDetailDialog` that takes a `competitor: CompetitorStats | null` prop. Self-fetches the competitor's reviews from `/api/reviews?competitor_id=...&pageSize=100` when opened. Computes the rating distribution client-side from the fetched reviews. Uses shadcn `Dialog` with a max-h-[85vh] scrollable content area.
+- **Wired into**: `src/components/dashboard/branch-comparison-section.tsx` — added `selectedCompetitor` state to `BranchComparisonSection`, passed `onSelectCompetitor` to `BranchComparisonCard`, changed the competitor rendering from `<div>` to `<button>` with click handler + `aria-label` + focus-visible ring styling. The dialog is rendered at the end of the section and controlled by the `selectedCompetitor` state.
+- **Verified**: Clicked "Revolver Espresso Seminyak" competitor card → dialog opened with: name + branch + competitor_id in header, Reviews=7 / Avg Rating=4.3 / New=+7 stats, Rating Distribution showing 1★:0, 2★:0, 3★:1, 4★:3, 5★:3 (correct!), "Last scraped: 34 minutes ago", "View on Google Maps" link, and 7 review items with reviewer names + review IDs + text + ratings. Escape closed the dialog.
+
+### Feature 3: Scraper Health Sparkline in Footer (recommendation #5 — new feature + new API)
+
+- **What**: A tiny sparkline in the footer showing the scraper's recent run health trend. Each run is a 1px-wide vertical bar colored by its health level (emerald=healthy, amber=warning, red=critical). Max 12 bars shown. Has a tooltip showing the run count + latest level + a color legend. Hidden on mobile. Self-polls every 60s.
+- **New API route**: `GET /api/health-trend` — parses `data/run.log` for past run summary lines (regex: `YYYY-MM-DD HH:MM:SS,mmm INFO gbp-monitor.run_all Run summary: {...}`), extracts the JSON objects, and builds a chronological array of health points. Capped at the most recent 20 runs. Returns `{ points: [{success, failed, skipped, timestamp, level}], latest, isMultiPoint }`. This is a clever zero-cost approach — no Python changes needed, the data is already in the log.
+- **New component**: `src/components/dashboard/health-sparkline.tsx` — a `HealthSparkline` component that self-fetches from `/api/health-trend` every 60s. Renders 12 vertical bars (max) with per-bar color based on the health level. The latest bar is full opacity, older bars are 60% opacity (visual emphasis on the most recent run). Has an `Activity` icon + a tooltip with the run count + a 3-color legend (healthy/warning/critical). Returns null while loading or when no data (keeps the footer clean on first load).
+- **Wired into**: `src/components/dashboard/footer.tsx` — rendered before the existing health indicator dot, between the "Zero-cost · No AI/LLM" text and the health dot.
+- **Verified**: API returns 8 points parsed from run.log (all healthy — emerald), `isMultiPoint: true`. Sparkline rendered in footer with `hasHealthSparkline: true`, `sparklineBars: 8` (8 bars, all emerald color `oklch(0.55 0.13 165)`).
+
+## Files Created / Modified
+
+**Created (5 files):**
+- `src/app/api/review-lengths/route.ts` — review text length distribution API
+- `src/app/api/health-trend/route.ts` — health trend (parses run.log) API
+- `src/components/dashboard/review-lengths-card.tsx` — review text length chart card
+- `src/components/dashboard/competitor-detail-dialog.tsx` — competitor detail modal
+- `src/components/dashboard/health-sparkline.tsx` — footer health sparkline
+
+**Modified (3 files):**
+- `src/components/dashboard/overview-section.tsx` — imported + rendered `ReviewLengthsCard`
+- `src/components/dashboard/branch-comparison-section.tsx` — added `selectedCompetitor` state + `onSelectCompetitor` prop + changed competitor `<div>` to `<button>` + rendered `CompetitorDetailDialog`
+- `src/components/dashboard/footer.tsx` — imported + rendered `HealthSparkline`
+- `src/lib/gbp/types.ts` — added `ReviewLengthBucket` + `ReviewLengthsResponse` interfaces
+
+## Verification Results
+
+- **Lint**: `bun run lint` passes clean (zero warnings, zero errors).
+- **Dev log**: zero errors, zero hydration mismatches, zero warnings throughout.
+- **agent-browser QA**:
+  - Review Text Length chart: 7 total charts (was 6), "Review Text Length" title + "20 reviews" badge + 5 bucket labels (Empty/Short/Medium/Long/Very Long) + AVG/MEDIAN stats footer rendered ✓
+  - review-lengths API: returns correct data (total=20, avg=121, median=120, all 20 in Medium bucket) ✓
+  - Competitor detail dialog: clicked "Revolver Espresso Seminyak" → dialog opened with header (name/branch/competitor_id), 3 stats (Reviews=7, Avg=4.3, New=+7), Rating Distribution (1★:0, 2★:0, 3★:1, 4★:3, 5★:3 — correct), "View on Google Maps" link, 7 review items with names + IDs + text + ratings ✓
+  - Health sparkline: `hasHealthSparkline: true`, `sparklineBars: 8` (8 bars, all emerald = all healthy runs) ✓
+  - health-trend API: returns 8 points parsed from run.log, `isMultiPoint: true`, latest = healthy ✓
+  - No horizontal scroll, no regressions ✓
+
+## Unresolved Issues / Risks
+
+1. **Round 2 recommendation #1 (react-query migration)** — still not attempted after 5 rounds. Deliberately deferred because it's a pure refactor that doesn't satisfy the mandatory "improve styling + add features" requirements of each cron round. The QueryClientProvider is wired up and ready for a future migration round.
+2. **Round 4 recommendation #3 (rating trend over time line chart)** — still not attempted. Requires Python-side changes to snapshot average_rating per run. Larger scope.
+3. **Health sparkline parses run.log client-side via the API** — the regex parsing is robust (handles the exact log format the Python orchestrator writes), but if the log format ever changes the sparkline will silently show no data. The regex is documented in the API route. A future enhancement could have the Python orchestrator write a structured `data/health_trend.json` file instead.
+4. **Competitor detail dialog fetches up to 100 reviews** — for competitors with hundreds of reviews, the dialog would need pagination or virtual scrolling. For the current 20-review dataset this is fine. Documented as a known scalability consideration.
+
+## Priority Recommendations for Next Round
+
+1. **Migrate the manual `fetch + useState + refreshKey` pattern to `@tanstack/react-query` `useQuery` hooks** — 6 rounds deferred. The QueryClientProvider is wired up. This is the highest-value remaining refactor (automatic background refetch, request deduplication, stale-while-revalidate, fixes the "Compare tab doesn't refetch on scrape" issue). Recommend doing this in a dedicated round where the user explicitly asks for refactoring.
+2. **Add a "rating trend over time" line chart** — requires Python-side changes to snapshot average_rating per run. Larger scope, Python + frontend.
+3. **Add a "review recency" heatmap** — a calendar heatmap (like GitHub's contribution graph) showing which days had scrape runs + how many new reviews were found. Uses existing delta file data. Visual + informative.
+4. **Add a "competitor leaderboard" widget** — a compact ranked list of all competitors by avg rating, review count, or new reviews. Sortable. Could go on the Overview or Compare tab.
+5. **Add a "data freshness" indicator** — a small badge on each competitor card showing how stale the data is (green = scraped today, amber = within 3 days, red = older than a week). Quick visual flag for data that needs re-scraping.
+
+## Rule Compliance
+
+- Rule 4 (zero-cost, no AI/LLM): ✓ — all new features are pure UI/UX + data-layer additions, no AI/LLM calls, no paid dependencies. The review-lengths chart uses a character-count heuristic (not AI), the health-trend API parses existing log data (no new infrastructure).
+- Rule 5 (no fake progress): ✓ — every feature is verified end-to-end via agent-browser (review-lengths API data + chart rendering, competitor dialog click + 7 reviews + rating distribution correctness, health sparkline 8 bars + emerald colors).
+- Rule 9 (documentation): ✓ — this worklog entry is the documentation; no Python files changed so the Python CHANGELOG was not modified.

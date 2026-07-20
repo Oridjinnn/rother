@@ -11,6 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { HealthSparkline } from "./health-sparkline";
 import type { VerifiedBy } from "@/lib/gbp/types";
 
 interface FooterProps {
@@ -115,6 +116,9 @@ export function Footer({ verifiedBy, lastVerified, health }: FooterProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {/* Health trend sparkline — tiny bar chart of recent run health */}
+          <HealthSparkline />
+
           {/* Health check indicator — colored dot + label */}
           {health && (
             <TooltipProvider delayDuration={200}>
