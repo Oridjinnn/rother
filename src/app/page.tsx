@@ -29,6 +29,9 @@ import { ReviewsSection } from "@/components/dashboard/reviews-section";
 import { LogsSection } from "@/components/dashboard/logs-section";
 import { ConfigSection } from "@/components/dashboard/config-section";
 import { ShortcutsHelpDialog } from "@/components/dashboard/shortcuts-help-dialog";
+import { ExportDashboardDialog } from "@/components/dashboard/export-dashboard-dialog";
+import { useAppMode } from "@/hooks/use-app-mode";
+import type { TextMap } from "@/lib/app-mode";
 
 import type {
   BranchesResponse,
@@ -88,7 +91,19 @@ const TABS: { value: TabValue; label: string; icon: typeof Activity; description
 ];
 
 export default function Home() {
+  const { mode, T } = useAppMode();
   const [tab, setTab] = React.useState<TabValue>("overview");
+
+  // Filter tabs based on mode — Client mode hides Run Logs + Config
+  const visibleTabs = React.useMemo(
+    () =>
+      TABS.filter((t) => {
+        if (t.value === "logs" && !T.showRunLogsTab) return false;
+        if (t.value === "config" && !T.showConfigTab) return false;
+        return true;
+      }),
+    [T.showRunLogsTab, T.showConfigTab],
+  );
 
   // ── Data state ─────────────────────────────────────────────────────────
   const [overview, setOverview] = React.useState<OverviewResponse | null>(null);
@@ -199,12 +214,12 @@ export default function Home() {
     return () => clearInterval(id);
   }, [autoRefresh, tab, pageVisible, fetchOverview]);
 
-  // ── Manual scrape trigger ──────────────────────────────────────────────
+  // ── Manual update trigger (renamed from "scrape" for client mode) ──────
   const handleRunNow = React.useCallback(async () => {
     if (isRunning) return;
     setIsRunning(true);
-    const toastId = toast.loading("Running scraper (fixtures mode)…", {
-      description: "Spawning python3 -m orchestration.run_all --fixtures",
+    const toastId = toast.loading(T.runToastLoading, {
+      description: T.runToastDesc,
     });
     try {
       const r = await fetch("/api/scrape/trigger", {
@@ -217,7 +232,7 @@ export default function Home() {
       }
       const json = (await r.json()) as ScrapeTriggerResponse;
       const summary: RunSummary = json.summary;
-      toast.success("Scrape complete", {
+      toast.success(T.runToastSuccess, {
         id: toastId,
         description: `+${summary.new_reviews} new review${
           summary.new_reviews === 1 ? "" : "s"
@@ -231,19 +246,19 @@ export default function Home() {
       fetchOverview();
       fetchBranches();
       if (summary.failed > 0 && summary.failed >= summary.success) {
-        toast.error("Run alert: failed ≥ success", {
+        toast.error("Update alert: some data couldn't be refreshed", {
           description: `${summary.failed} of ${
             summary.success + summary.failed
-          } listings failed. Check the Run Logs tab.`,
+          } sources had issues.${T.showRunLogsTab ? " Check the Run Logs tab." : ""}`,
         });
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error("Scrape failed", { id: toastId, description: msg });
+      toast.error("Update failed", { id: toastId, description: msg });
     } finally {
       setIsRunning(false);
     }
-  }, [isRunning, fetchOverview, fetchBranches]);
+  }, [isRunning, fetchOverview, fetchBranches, T]);
 
   // Keyboard shortcuts: gmail-style two-key "g <letter>" sequences.
   //   g r → Run Now (scrape trigger)
@@ -265,6 +280,7 @@ export default function Home() {
     c: "config",
   };
   const [showShortcutsHelp, setShowShortcutsHelp] = React.useState(false);
+  const [showExportDialog, setShowExportDialog] = React.useState(false);
   React.useEffect(() => {
     let firstKey: "g" | null = null;
     let resetTimer: ReturnType<typeof setTimeout> | null = null;
@@ -333,16 +349,19 @@ export default function Home() {
         onRunNow={handleRunNow}
         isRunning={isRunning}
         onShowShortcuts={() => setShowShortcutsHelp(true)}
+        onShowExport={() => setShowExportDialog(true)}
         lastRunAt={
           overview?.runSummary?.finished_at ??
           overview?.runSummary?.started_at ??
           null
         }
+        T={T}
+        mode={mode}
       />
 
       <main
         className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8"
-        aria-label="GBP Monitor dashboard"
+        aria-label="Rother dashboard"
       >
         {/* Tab navigation */}
         <nav aria-label="Dashboard sections" className="mb-6">
@@ -353,7 +372,7 @@ export default function Home() {
           >
             <div className="overflow-x-auto gbp-scrollbar pb-1">
               <TabsList className="flex h-auto w-max gap-1 bg-muted/60 p-1">
-                {TABS.map((t) => {
+                {visibleTabs.map((t) => {
                   const Icon = t.icon;
                   // Show a count badge on the Reviews tab when we have data.
                   const badgeCount =
@@ -403,6 +422,7 @@ export default function Home() {
                 onToggleAutoRefresh={() => setAutoRefresh((v) => !v)}
                 autoRefreshSeconds={AUTO_REFRESH_SECONDS}
                 refreshKey={refreshKey}
+                T={T}
               />
             </TabsContent>
 
@@ -453,12 +473,22 @@ export default function Home() {
               }
             : null
         }
+        T={T}
+        mode={mode}
       />
 
       {/* Keyboard shortcuts help dialog — opens via "?" key or the header button */}
       <ShortcutsHelpDialog
         open={showShortcutsHelp}
         onOpenChange={setShowShortcutsHelp}
+      />
+
+      {/* Data export dashboard dialog — opens via the header export button */}
+      <ExportDashboardDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        totalReviews={overview?.totalReviews ?? 0}
+        totalRuns={overview?.runSummary ? 1 : 0}
       />
     </div>
   );

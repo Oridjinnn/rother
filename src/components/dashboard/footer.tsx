@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/tooltip";
 import { HealthSparkline } from "./health-sparkline";
 import type { VerifiedBy } from "@/lib/gbp/types";
+import type { AppMode, TextMap } from "@/lib/app-mode";
 
 interface FooterProps {
   verifiedBy: VerifiedBy | null;
@@ -25,6 +26,10 @@ interface FooterProps {
     /** ISO timestamp of the last run's finish time (or start if no finish). */
     lastRunAt?: string | null;
   } | null;
+  /** App mode text map */
+  T: TextMap;
+  /** App mode */
+  mode: AppMode;
 }
 
 const verificationMeta: Record<
@@ -93,7 +98,7 @@ function computeHealth(h: FooterProps["health"]): {
 }
 
 /** Sticky footer per UI/UX rule. Pushed to bottom by min-h-screen flex flex-col. */
-export function Footer({ verifiedBy, lastVerified, health }: FooterProps) {
+export function Footer({ verifiedBy, lastVerified, health, T, mode }: FooterProps) {
   const meta = verifiedBy ? verificationMeta[verifiedBy] : null;
   const VIcon = meta?.icon ?? ShieldAlert;
   const healthInfo = computeHealth(health);
@@ -107,12 +112,12 @@ export function Footer({ verifiedBy, lastVerified, health }: FooterProps) {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
             <Coffee className="size-3.5 text-primary" aria-hidden="true" />
-            GBP Monitor — Copenhagen Bali
+            {T.name}
           </span>
           <span className="hidden text-border lg:inline">·</span>
-          <span className="font-mono text-[11px] text-muted-foreground">v0.1.0</span>
+          <span className="font-mono text-[11px] text-muted-foreground">v{T.version}</span>
           <span className="hidden text-border lg:inline">·</span>
-          <span className="italic">Zero-cost · No AI/LLM</span>
+          <span className="italic">{T.tagline}</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -145,9 +150,9 @@ export function Footer({ verifiedBy, lastVerified, health }: FooterProps) {
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
-                  <p className="font-semibold">Last run health</p>
+                  <p className="font-semibold">{T.healthPanelTitle}</p>
                   <p className="text-xs opacity-90">
-                    {total} listing{total === 1 ? "" : "s"} ·{" "}
+                    {total} source{total === 1 ? "" : "s"} ·{" "}
                     {health.success} success · {health.failed} failed ·{" "}
                     {health.skipped} skipped
                   </p>
@@ -161,7 +166,8 @@ export function Footer({ verifiedBy, lastVerified, health }: FooterProps) {
             </TooltipProvider>
           )}
 
-          {meta && (
+          {/* Selectors verification badge — only in dev mode */}
+          {meta && T.showTechnicalDetails && (
             <Badge
               variant="outline"
               className={`gap-1 px-2 py-0.5 text-[11px] font-medium ${meta.className}`}
@@ -176,15 +182,39 @@ export function Footer({ verifiedBy, lastVerified, health }: FooterProps) {
               )}
             </Badge>
           )}
-          <Link
-            href="https://github.com/features/actions"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+
+          {/* GitHub Actions cron link — only in dev mode */}
+          {T.showCronLink && (
+            <Link
+              href="https://github.com/features/actions"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+            >
+              <Github className="size-3.5" aria-hidden="true" />
+              GitHub Actions cron · daily 05:00 WITA
+            </Link>
+          )}
+
+          {/* Mode switcher — subtle link to toggle between Client and Dev */}
+          <button
+            type="button"
+            onClick={() => {
+              const newMode = mode === "dev" ? "client" : "dev";
+              const url = new URL(window.location.href);
+              if (newMode === "dev") {
+                url.searchParams.set("mode", "dev");
+              } else {
+                url.searchParams.delete("mode");
+              }
+              window.location.href = url.toString();
+            }}
+            className="inline-flex items-center gap-1 rounded-md border border-border/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label={mode === "dev" ? "Switch to client view" : "Switch to developer view"}
+            title={mode === "dev" ? "Switch to client view" : "Switch to developer view"}
           >
-            <Github className="size-3.5" aria-hidden="true" />
-            GitHub Actions cron · daily 05:00 WITA
-          </Link>
+            {mode === "dev" ? "Client view" : "Dev view"}
+          </button>
         </div>
       </div>
     </footer>

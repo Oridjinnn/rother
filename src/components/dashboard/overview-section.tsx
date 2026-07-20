@@ -61,8 +61,11 @@ import { RunComparisonCard } from "./run-comparison-card";
 import { TopReviewers } from "./top-reviewers";
 import { ScrapeSchedule } from "./scrape-schedule";
 import { ReviewLanguageDistribution } from "./review-language-distribution";
+import { CompetitorCorrelation } from "./competitor-correlation";
+import { CompetitorRatingDistComparison } from "./competitor-rating-dist-comparison";
 import { formatTimestamp } from "@/lib/gbp/format";
 import type { OverviewResponse } from "@/lib/gbp/types";
+import type { TextMap } from "@/lib/app-mode";
 
 interface OverviewSectionProps {
   data: OverviewResponse | null;
@@ -78,6 +81,8 @@ interface OverviewSectionProps {
   autoRefreshSeconds?: number;
   /** Bump to force the run-history timeline to refetch. */
   refreshKey?: number;
+  /** App mode text map */
+  T?: TextMap;
 }
 
 /** Verification badge for the KPI card — pill-shaped, color-coded. */
@@ -755,6 +760,12 @@ export function OverviewSection({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <TopReviewers refreshKey={refreshKey} />
         <ReviewLanguageDistribution refreshKey={refreshKey} />
+      </div>
+
+      {/* Competitor correlation matrix + Rating dist comparison — side-by-side on lg+ */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <CompetitorCorrelation refreshKey={refreshKey} />
+        <CompetitorRatingDistComparison refreshKey={refreshKey} />
       </div>
     </motion.div>
   );

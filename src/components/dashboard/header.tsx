@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Coffee, Keyboard, MapPin, Sparkles, Play, Loader2 } from "lucide-react";
+import { Coffee, Download, Keyboard, MapPin, Sparkles, Play, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,21 +13,28 @@ import {
 } from "@/components/ui/tooltip";
 import { ThemeToggle } from "./theme-toggle";
 import { LiveClock } from "./live-clock";
+import type { AppMode, TextMap } from "@/lib/app-mode";
 
 interface HeaderProps {
   onRunNow: () => void;
   isRunning: boolean;
   /** Optional: callback to open the keyboard shortcuts help dialog. */
   onShowShortcuts?: () => void;
+  /** Optional: callback to open the data export dashboard dialog. */
+  onShowExport?: () => void;
   /** Optional: ISO timestamp of the last scrape run (for the live clock). */
   lastRunAt?: string | null;
+  /** App mode text map */
+  T: TextMap;
+  /** App mode */
+  mode: AppMode;
 }
 
 /**
  * Sticky app header: logo + project title + theme toggle + manual run button.
  * Collapses to a compact layout on mobile.
  */
-export function Header({ onRunNow, isRunning, onShowShortcuts, lastRunAt }: HeaderProps) {
+export function Header({ onRunNow, isRunning, onShowShortcuts, onShowExport, lastRunAt, T, mode }: HeaderProps) {
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -46,17 +53,41 @@ export function Header({ onRunNow, isRunning, onShowShortcuts, lastRunAt }: Head
           </span>
           <div className="min-w-0 leading-tight">
             <h1 className="truncate text-base font-bold tracking-tight text-foreground sm:text-lg">
-              GBP Monitor
+              {T.name}
+              <span className="ml-1.5 font-mono text-[10px] font-normal text-muted-foreground">
+                v{T.version}
+              </span>
             </h1>
             <p className="hidden items-center gap-1 text-xs text-muted-foreground sm:flex">
               <MapPin className="size-3" aria-hidden="true" />
-              Copenhagen Bali · competitor review watch
+              {T.subtitle}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <LiveClock lastRunAt={lastRunAt} isRunning={isRunning} />
+          {onShowExport && (
+            <TooltipProvider delayDuration={400}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onShowExport}
+                    className="size-9 text-muted-foreground hover:text-foreground"
+                    aria-label="Export data"
+                  >
+                    <Download className="size-4" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="font-semibold">Export data</p>
+                  <p className="text-xs opacity-90">Download CSV / JSON</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <ThemeToggle />
           {onShowShortcuts && (
             <TooltipProvider delayDuration={400}>
@@ -87,24 +118,24 @@ export function Header({ onRunNow, isRunning, onShowShortcuts, lastRunAt }: Head
                   disabled={isRunning}
                   className="bg-gradient-to-br from-primary to-emerald-700 text-primary-foreground shadow-sm hover:from-primary/90 hover:to-emerald-700/90 hover:shadow-md transition-all"
                   size="sm"
-                  aria-label={isRunning ? "Running scraper…" : "Run scraper now (fixtures mode)"}
+                  aria-label={isRunning ? T.runButtonLoading : T.runButtonAria}
                 >
                   {isRunning ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      <span className="hidden sm:inline">Running…</span>
+                      <span className="hidden sm:inline">{T.runButtonLoading}</span>
                     </>
                   ) : (
                     <>
                       <Play className="size-4" />
-                      <span className="hidden sm:inline">Run Now</span>
+                      <span className="hidden sm:inline">{T.runButton}</span>
                     </>
                   )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-xs">
                 <p className="font-semibold">
-                  {isRunning ? "Running scraper…" : "Run scraper now (fixtures mode)"}
+                  {isRunning ? T.runButtonLoading : T.runTooltipTitle}
                 </p>
                 {!isRunning && (
                   <p className="text-xs opacity-90">
