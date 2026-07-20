@@ -57,6 +57,7 @@ import {
 
 import { StarRating } from "./star-rating";
 import { EmptyState } from "./empty-state";
+import { ExportButtons } from "./export-buttons";
 import { cleanReviewerName } from "@/lib/gbp/format";
 import type {
   BranchesResponse,
@@ -345,18 +346,30 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
     >
       <Card className="gbp-card-hover bg-gradient-to-br from-primary/5 to-transparent">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <MessageSquare className="size-4 text-primary" aria-hidden="true" />
-            All Reviews
-          </CardTitle>
-          <CardDescription>
-            Searchable, filterable, paginated view across every competitor snapshot.
-            {" "}
-            <span className="font-semibold text-foreground">
-              {total.toLocaleString()}
-            </span>{" "}
-            review{total === 1 ? "" : "s"} match the current filters.
-          </CardDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1 min-w-0">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MessageSquare className="size-4 text-primary" aria-hidden="true" />
+                All Reviews
+              </CardTitle>
+              <CardDescription>
+                Searchable, filterable, paginated view across every competitor snapshot.
+                {" "}
+                <span className="font-semibold text-foreground">
+                  {total.toLocaleString()}
+                </span>{" "}
+                review{total === 1 ? "" : "s"} match the current filters.
+              </CardDescription>
+            </div>
+            <ExportButtons
+              branchId={branchId === "all" ? undefined : branchId}
+              competitorId={competitorId === "all" ? undefined : competitorId}
+              ratings={Array.from(selectedRatings).sort()}
+              search={debouncedSearch}
+              disabled={total === 0 || loading}
+              total={total}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {/* Filter bar */}

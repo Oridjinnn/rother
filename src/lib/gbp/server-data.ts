@@ -114,3 +114,48 @@ export async function tailLog(lines = 200): Promise<{
     return { lines: [], totalLines: 0 };
   }
 }
+
+/**
+ * Read ALL delta files across all competitors, sorted newest-first by
+ * filename (the orchestrator writes `{competitor_id}_{YYYYMMDDTHHMMSSZ}.json`
+ * so lexical sort = chronological sort).
+ *
+ * Each entry has the competitor_id, the run timestamp (parsed from filename),
+ * and the review delta. Used by the Run History timeline panel.
+ */
+export interface DeltaFileEntry {
+  competitor_id: string;
+  run_timestamp: string; // ISO-ish, parsed from filename
+  filename: string;
+  reviews: Review[];
+}
+
+export async function readAllDeltas(): Promise<DeltaFileEntry[]> {
+  const out: DeltaFileEntry[] = [];
+  let entries: string[] = [];
+  try {
+    entries = await fs.readdir(GBP_REVIEWS_NEW_DIR);
+  } catch {
+    return out;
+  }
+  for (const filename of entries) {
+    if (!filename.endsWith(".json")) continue;
+    // filename pattern: {competitor_id}_{YYYYMMDDTHHMMSSZ}.json
+    const base = filename.replace(/\.json$/, "");
+    const underscoreIdx = base.lastIndexOf("_");
+    if (underscoreIdx < 0) continue;
+    const competitorId = base.slice(0, underscoreIdx);
+    const tsRaw = base.slice(underscoreIdx + 1);
+    // Convert YYYYMMDDTHHMMSSZ → ISO-ish for display
+    const m = tsRaw.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+    const run_timestamp = m
+      ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z`
+      : tsRaw;
+    const full = path.join(GBP_REVIEWS_NEW_DIR, filename);
+    const reviews = await readJsonFile<Review[]>(full, []);
+    out.push({ competitor_id: competitorId, run_timestamp, filename, reviews });
+  }
+  // Sort newest first
+  out.sort((a, b) => b.run_timestamp.localeCompare(a.run_timestamp));
+  return out;
+}

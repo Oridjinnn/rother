@@ -44,6 +44,8 @@ import {
   ReviewsPerCompetitorChart,
 } from "./charts";
 import { EmptyState } from "./empty-state";
+import { AutoRefreshToggle } from "./auto-refresh-toggle";
+import { RunHistoryTimeline } from "./run-history-timeline";
 import { formatTimestamp } from "@/lib/gbp/format";
 import type { OverviewResponse } from "@/lib/gbp/types";
 
@@ -53,6 +55,14 @@ interface OverviewSectionProps {
   error: string | null;
   /** Called when the user clicks "Refresh" on the health panel. */
   onRefresh?: () => void;
+  /** Whether auto-refresh is active (controlled by parent). */
+  autoRefresh?: boolean;
+  /** Toggle auto-refresh (parent owns the interval). */
+  onToggleAutoRefresh?: () => void;
+  /** Auto-refresh interval in seconds (for the tooltip label). */
+  autoRefreshSeconds?: number;
+  /** Bump to force the run-history timeline to refetch. */
+  refreshKey?: number;
 }
 
 /** Verification badge for the KPI card — pill-shaped, color-coded. */
@@ -91,9 +101,15 @@ function VerificationBadge({
 function RunHealthPanel({
   data,
   onRefresh,
+  autoRefresh,
+  onToggleAutoRefresh,
+  autoRefreshSeconds,
 }: {
   data: OverviewResponse;
   onRefresh?: () => void;
+  autoRefresh?: boolean;
+  onToggleAutoRefresh?: () => void;
+  autoRefreshSeconds?: number;
 }) {
   const { runSummary } = data;
   if (!runSummary) {
@@ -167,14 +183,23 @@ function RunHealthPanel({
             </CardDescription>
           </div>
           {onRefresh && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRefresh}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              {onToggleAutoRefresh && (
+                <AutoRefreshToggle
+                  active={!!autoRefresh}
+                  onToggle={onToggleAutoRefresh}
+                  intervalSeconds={autoRefreshSeconds ?? 30}
+                />
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRefresh}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Refresh
+              </Button>
+            </div>
           )}
         </div>
       </CardHeader>
@@ -350,6 +375,10 @@ export function OverviewSection({
   loading,
   error,
   onRefresh,
+  autoRefresh,
+  onToggleAutoRefresh,
+  autoRefreshSeconds,
+  refreshKey,
 }: OverviewSectionProps) {
   if (loading && !data) {
     return (
@@ -500,7 +529,13 @@ export function OverviewSection({
       </div>
 
       {/* Run health panel */}
-      <RunHealthPanel data={data} onRefresh={onRefresh} />
+      <RunHealthPanel
+        data={data}
+        onRefresh={onRefresh}
+        autoRefresh={autoRefresh}
+        onToggleAutoRefresh={onToggleAutoRefresh}
+        autoRefreshSeconds={autoRefreshSeconds}
+      />
 
       {/* Charts grid */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -616,6 +651,10 @@ export function OverviewSection({
           </CardContent>
         </Card>
       )}
+
+      {/* Run history timeline — newest-first list of every run that produced
+          new reviews. Auto-polls every 30s. */}
+      <RunHistoryTimeline refreshKey={refreshKey} />
     </motion.div>
   );
 }

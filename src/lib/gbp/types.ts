@@ -157,3 +157,26 @@ export interface ScrapeTriggerErrorResponse {
   error: string;
   stderr: string;
 }
+
+/** One run's worth of new-review deltas, grouped by competitor.
+ *  Returned by GET /api/history. */
+export interface HistoryRunBreakdownItem {
+  competitor_id: string;
+  competitor_name: string;
+  branch_id: string;
+  branch_name: string;
+  count: number;
+}
+
+export interface HistoryRun {
+  run_timestamp: string; // ISO 8601
+  total_new_reviews: number;
+  competitors_with_new: number;
+  branches_affected: string[];
+  breakdown: HistoryRunBreakdownItem[];
+}
+
+export interface HistoryResponse {
+  runs: HistoryRun[];
+  totalRuns: number;
+}

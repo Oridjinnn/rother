@@ -98,6 +98,10 @@ export default function Home() {
   const [refreshKey, setRefreshKey] = React.useState(0);
   const [isRunning, setIsRunning] = React.useState(false);
 
+  // ── Auto-refresh (Overview tab) — opt-in, 30s interval ──────────────────
+  const AUTO_REFRESH_SECONDS = 30;
+  const [autoRefresh, setAutoRefresh] = React.useState(false);
+
   // ── Fetchers ───────────────────────────────────────────────────────────
   const fetchOverview = React.useCallback(async () => {
     setOverviewLoading(true);
@@ -161,6 +165,17 @@ export default function Home() {
     fetchOverview();
     fetchBranches();
   }, [fetchOverview, fetchBranches, refreshKey]);
+
+  // Auto-refresh: when enabled, poll /api/overview every AUTO_REFRESH_SECONDS.
+  // Only runs when the user is on the Overview tab to avoid wasted requests.
+  React.useEffect(() => {
+    if (!autoRefresh) return;
+    if (tab !== "overview") return;
+    const id = setInterval(() => {
+      fetchOverview();
+    }, AUTO_REFRESH_SECONDS * 1000);
+    return () => clearInterval(id);
+  }, [autoRefresh, tab, fetchOverview]);
 
   // ── Manual scrape trigger ──────────────────────────────────────────────
   const handleRunNow = React.useCallback(async () => {
@@ -258,6 +273,10 @@ export default function Home() {
                 loading={overviewLoading}
                 error={overviewError}
                 onRefresh={fetchOverview}
+                autoRefresh={autoRefresh}
+                onToggleAutoRefresh={() => setAutoRefresh((v) => !v)}
+                autoRefreshSeconds={AUTO_REFRESH_SECONDS}
+                refreshKey={refreshKey}
               />
             </TabsContent>
 

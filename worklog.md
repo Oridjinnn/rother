@@ -261,3 +261,101 @@ Stage Summary:
 - The recurring webDevReview cron job is active and will fire every 15 minutes (every 900 seconds) in the Asia/Jakarta timezone.
 - Each fire will: (1) read /home/z/my-project/worklog.md, (2) assess project status + agent-browser QA, (3) fix bugs or propose new requirements, (4) improve styling details, (5) add features, (6) update worklog.md.
 - The job's prompt includes full project context so the triggered agent doesn't need to rediscover the architecture.
+
+---
+Task ID: CRON-R1 (webDevReview round 1)
+Agent: main (orchestrator) — recurring webDevReview cron job (round 1)
+Task: Assess project status, perform QA via agent-browser, identify work focus, improve styling + add features, update worklog.
+
+## Current Project Status (assessment)
+
+The project is in a **stable, production-ready state** as of the previous round:
+- Python scraper at `/home/z/my-project/gbp-monitor/` — all 10 modules PROVEN, hardened with Fixes A–D (sec-ch-ua Client Hints override, 5-tier self-healing locator hierarchy, log rotation).
+- Next.js dashboard at `/home/z/my-project/src/` — 6 sections (Overview/Branches/Reviews/Run Logs/Config) + 7 API routes, all verified end-to-end via agent-browser in the previous round.
+- Recurring webDevReview cron job active (job_id 282363, every 15 min).
+- Zero bugs found in the previous QA round.
+
+## QA Performed This Round (via agent-browser + VLM)
+
+1. **Element audit**: 23 cards, 3 charts, 8 buttons, 0 missing-data indicators, no horizontal scroll — all healthy.
+2. **VLM visual assessment** of the Overview and Reviews tabs via z-ai vision CLI. Key findings:
+   - Dashboard is functional and well-structured but has room for genuine feature additions (not just cosmetic tweaks).
+   - The "New Reviews per Branch" chart shows 3 of 6 branches with 0 reviews (accurate — only 3 fixtures exist), which looks like empty space but is correct data.
+   - Pagination IS implemented (VLM incorrectly flagged it as missing — it's just not visible because 20 reviews fit on one page with pageSize=25).
+3. **Dev log check**: zero errors, zero hydration mismatches, zero warnings.
+4. **Lint check**: `bun run lint` passes clean.
+
+## Work Focus Selected
+
+Rather than cosmetic restyling (the existing styling is already polished — emerald/teal Bali palette, gradients, tooltips, skeletons, dark mode), I focused on **adding 3 genuine new features** that increase the dashboard's utility:
+
+### Feature 1: CSV/JSON Export for Reviews (new)
+
+- **New API route**: `GET /api/reviews/export?format=csv|json&branch_id=&competitor_id=&rating=&q=` — returns ALL filtered reviews (no pagination) as a downloadable file with `Content-Disposition` header. CSV follows RFC 4180 (commas/quotes/newlines properly escaped), JSON is enriched with joined `competitor_name` + `branch_name`. The `, original` suffix is stripped from reviewer names in both formats.
+- **New component**: `src/components/dashboard/export-buttons.tsx` — a dropdown menu (CSV / JSON) with icons + descriptions, loading state during export, and a sonner toast on success (showing count + filename) or failure.
+- **Wired into**: Reviews tab header (next to the "All Reviews" title).
+- **Verified end-to-end**: clicked CSV export → file `gbp-reviews-2026-07-20T10-49-40-175Z.csv` (5666 bytes) downloaded to `~/Downloads/`. Parsed with Python's `csv` module: 20 rows, 10 columns, 10 rows with commas in text all parsed correctly, 0 rows with the `, original` suffix. Toast confirmed "CSV export ready · 20 reviews → gbp-reviews-...csv".
+
+### Feature 2: Auto-Refresh Toggle (new)
+
+- **New component**: `src/components/dashboard/auto-refresh-toggle.tsx` — a compact pill button with play/pause icons. When active, shows a pulsing dot + "Live" label. Tooltip shows the interval. Accessible: `aria-pressed` reflects state, `aria-label` updates dynamically.
+- **Wired into**: Overview tab's Run Health panel header (next to the existing Refresh button).
+- **State owned by**: `page.tsx` (`autoRefresh` state, 30s interval). The interval only fires when the user is on the Overview tab (avoids wasted requests on other tabs).
+- **Verified**: clicked the toggle → label changed from "Enable auto-refresh" (`aria-pressed=false`) to "Auto-refresh active (every 30s)" (`aria-pressed=true`).
+
+### Feature 3: Run History Timeline (new)
+
+- **New API route**: `GET /api/history` — reads ALL delta files from `data/reviews_new/`, groups by run timestamp (parsed from filename), returns a chronological timeline with per-competitor breakdown + branches affected.
+- **New server-data helper**: `readAllDeltas()` in `src/lib/gbp/server-data.ts` — reads + parses all delta files, sorts newest-first.
+- **New component**: `src/components/dashboard/run-history-timeline.tsx` — a vertical timeline with a gradient line, dots (newest = primary color with pulsing ring), per-run cards showing: total new reviews, competitors count, relative + absolute timestamp, branch chips, and a per-competitor breakdown (top 3 inline). Auto-polls every 30s. Empty state when no runs have deltas.
+- **Wired into**: Overview tab, at the bottom (after "Snapshot at a Glance").
+- **Verified**: rendered with real data — "1 run" badge, "+20 new reviews", "3 competitors", "about 2 hours ago", branch chips (canggu/seminyak/ubud), per-competitor breakdown (Crate Cafe +6, Revolver Espresso +7, Seniman +7).
+
+## Files Created / Modified
+
+**Created:**
+- `src/app/api/reviews/export/route.ts` — CSV/JSON export endpoint
+- `src/app/api/history/route.ts` — run history timeline endpoint
+- `src/components/dashboard/export-buttons.tsx` — export dropdown component
+- `src/components/dashboard/auto-refresh-toggle.tsx` — auto-refresh toggle component
+- `src/components/dashboard/run-history-timeline.tsx` — run history timeline component
+
+**Modified:**
+- `src/lib/gbp/server-data.ts` — added `readAllDeltas()` helper + `DeltaFileEntry` interface
+- `src/lib/gbp/types.ts` — added `HistoryRun`, `HistoryRunBreakdownItem`, `HistoryResponse` types
+- `src/components/dashboard/overview-section.tsx` — added auto-refresh toggle to Run Health panel header + Run History timeline at the bottom; extended props
+- `src/components/dashboard/reviews-section.tsx` — added ExportButtons to the CardHeader
+- `src/app/page.tsx` — added `autoRefresh` state + interval effect, passed new props to OverviewSection
+
+## Verification Results
+
+- **Lint**: `bun run lint` passes clean (zero warnings, zero errors).
+- **Dev log**: zero errors, zero hydration mismatches, zero warnings throughout.
+- **API routes**: all 3 new endpoints return 200 (`/api/reviews/export?format=csv`, `/api/reviews/export?format=json`, `/api/history`).
+- **agent-browser QA**:
+  - Auto-refresh toggle: clicks correctly, `aria-pressed` state updates, label changes between "Enable auto-refresh" ↔ "Auto-refresh active (every 30s)" ✓
+  - Export dropdown: opens with CSV + JSON options, clicking CSV triggers a real file download (5666 bytes, 20 rows, RFC 4180 compliant) ✓
+  - Run History timeline: renders with real data (1 run, +20 reviews, 3 competitors, branch chips, per-competitor breakdown) ✓
+- **CSV content validation**: parsed 20 rows with Python's `csv.DictReader`, 10 columns including joined competitor_name + branch_name, 0 rows with the `, original` suffix, 10 rows with commas in text all quoted correctly.
+
+## Unresolved Issues / Risks
+
+1. **`run_summary.json` new_reviews field reads 0 on second fixtures run** (no delta vs first-run baseline). The "New (Last Run)" KPI shows +0 but the Run History timeline correctly shows the cumulative +20 from the first run. Both are accurate readings of different data sources — documented, not a bug.
+2. **The "New Reviews per Branch" chart shows 3 of 6 branches with 0 bars** — accurate (only 3 fixtures exist), but visually looks like empty space. A future enhancement could show a "no data" pattern for 0-count branches instead of an empty bar slot.
+3. **CSV export is synchronous** — for very large datasets (low-thousands of reviews) this is fine, but a streaming implementation would be better for scale. Out of scope for this round.
+4. **Auto-refresh polls /api/overview every 30s** when enabled — could be smarter (e.g. only poll when the page is visible, using the Page Visibility API). Minor optimization, not critical.
+
+## Priority Recommendations for Next Round
+
+1. **Add a "branches with 0 reviews" empty-state pattern** in the New Reviews per Branch chart (cosmetic — show a subtle "no data yet" hatched pattern instead of empty space).
+2. **Add Page Visibility API check** to the auto-refresh interval (pause polling when the tab is hidden).
+3. **Consider a "Run Now" confirmation dialog** when selectors are UNPROVEN — currently the button always runs in fixtures mode (safe), but if live mode is ever added, a confirmation would prevent accidental live scrapes against unverified selectors.
+4. **Add a reviews count badge to the Reviews tab trigger** (e.g. "Reviews (20)") so the user sees the total without clicking.
+5. **Migrate the manual `fetch + useState + refreshKey` pattern to `@tanstack/react-query` `useQuery` hooks** — the QueryClientProvider is already wired up; this would give automatic background refetch, request deduplication, and stale-while-revalidate for free.
+
+## Rule Compliance
+
+- Rule 4 (zero-cost, no AI/LLM): ✓ — all new features are pure UI/data-layer additions, no AI/LLM calls, no paid dependencies.
+- Rule 5 (no fake progress): ✓ — every feature is verified end-to-end via agent-browser + curl + Python validation.
+- Rule 7 (failure isolation): ✓ — new API routes have try/catch with proper error responses.
+- Rule 9 (documentation): ✓ — this worklog entry is the documentation; the Python CHANGELOG was not modified because no Python files changed this round.
