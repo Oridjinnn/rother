@@ -102,6 +102,15 @@ export default function Home() {
   const AUTO_REFRESH_SECONDS = 30;
   const [autoRefresh, setAutoRefresh] = React.useState(false);
 
+  // ── Page visibility tracking — auto-refresh pauses when tab is hidden ──
+  const [pageVisible, setPageVisible] = React.useState(true);
+  React.useEffect(() => {
+    const onVis = () => setPageVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVis);
+    onVis();
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
   // ── Fetchers ───────────────────────────────────────────────────────────
   const fetchOverview = React.useCallback(async () => {
     setOverviewLoading(true);
@@ -167,15 +176,18 @@ export default function Home() {
   }, [fetchOverview, fetchBranches, refreshKey]);
 
   // Auto-refresh: when enabled, poll /api/overview every AUTO_REFRESH_SECONDS.
-  // Only runs when the user is on the Overview tab to avoid wasted requests.
+  // Only runs when (a) the user is on the Overview tab AND (b) the page is
+  // visible — pauses when the user switches to another tab/window to avoid
+  // wasted requests (Page Visibility API).
   React.useEffect(() => {
     if (!autoRefresh) return;
     if (tab !== "overview") return;
+    if (!pageVisible) return;
     const id = setInterval(() => {
       fetchOverview();
     }, AUTO_REFRESH_SECONDS * 1000);
     return () => clearInterval(id);
-  }, [autoRefresh, tab, fetchOverview]);
+  }, [autoRefresh, tab, pageVisible, fetchOverview]);
 
   // ── Manual scrape trigger ──────────────────────────────────────────────
   const handleRunNow = React.useCallback(async () => {
@@ -223,6 +235,48 @@ export default function Home() {
     }
   }, [isRunning, fetchOverview, fetchBranches]);
 
+  // Keyboard shortcut: "g r" (gmail-style two-key) triggers Run Now from
+  // anywhere on the page. We avoid Ctrl+R/Cmd+R because those are the
+  // browser's native reload shortcuts. "g r" = press g, then r within 800ms.
+  // Disabled when the user is typing in an input/textarea/select.
+  React.useEffect(() => {
+    let firstKey: "g" | null = null;
+    let resetTimer: ReturnType<typeof setTimeout> | null = null;
+    const isTypingTarget = (el: EventTarget | null): boolean => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName.toLowerCase();
+      return tag === "input" || tag === "textarea" || tag === "select" || el.isContentEditable;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const key = e.key.toLowerCase();
+      if (key === "g") {
+        firstKey = "g";
+        if (resetTimer) clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => {
+          firstKey = null;
+        }, 800);
+        return;
+      }
+      if (firstKey === "g" && key === "r") {
+        e.preventDefault();
+        firstKey = null;
+        if (resetTimer) clearTimeout(resetTimer);
+        handleRunNow();
+        toast.info("Shortcut: Run Now", {
+          description: "Triggered by “g” then “r” keyboard sequence.",
+          duration: 2000,
+        });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (resetTimer) clearTimeout(resetTimer);
+    };
+  }, [handleRunNow]);
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header onRunNow={handleRunNow} isRunning={isRunning} />
@@ -242,6 +296,11 @@ export default function Home() {
               <TabsList className="flex h-auto w-max gap-1 bg-muted/60 p-1">
                 {TABS.map((t) => {
                   const Icon = t.icon;
+                  // Show a count badge on the Reviews tab when we have data.
+                  const badgeCount =
+                    t.value === "reviews" && overview && overview.totalReviews > 0
+                      ? overview.totalReviews
+                      : null;
                   return (
                     <TooltipProvider key={t.value} delayDuration={300}>
                       <Tooltip>
@@ -254,6 +313,14 @@ export default function Home() {
                             <Icon className="size-4" aria-hidden="true" />
                             <span className="hidden sm:inline">{t.label}</span>
                             <span className="sm:sr-only">{t.label}</span>
+                            {badgeCount !== null && (
+                              <span
+                                className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold tabular-nums text-primary"
+                                aria-label={`${badgeCount} reviews`}
+                              >
+                                {badgeCount > 999 ? "999+" : badgeCount}
+                              </span>
+                            )}
                           </TabsTrigger>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-xs">

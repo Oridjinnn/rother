@@ -10,6 +10,7 @@ import {
   Clock,
   FileText,
   MapPin,
+  PieChart,
   ShieldAlert,
   Sparkles,
   Star,
@@ -42,6 +43,7 @@ import {
   NewReviewsPerBranchChart,
   RatingDistributionChart,
   ReviewsPerCompetitorChart,
+  SentimentDistributionChart,
 } from "./charts";
 import { EmptyState } from "./empty-state";
 import { AutoRefreshToggle } from "./auto-refresh-toggle";
@@ -578,24 +580,46 @@ export function OverviewSection({
         </ChartCard>
       </div>
 
-      <ChartCard
-        title="New Reviews per Branch"
-        icon={MapPin}
-        description="New reviews detected in the latest run, grouped by Copenhagen Bali branch"
-        loading={loading}
-        skeletonHeight={260}
-      >
-        {data.newReviewsPerBranch.some((b) => b.count > 0) ? (
-          <NewReviewsPerBranchChart data={data.newReviewsPerBranch} />
-        ) : (
-          <EmptyState
-            icon={TrendingUp}
-            title="No new reviews"
-            description="The last run found no new reviews. Run the scraper again to detect deltas."
-            className="h-[260px]"
-          />
-        )}
-      </ChartCard>
+      {/* Second charts grid: Sentiment donut + New reviews per branch */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChartCard
+          title="Sentiment Distribution"
+          icon={PieChart}
+          description="Rating-based sentiment buckets (★4–5 positive · ★3 neutral · ★1–2 negative). No AI/LLM — heuristic only."
+          loading={loading}
+          skeletonHeight={260}
+        >
+          {hasReviews ? (
+            <SentimentDistributionChart data={data.ratingDistribution} />
+          ) : (
+            <EmptyState
+              icon={PieChart}
+              title="No sentiment data yet"
+              description="Run the scraper to populate the sentiment breakdown."
+              className="h-[260px]"
+            />
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="New Reviews per Branch"
+          icon={MapPin}
+          description="New reviews detected in the latest run, grouped by Copenhagen Bali branch"
+          loading={loading}
+          skeletonHeight={260}
+        >
+          {data.newReviewsPerBranch.some((b) => b.count > 0) ? (
+            <NewReviewsPerBranchChart data={data.newReviewsPerBranch} />
+          ) : (
+            <EmptyState
+              icon={TrendingUp}
+              title="No new reviews"
+              description="The last run found no new reviews. Run the scraper again to detect deltas."
+              className="h-[260px]"
+            />
+          )}
+        </ChartCard>
+      </div>
 
       {/* Quick recent-reviews preview (a taste of the Reviews tab) */}
       {hasReviews && data.competitorStats.length > 0 && (

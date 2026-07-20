@@ -5,6 +5,12 @@ import { motion } from "framer-motion";
 import { Coffee, MapPin, Sparkles, Play, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ThemeToggle } from "./theme-toggle";
 
 interface HeaderProps {
@@ -46,25 +52,48 @@ export function Header({ onRunNow, isRunning }: HeaderProps) {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button
-            onClick={onRunNow}
-            disabled={isRunning}
-            className="bg-gradient-to-br from-primary to-emerald-700 text-primary-foreground shadow-sm hover:from-primary/90 hover:to-emerald-700/90 hover:shadow-md transition-all"
-            size="sm"
-            aria-label={isRunning ? "Running scraper…" : "Run scraper now (fixtures mode)"}
-          >
-            {isRunning ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                <span className="hidden sm:inline">Running…</span>
-              </>
-            ) : (
-              <>
-                <Play className="size-4" />
-                <span className="hidden sm:inline">Run Now</span>
-              </>
-            )}
-          </Button>
+          <TooltipProvider delayDuration={400}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={onRunNow}
+                  disabled={isRunning}
+                  className="bg-gradient-to-br from-primary to-emerald-700 text-primary-foreground shadow-sm hover:from-primary/90 hover:to-emerald-700/90 hover:shadow-md transition-all"
+                  size="sm"
+                  aria-label={isRunning ? "Running scraper…" : "Run scraper now (fixtures mode)"}
+                >
+                  {isRunning ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      <span className="hidden sm:inline">Running…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="size-4" />
+                      <span className="hidden sm:inline">Run Now</span>
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs">
+                <p className="font-semibold">
+                  {isRunning ? "Running scraper…" : "Run scraper now (fixtures mode)"}
+                </p>
+                {!isRunning && (
+                  <p className="text-xs opacity-90">
+                    Shortcut: press{" "}
+                    <kbd className="rounded border border-border bg-muted px-1 py-0 font-mono text-[10px]">
+                      g
+                    </kbd>{" "}
+                    then{" "}
+                    <kbd className="rounded border border-border bg-muted px-1 py-0 font-mono text-[10px]">
+                      r
+                    </kbd>
+                  </p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
     </motion.header>
