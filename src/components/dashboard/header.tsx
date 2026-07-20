@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Coffee, MapPin, Sparkles, Play, Loader2 } from "lucide-react";
+import { Coffee, Keyboard, MapPin, Sparkles, Play, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,13 +16,15 @@ import { ThemeToggle } from "./theme-toggle";
 interface HeaderProps {
   onRunNow: () => void;
   isRunning: boolean;
+  /** Optional: callback to open the keyboard shortcuts help dialog. */
+  onShowShortcuts?: () => void;
 }
 
 /**
  * Sticky app header: logo + project title + theme toggle + manual run button.
  * Collapses to a compact layout on mobile.
  */
-export function Header({ onRunNow, isRunning }: HeaderProps) {
+export function Header({ onRunNow, isRunning, onShowShortcuts }: HeaderProps) {
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -52,6 +54,27 @@ export function Header({ onRunNow, isRunning }: HeaderProps) {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          {onShowShortcuts && (
+            <TooltipProvider delayDuration={400}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onShowShortcuts}
+                    className="size-9 text-muted-foreground hover:text-foreground"
+                    aria-label="Show keyboard shortcuts"
+                  >
+                    <Keyboard className="size-4" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="font-semibold">Keyboard shortcuts</p>
+                  <p className="text-xs opacity-90">Press ? to open</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <TooltipProvider delayDuration={400}>
             <Tooltip>
               <TooltipTrigger asChild>

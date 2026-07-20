@@ -180,3 +180,17 @@ export interface HistoryResponse {
   runs: HistoryRun[];
   totalRuns: number;
 }
+
+/** One data point in the "Reviews count over time" time series.
+ *  Returned by GET /api/reviews-over-time. */
+export interface ReviewsOverTimePoint {
+  date: string; // YYYY-MM-DD
+  new_reviews: number;
+  cumulative: number;
+}
+
+export interface ReviewsOverTimeResponse {
+  data: ReviewsOverTimePoint[];
+  totalPoints: number;
+  totalReviews: number;
+}

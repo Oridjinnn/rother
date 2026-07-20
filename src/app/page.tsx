@@ -26,6 +26,7 @@ import { BranchesSection } from "@/components/dashboard/branches-section";
 import { ReviewsSection } from "@/components/dashboard/reviews-section";
 import { LogsSection } from "@/components/dashboard/logs-section";
 import { ConfigSection } from "@/components/dashboard/config-section";
+import { ShortcutsHelpDialog } from "@/components/dashboard/shortcuts-help-dialog";
 
 import type {
   BranchesResponse,
@@ -235,10 +236,24 @@ export default function Home() {
     }
   }, [isRunning, fetchOverview, fetchBranches]);
 
-  // Keyboard shortcut: "g r" (gmail-style two-key) triggers Run Now from
-  // anywhere on the page. We avoid Ctrl+R/Cmd+R because those are the
-  // browser's native reload shortcuts. "g r" = press g, then r within 800ms.
-  // Disabled when the user is typing in an input/textarea/select.
+  // Keyboard shortcuts: gmail-style two-key "g <letter>" sequences.
+  //   g r → Run Now (scrape trigger)
+  //   g o → Overview tab
+  //   g b → Branches tab
+  //   g v → Reviews tab (v for "reViews" — r is taken by Run Now)
+  //   g l → Run Logs tab
+  //   g c → Config tab
+  //   ?   → Show keyboard shortcuts help dialog
+  // Disabled when the user is typing in an input/textarea/select/contenteditable.
+  // The first key "g" must be followed by the second key within 800ms.
+  const SHORTCUT_TAB_MAP: Record<string, TabValue> = {
+    o: "overview",
+    b: "branches",
+    v: "reviews",
+    l: "logs",
+    c: "config",
+  };
+  const [showShortcutsHelp, setShowShortcutsHelp] = React.useState(false);
   React.useEffect(() => {
     let firstKey: "g" | null = null;
     let resetTimer: ReturnType<typeof setTimeout> | null = null;
@@ -251,6 +266,17 @@ export default function Home() {
       if (isTypingTarget(e.target)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const key = e.key.toLowerCase();
+      // "?" key opens the shortcuts help dialog
+      if (key === "?" || (key === "/" && e.shiftKey)) {
+        e.preventDefault();
+        setShowShortcutsHelp((v) => !v);
+        return;
+      }
+      // Escape closes the help dialog
+      if (key === "escape") {
+        setShowShortcutsHelp(false);
+        return;
+      }
       if (key === "g") {
         firstKey = "g";
         if (resetTimer) clearTimeout(resetTimer);
@@ -259,15 +285,28 @@ export default function Home() {
         }, 800);
         return;
       }
-      if (firstKey === "g" && key === "r") {
-        e.preventDefault();
+      if (firstKey === "g") {
         firstKey = null;
         if (resetTimer) clearTimeout(resetTimer);
-        handleRunNow();
-        toast.info("Shortcut: Run Now", {
-          description: "Triggered by “g” then “r” keyboard sequence.",
-          duration: 2000,
-        });
+        if (key === "r") {
+          e.preventDefault();
+          handleRunNow();
+          toast.info("Shortcut: Run Now", {
+            description: "Triggered by “g” then “r” keyboard sequence.",
+            duration: 2000,
+          });
+          return;
+        }
+        const tabValue = SHORTCUT_TAB_MAP[key];
+        if (tabValue) {
+          e.preventDefault();
+          setTab(tabValue);
+          const label = TABS.find((t) => t.value === tabValue)?.label ?? tabValue;
+          toast.info(`Shortcut: ${label} tab`, {
+            description: `Triggered by “g” then “${key}” keyboard sequence.`,
+            duration: 2000,
+          });
+        }
       }
     };
     window.addEventListener("keydown", onKey);
@@ -275,11 +314,15 @@ export default function Home() {
       window.removeEventListener("keydown", onKey);
       if (resetTimer) clearTimeout(resetTimer);
     };
-  }, [handleRunNow]);
+  }, [handleRunNow]); // SHORTCUT_TAB_MAP + TABS are module/stable consts
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header onRunNow={handleRunNow} isRunning={isRunning} />
+      <Header
+        onRunNow={handleRunNow}
+        isRunning={isRunning}
+        onShowShortcuts={() => setShowShortcutsHelp(true)}
+      />
 
       <main
         className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8"
@@ -374,6 +417,12 @@ export default function Home() {
       <Footer
         verifiedBy={selectorVerification?.verified_by ?? null}
         lastVerified={selectorVerification?.last_verified ?? null}
+      />
+
+      {/* Keyboard shortcuts help dialog — opens via "?" key or the header button */}
+      <ShortcutsHelpDialog
+        open={showShortcutsHelp}
+        onOpenChange={setShowShortcutsHelp}
       />
     </div>
   );

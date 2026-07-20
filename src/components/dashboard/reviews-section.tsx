@@ -58,6 +58,7 @@ import {
 import { StarRating } from "./star-rating";
 import { EmptyState } from "./empty-state";
 import { ExportButtons } from "./export-buttons";
+import { CopyButton } from "./copy-button";
 import { cleanReviewerName } from "@/lib/gbp/format";
 import type {
   BranchesResponse,
@@ -257,9 +258,13 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
             <span className="font-medium text-foreground">
               {row.original.reviewer_display}
             </span>
-            <span className="font-mono text-[10px] text-muted-foreground">
-              {row.original.review_id}
-            </span>
+            <CopyButton
+              value={row.original.review_id}
+              label={`Copy review ID: ${row.original.review_id}`}
+              showText
+              displayText={row.original.review_id}
+              size="sm"
+            />
           </div>
         ),
         sortingFn: "alphanumeric",
