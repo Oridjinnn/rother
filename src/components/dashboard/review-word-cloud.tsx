@@ -180,8 +180,7 @@ export function ReviewWordCloud({ refreshKey }: ReviewWordCloudProps) {
               )}
             </CardTitle>
             <CardDescription>
-              Most frequent words across all reviews (stopwords filtered).
-              No AI/LLM — pure word frequency counting.
+              Most frequent words across all reviews (common words filtered out).
             </CardDescription>
           </div>
           <Button

@@ -267,7 +267,7 @@ function CompetitorReviewList({
             <EmptyState
               icon={MessageSquare}
               title="No reviews yet"
-              description="This competitor has no snapshot. Run the scraper to populate it."
+              description="No data yet for this competitor. Click the update button to load it."
             />
           ) : (
             <ul className="space-y-3">

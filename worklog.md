@@ -1251,3 +1251,73 @@ I implemented 3 of the 5 round-9 recommendations (skipping #1 react-query migrat
 - Rule 4 (zero-cost, no AI/LLM): ✓ — all new features are pure UI/UX + data-layer additions, no AI/LLM calls, no paid dependencies. The correlation matrix uses cosine similarity (linear algebra, not AI), the export dialog uses Blob downloads (browser API), the rating distribution chart uses recharts (open-source).
 - Rule 5 (no fake progress): ✓ — every feature is verified end-to-end via agent-browser (correlation API data + matrix cells + aria-labels, export dialog opens with 4 buttons + counts, rating dist chart rendered as part of 13 chart elements).
 - Rule 9 (documentation): ✓ — this worklog entry is the documentation; no Python files changed so the Python CHANGELOG was not modified.
+
+---
+Task ID: TWO-PACKAGES (Rother Client + Dev separation)
+Agent: main (orchestrator)
+Task: Separate the app into two distinct packages — Rother (Client) 0.0.1 and Rother (Dev) 0.0.1 — with zero developer jargon in the Client package.
+
+## What Was Done
+
+Created a two-package system controlled by the `?mode=dev` URL query parameter:
+- **`/`** → **Rother (Client) 0.0.1** — the package the client opens. Clean, professional, no dev jargon.
+- **`/?mode=dev`** → **Rother (Dev) 0.0.1** — the package the team opens. Full developer view.
+
+### Package Differences
+
+| Feature | Rother (Client) | Rother (Dev) |
+|---------|-----------------|--------------|
+| App name | "Rother" | "Rother (Dev)" |
+| Version | 0.0.1 | 0.0.1 |
+| Subtitle | "Competitor review insights" | "Copenhagen Bali · competitor review watch" |
+| Footer tagline | "Automated review monitoring" | "Zero-cost · No AI/LLM" |
+| Run button | "Update Now" | "Run Now" |
+| Loading text | "Updating…" | "Running…" |
+| Toast success | "Update complete" | "Scrape complete" |
+| Health panel | "Update Status" | "Last Run Health" |
+| Schedule card | Hidden | "Scrape Schedule" with countdown |
+| KPI "Last Run" | "Last Updated" | "Last Run" |
+| Selector Verification card | Hidden | Shown |
+| UNPROVEN banner | Hidden | Shown |
+| "mode: fixtures" label | Hidden | Shown |
+| Run Logs tab | Hidden | Shown |
+| Config tab | Hidden | Shown |
+| GitHub Actions link | Hidden | Shown |
+| "No AI/LLM" disclaimers | Removed | Shown |
+| Tab count | 4 (Overview/Branches/Compare/Reviews) | 6 (+ Run Logs + Config) |
+| Mode switcher | "Dev view" link in footer | "Client view" link in footer |
+
+### Files Created
+- `src/lib/app-mode.ts` — the `AppMode` type, `TextMap` interface, `getText()` function with all mode-specific text mappings, `readModeFromUrl()`, `appName()`, `appVersion()`
+- `src/hooks/use-app-mode.ts` — `useAppMode()` hook (reads mode from URL, listens for popstate/pushstate) + `switchMode()` helper
+
+### Files Modified
+- `src/app/page.tsx` — uses `useAppMode()`, filters tabs based on `T.showRunLogsTab`/`T.showConfigTab`, passes `T` + `mode` to Header/Footer/OverviewSection, mode-aware toast text ("Update complete" vs "Scrape complete")
+- `src/components/dashboard/header.tsx` — accepts `T` + `mode` props, uses `T.name`/`T.version`/`T.subtitle`/`T.runButton`/`T.runButtonLoading`/`T.runButtonAria`/`T.runTooltipTitle`
+- `src/components/dashboard/footer.tsx` — accepts `T` + `mode` props, uses `T.name`/`T.version`/`T.tagline`/`T.healthPanelTitle`, hides selectors badge + GitHub Actions link + cron link in client mode via `T.showTechnicalDetails`/`T.showCronLink`, adds a mode switcher button ("Dev view" / "Client view")
+- `src/components/dashboard/overview-section.tsx` — accepts optional `T` prop, hides UNPROVEN banner + Selector Verification card + Scrape Schedule + "mode: fixtures" label in client mode via `isDev` flag, mode-aware alert text ("Some sources couldn't be refreshed" vs "Run alert: failed ≥ success"), mode-aware empty-state descriptions
+- `src/components/dashboard/reviews-over-time-card.tsx` — removed "scrape runs" / "scraper" from description
+- `src/components/dashboard/review-word-cloud.tsx` — removed "No AI/LLM — pure word frequency counting" from description
+- `src/components/dashboard/competitor-growth-rate.tsx` — removed "last-scrape date" reference from description
+- `src/components/dashboard/review-language-distribution.tsx` — removed "Script-based detection (Unicode ranges) — no AI/LLM" from description
+- `src/components/dashboard/run-history-timeline.tsx` — renamed "Run History" → "Update History", "scraper runs" → "updates"
+- `src/components/dashboard/run-comparison-card.tsx` — renamed "Run Comparison" → "Update Comparison", "scraper runs" → "updates", "Run A/B" → "Update A/B"
+- `src/components/dashboard/reviews-section.tsx` — replaced "The scraper hasn't produced any snapshots" empty-state with "No reviews yet. Click the update button to load data."
+- `src/components/dashboard/branches-section.tsx` — replaced "No snapshot yet — this competitor has no fixture in fixtures mode" with "No data yet — this competitor hasn't been monitored."
+- `src/components/dashboard/branch-comparison-section.tsx` — "Last scraped" → "Last updated"
+
+## Verification Results
+
+- **Lint**: `bun run lint` passes clean (zero warnings, zero errors).
+- **Dev log**: zero errors.
+- **Client mode (`/`)**:
+  - Title: "Rother v0.0.1" ✓
+  - 4 tabs: Overview, Branches, Compare, Reviews (no Run Logs, no Config) ✓
+  - `devJargonFound: []` — ZERO instances of "scraper", "scrape", "fixtures", "LLM", "AI/LLM", "SelectorNotFoundError", "Run Logs", "Config" anywhere in the page text ✓
+  - Footer: "Rother · v0.0.1 · Automated review monitoring · Healthy · 3 ok · Dev view" ✓
+- **Dev mode (`/?mode=dev`)**:
+  - Title: "Rother (Dev) v0.0.1" ✓
+  - 6 tabs: Overview, Branches, Compare, Reviews, Run Logs, Config ✓
+  - `hasRunLogsTab: true`, `hasConfigTab: true` ✓
+  - Footer: "Client view" switcher link ✓
+- **Mode switcher**: Both modes have a footer button to toggle between them ✓

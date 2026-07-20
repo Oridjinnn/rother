@@ -64,7 +64,7 @@ function HistoryExportButton({ totalRuns }: { totalRuns: number }) {
   const doExport = async (format: "csv" | "json") => {
     if (totalRuns === 0) {
       toast.info("Nothing to export", {
-        description: "No scraper runs have produced new reviews yet.",
+        description: "No updates have found new reviews yet.",
       });
       return;
     }
@@ -201,7 +201,7 @@ export function RunHistoryTimeline({ refreshKey }: RunHistoryTimelineProps) {
             />
             Run History
           </CardTitle>
-          <CardDescription>Timeline of scraper runs with deltas</CardDescription>
+          <CardDescription>Timeline of recent updates</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {Array.from({ length: 2 }).map((_, i) => (
@@ -246,13 +246,13 @@ export function RunHistoryTimeline({ refreshKey }: RunHistoryTimelineProps) {
             />
             Run History
           </CardTitle>
-          <CardDescription>Timeline of scraper runs with deltas</CardDescription>
+          <CardDescription>Timeline of recent updates</CardDescription>
         </CardHeader>
         <CardContent>
           <EmptyState
             icon={GitCommitVertical}
             title="No runs with new reviews yet"
-            description="Once a scraper run detects new reviews (delta vs the previous snapshot), it will appear here as a timeline entry. Run the scraper a few times to populate this."
+            description="Once an update finds new reviews, it will appear here as a timeline entry. Run a few updates to populate this."
           />
         </CardContent>
       </Card>
@@ -278,7 +278,7 @@ export function RunHistoryTimeline({ refreshKey }: RunHistoryTimelineProps) {
               </Badge>
             </CardTitle>
             <CardDescription>
-              Timeline of scraper runs that produced new reviews · auto-refresh
+              Timeline of updates that found new reviews · auto-refresh
               every 30s
             </CardDescription>
           </div>

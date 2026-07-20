@@ -296,11 +296,11 @@ function BranchComparisonCard({
             ))}
           </div>
 
-          {/* Last scraped footer */}
+          {/* Last updated footer */}
           {lastScraped && (
             <div className="flex items-center gap-1.5 border-t border-border/40 pt-2 text-[10px] text-muted-foreground">
               <CalendarClock className="size-3" aria-hidden="true" />
-              <span>Last scraped: {formatTimestamp(lastScraped).relative}</span>
+              <span>Last updated: {formatTimestamp(lastScraped).relative}</span>
             </div>
           )}
         </CardContent>

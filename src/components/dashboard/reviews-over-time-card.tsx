@@ -78,8 +78,8 @@ export function ReviewsOverTimeCard({ refreshKey }: ReviewsOverTimeCardProps) {
               )}
             </CardTitle>
             <CardDescription>
-              Cumulative reviews monitored across all scrape runs — shows the
-              growth trend as the scraper accumulates reviews over time.
+              Cumulative reviews monitored over time — shows the
+              growth trend.
             </CardDescription>
           </div>
           <Button

@@ -249,8 +249,7 @@ export function ReviewLanguageDistribution({
               </Badge>
             </CardTitle>
             <CardDescription>
-              Script-based detection (Unicode ranges) — no AI/LLM. Shows
-              what scripts customers review in.
+              What languages and scripts customers review in.
             </CardDescription>
           </div>
           <Button

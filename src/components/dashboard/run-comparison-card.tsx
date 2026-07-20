@@ -179,14 +179,14 @@ export function RunComparisonCard({ refreshKey }: RunComparisonCardProps) {
             Run Comparison
           </CardTitle>
           <CardDescription>
-            Compare two scraper runs side-by-side to see what changed.
+            Compare two updates side-by-side to see what changed.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <EmptyState
             icon={GitCompareArrows}
             title="Need at least 2 runs to compare"
-            description="Run the scraper a few more times to build up history, then come back to compare runs."
+            description="Run a few more updates to build up history, then come back to compare."
             className="h-[200px]"
           />
         </CardContent>
@@ -212,7 +212,7 @@ export function RunComparisonCard({ refreshKey }: RunComparisonCardProps) {
               )}
             </CardTitle>
             <CardDescription>
-              Compare two scraper runs to see what changed between them.
+              Compare two updates to see what changed between them.
             </CardDescription>
           </div>
           <Button
@@ -230,11 +230,11 @@ export function RunComparisonCard({ refreshKey }: RunComparisonCardProps) {
         <div className="mt-2 grid grid-cols-1 items-end gap-2 sm:grid-cols-[1fr_auto_1fr]">
           <div className="space-y-1">
             <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Run A (older)
+              Update A (older)
             </label>
             <Select value={runIdA} onValueChange={setRunIdA}>
               <SelectTrigger size="sm" className="w-full">
-                <SelectValue placeholder="Select run A" />
+                <SelectValue placeholder="Select update A" />
               </SelectTrigger>
               <SelectContent>
                 {data.runs.map((r) => (
@@ -251,11 +251,11 @@ export function RunComparisonCard({ refreshKey }: RunComparisonCardProps) {
           />
           <div className="space-y-1">
             <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Run B (newer)
+              Update B (newer)
             </label>
             <Select value={runIdB} onValueChange={setRunIdB}>
               <SelectTrigger size="sm" className="w-full">
-                <SelectValue placeholder="Select run B" />
+                <SelectValue placeholder="Select update B" />
               </SelectTrigger>
               <SelectContent>
                 {data.runs.map((r) => (

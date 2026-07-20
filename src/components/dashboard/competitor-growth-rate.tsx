@@ -181,7 +181,7 @@ export function CompetitorGrowthRate({
         </CardTitle>
         <CardDescription>
           Reviews per day — higher = faster review accumulation.
-          Approximate (uses last-scrape date as the monitoring period).
+          Approximate.
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">

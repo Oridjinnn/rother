@@ -124,24 +124,30 @@ function RunHealthPanel({
   autoRefresh,
   onToggleAutoRefresh,
   autoRefreshSeconds,
+  T,
 }: {
   data: OverviewResponse;
   onRefresh?: () => void;
   autoRefresh?: boolean;
   onToggleAutoRefresh?: () => void;
   autoRefreshSeconds?: number;
+  T?: TextMap;
 }) {
   const { runSummary } = data;
+  const t = T ?? ({} as TextMap);
+  const isDev = t.showRunLogsTab === true;
   if (!runSummary) {
     return (
       <Card className="gbp-card-hover">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Activity className="size-4 text-primary" aria-hidden="true" />
-            Last Run Health
+            {t.healthPanelTitle ?? "Last Run Health"}
           </CardTitle>
           <CardDescription>
-            No runs yet. Click “Run Now” in the header to trigger a fixtures-mode scrape.
+            {isDev
+              ? `No runs yet. Click "${t.runButton}" in the header to trigger a fixtures-mode scrape.`
+              : "No updates yet. Click the update button in the header to load data."}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -161,7 +167,7 @@ function RunHealthPanel({
           <div className="space-y-1">
             <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               <Activity className="size-4 text-primary" aria-hidden="true" />
-              Last Run Health
+              {t.healthPanelTitle ?? "Last Run Health"}
               {data.isAlert ? (
                 <Badge
                   variant="destructive"
@@ -195,11 +201,15 @@ function RunHealthPanel({
               </span>
               <span className="text-border">·</span>
               <span className="font-mono text-[11px]">{ts.absolute}</span>
-              <span className="text-border">·</span>
-              <span className="inline-flex items-center gap-1">
-                <Sparkles className="size-3 text-amber-500" aria-hidden="true" />
-                mode: {runSummary.mode}
-              </span>
+              {isDev && (
+                <>
+                  <span className="text-border">·</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Sparkles className="size-3 text-amber-500" aria-hidden="true" />
+                    mode: {runSummary.mode}
+                  </span>
+                </>
+              )}
             </CardDescription>
           </div>
           {onRefresh && (
@@ -399,7 +409,11 @@ export function OverviewSection({
   onToggleAutoRefresh,
   autoRefreshSeconds,
   refreshKey,
+  T,
 }: OverviewSectionProps) {
+  // Default to client text if T is not provided (backward compat)
+  const t = T ?? ({} as TextMap);
+  const isDev = t.showRunLogsTab === true;
   if (loading && !data) {
     return (
       <div className="space-y-6">
@@ -442,7 +456,8 @@ export function OverviewSection({
       className="space-y-6"
     >
       {/* UNPROVEN banner — only when selectors are seed */}
-      {data.selectorVerification.isUnproven && (
+      {/* UNPROVEN selectors banner — ONLY in dev mode (client never sees this) */}
+      {isDev && data.selectorVerification.isUnproven && (
         <Alert className="border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200">
           <ShieldAlert className="size-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
           <AlertTitle className="text-amber-800 dark:text-amber-200">
@@ -457,18 +472,33 @@ export function OverviewSection({
         </Alert>
       )}
 
-      {/* Run alert — when failed ≥ success */}
+      {/* Update alert — when failed ≥ success. Client-friendly language in client mode. */}
       {data.isAlert && (
         <Alert variant="destructive">
           <AlertTriangle className="size-4" aria-hidden="true" />
-          <AlertTitle>Run alert: failed ≥ success</AlertTitle>
+          <AlertTitle>
+            {isDev ? "Run alert: failed ≥ success" : "Some sources couldn't be refreshed"}
+          </AlertTitle>
           <AlertDescription>
-            The last run had {data.runSummary?.failed} failure(s) out of{" "}
-            {data.runSummary
-              ? data.runSummary.success + data.runSummary.failed
-              : 0}{" "}
-            attempted listing(s). Possible selector breakage — check{" "}
-            <code className="font-mono">config/selectors.json</code> and the Run Logs tab.
+            {isDev ? (
+              <>
+                The last run had {data.runSummary?.failed} failure(s) out of{" "}
+                {data.runSummary
+                  ? data.runSummary.success + data.runSummary.failed
+                  : 0}{" "}
+                attempted listing(s). Possible selector breakage — check{" "}
+                <code className="font-mono">config/selectors.json</code> and the Run Logs tab.
+              </>
+            ) : (
+              <>
+                The last update couldn't refresh{" "}
+                {data.runSummary?.failed} of{" "}
+                {data.runSummary
+                  ? data.runSummary.success + data.runSummary.failed
+                  : 0}{" "}
+                monitored sources. Our team has been notified and will investigate.
+              </>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -497,14 +527,14 @@ export function OverviewSection({
           hint="Across all snapshots"
         />
         <KpiCard
-          label="New (Last Run)"
+          label={isDev ? "New (Last Run)" : "New (Latest)"}
           value={`+${data.newReviewsLastRun}`}
           icon={TrendingUp}
           accent="amber"
-          hint="From latest deltas"
+          hint={isDev ? "From latest deltas" : "From latest update"}
         />
         <KpiCard
-          label="Last Run"
+          label={t.lastRunLabel ?? "Last Run"}
           value={
             <span className="text-base font-bold leading-tight">
               {ts.relative}
@@ -516,6 +546,8 @@ export function OverviewSection({
             <span className="font-mono text-[10px]">{ts.absolute}</span>
           }
         />
+        {/* Selector Verification card — ONLY in dev mode */}
+        {isDev && (
         <Card className="gbp-card-hover relative overflow-hidden py-0">
           <CardContent className="flex items-start justify-between gap-3 p-5">
             <div className="flex flex-col gap-1 min-w-0">
@@ -546,6 +578,7 @@ export function OverviewSection({
             </span>
           </CardContent>
         </Card>
+        )}
       </div>
 
       {/* Run health panel + Scrape schedule — side-by-side on lg+ */}
@@ -556,8 +589,10 @@ export function OverviewSection({
           autoRefresh={autoRefresh}
           onToggleAutoRefresh={onToggleAutoRefresh}
           autoRefreshSeconds={autoRefreshSeconds}
+          T={T}
         />
-        <ScrapeSchedule />
+        {/* Scrape schedule — only in dev mode (client doesn't need to see cron details) */}
+        {isDev && <ScrapeSchedule />}
       </div>
 
       {/* Charts grid */}
@@ -594,7 +629,7 @@ export function OverviewSection({
             <EmptyState
               icon={Store}
               title="No competitor data"
-              description="Run the scraper to populate per-competitor review counts."
+              description={`Click "${t.runButton}" to load competitor data.`}
               className="h-[320px]"
             />
           )}
@@ -606,7 +641,7 @@ export function OverviewSection({
         <ChartCard
           title="Sentiment Distribution"
           icon={PieChart}
-          description="Rating-based sentiment buckets (★4–5 positive · ★3 neutral · ★1–2 negative). No AI/LLM — heuristic only."
+          description={isDev ? "Rating-based sentiment buckets (★4–5 positive · ★3 neutral · ★1–2 negative). No AI/LLM — heuristic only." : "How customers feel about each competitor — positive, neutral, or negative."}
           loading={loading}
           skeletonHeight={260}
         >
@@ -616,7 +651,7 @@ export function OverviewSection({
             <EmptyState
               icon={PieChart}
               title="No sentiment data yet"
-              description="Run the scraper to populate the sentiment breakdown."
+              description={`Click "${t.runButton}" to load sentiment data.`}
               className="h-[260px]"
             />
           )}
@@ -635,7 +670,7 @@ export function OverviewSection({
             <EmptyState
               icon={TrendingUp}
               title="No new reviews"
-              description="The last run found no new reviews. Run the scraper again to detect deltas."
+              description={`No new reviews found in the latest update. Click "${t.runButton}" to check again.`}
               className="h-[260px]"
             />
           )}
@@ -731,7 +766,7 @@ export function OverviewSection({
           <EmptyState
             icon={RadarIcon}
             title="No competitor data yet"
-            description="Run the scraper to populate the competitor comparison."
+            description={`Click "${t.runButton}" to load competitor comparison data.`}
             className="h-[320px]"
           />
         )}
