@@ -55,6 +55,9 @@ import { ReviewLengthsCard } from "./review-lengths-card";
 import { CompetitorLeaderboard } from "./competitor-leaderboard";
 import { FreshnessBadge } from "./freshness-badge";
 import { ReviewRecencyHeatmap } from "./review-recency-heatmap";
+import { ReviewWordCloud } from "./review-word-cloud";
+import { CompetitorGrowthRate } from "./competitor-growth-rate";
+import { RunComparisonCard } from "./run-comparison-card";
 import { formatTimestamp } from "@/lib/gbp/format";
 import type { OverviewResponse } from "@/lib/gbp/types";
 
@@ -634,6 +637,9 @@ export function OverviewSection({
       {/* Review text length distribution — full-width bar chart */}
       <ReviewLengthsCard refreshKey={refreshKey} />
 
+      {/* Review word cloud — text-based word frequency visualization */}
+      <ReviewWordCloud refreshKey={refreshKey} />
+
       {/* Snapshot at a Glance + Competitor Leaderboard — side-by-side on lg+ */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Quick recent-reviews preview (a taste of the Reviews tab) */}
@@ -720,12 +726,24 @@ export function OverviewSection({
         )}
       </ChartCard>
 
+      {/* Run comparison — diff two runs side-by-side */}
+      <RunComparisonCard refreshKey={refreshKey} />
+
       {/* Run history timeline — newest-first list of every run that produced
           new reviews. Auto-polls every 30s. */}
       <RunHistoryTimeline refreshKey={refreshKey} />
 
-      {/* Review recency heatmap — GitHub-style contribution graph */}
-      <ReviewRecencyHeatmap refreshKey={refreshKey} />
+      {/* Review recency heatmap + Competitor growth rate — side-by-side on lg+ */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Review recency heatmap — GitHub-style contribution graph */}
+        <ReviewRecencyHeatmap refreshKey={refreshKey} />
+
+        {/* Competitor growth rate — reviews per day */}
+        <CompetitorGrowthRate
+          data={data.competitorStats}
+          loading={loading}
+        />
+      </div>
     </motion.div>
   );
 }
