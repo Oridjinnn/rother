@@ -19,6 +19,17 @@ python -m orchestration.run_all            # full run (mock listings)
 python -m orchestration.run_all --fixtures # run against static HTML fixtures only
 ```
 
+## Baseline Verification
+
+After setup, verify the scraper works:
+
+```bash
+cd gbp-monitor
+python -m tests.verify_baseline
+```
+
+Expected output: 20+ checks pass, exit code 0.
+
 ## Layout
 
 See `GBP_MONITOR_PLAN.md` Section 3 for the canonical directory structure.
@@ -30,6 +41,9 @@ Each Python package (`harness`, `parser`, `storage`, `discovery`,
 A Next.js dashboard at the parent project's `/` route visualizes the
 snapshots produced by this scraper. It reads from `data/snapshots/`,
 `data/reviews_new/`, and `data/run.log`.
+
+See `docs/engineering/` at the project root for full setup, execution, and
+verification guides.
 
 ## Status
 

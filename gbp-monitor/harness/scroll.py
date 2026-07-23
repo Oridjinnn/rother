@@ -14,6 +14,7 @@ that Google changed the DOM and `config/selectors.json` may need updating.
 from __future__ import annotations
 
 import logging
+import time
 
 logger = logging.getLogger("gbp-monitor.scroll")
 
@@ -33,7 +34,9 @@ class SelectorNotFoundError(Exception):
     """
 
 
-def scroll_review_container(page, selectors: dict) -> None:
+def scroll_review_container(
+    page, selectors: dict, tracker=None, comp_id: str = ""
+) -> None:
     """Scroll `selectors["review_container"]` until content height stabilizes.
 
     Strategy:
@@ -55,9 +58,30 @@ def scroll_review_container(page, selectors: dict) -> None:
     # as `SelectorNotFoundError` so the caller can distinguish DOM changes
     # from other failures. Verified API: `wait_for_selector(selector, *,
     # timeout=None, state=None, strict=None)` against Playwright 1.57.
+    t0 = time.time() if tracker else None
     try:
         page.wait_for_selector(container_selector, timeout=10000)
+        if tracker:
+            tracker.record(
+                selector_key="review_container",
+                selector_value=container_selector,
+                found=True,
+                match_count=1,
+                duration_ms=(time.time() - t0) * 1000,
+                competitor_id=comp_id,
+                phase="scroll",
+            )
     except Exception as e:
+        if tracker:
+            tracker.record(
+                selector_key="review_container",
+                selector_value=container_selector,
+                found=False,
+                duration_ms=(time.time() - t0) * 1000,
+                error=str(e),
+                competitor_id=comp_id,
+                phase="scroll",
+            )
         raise SelectorNotFoundError(
             f"review_container selector failed: {container_selector}"
         ) from e

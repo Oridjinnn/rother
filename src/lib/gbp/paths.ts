@@ -1,14 +1,23 @@
 /**
  * Absolute filesystem paths to the GBP Monitor Python project's data + config.
  *
- * The Python scraper (Task 2-a) writes to these locations. The dashboard
- * reads from them. All API routes use these constants — never relative paths
- * or hard-coded strings scattered through route handlers.
+ * The Python scraper writes to these locations. The dashboard reads from them.
+ * All API routes use these constants — never relative paths or hard-coded
+ * strings scattered through route handlers.
+ *
+ * GBP_ROOT resolution (in priority order):
+ *   1. GBP_ROOT environment variable (production override)
+ *   2. process.cwd() + "gbp-monitor" (development — cwd is project root)
  */
 
 import path from "node:path";
 
-export const GBP_ROOT = path.resolve("/home/z/my-project/gbp-monitor");
+export const GBP_ROOT = (() => {
+  if (process.env.GBP_ROOT) {
+    return path.resolve(process.env.GBP_ROOT);
+  }
+  return path.resolve(process.cwd(), "gbp-monitor");
+})();
 export const GBP_DATA_DIR = path.join(GBP_ROOT, "data");
 export const GBP_CONFIG_DIR = path.join(GBP_ROOT, "config");
 

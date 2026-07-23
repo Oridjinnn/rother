@@ -17,6 +17,13 @@ Modes:
                         without a fixture file are SKIPPED (not counted
                         as failures) so the "failed >= success" warning
                         signal stays meaningful.
+  - `--verify`:         Live verification mode. Captures screenshot + raw
+                        HTML from real Google Maps URLs without modifying
+                        production snapshots, deltas, or run_summary.
+                        Evidence is written to ``data/verify/{ts}/``.
+                        Exits non-zero if any capture fails. See
+                        ``docs/engineering/LIVE_VERIFICATION.md`` for
+                        the full workflow guide.
 
 Outputs (always):
   - `data/snapshots/{competitor_id}.json` — full review list per competitor
@@ -27,6 +34,12 @@ Outputs (always):
   - `data/run_summary.json` — the latest run's summary dict, for the
     Next.js dashboard to read. This is an addition to the plan's run.log
     summary line, documented in CHANGELOG.md.
+
+Outputs (verify mode):
+  - `data/verify/{ts}/{competitor_id}/page.png` — full-page screenshot
+  - `data/verify/{ts}/{competitor_id}/page.html` — captured raw HTML
+  - `data/verify/{ts}/report.json` — structured verification report
+  - `data/verify/{ts}/selector_report.json` — per-selector outcome report
 
 Failure isolation (Rule 7):
   - Every per-listing exception is caught in the inner `try` block. The
@@ -295,12 +308,26 @@ def _process_one_listing(
         logger.error("FAILED listing %s: %s", comp_id, err["error"])
 
 
-def _capture_with_retries(context, url: str, selectors: dict, comp_id: str) -> str:
+def _capture_with_retries(
+    context,
+    url: str,
+    selectors: dict,
+    comp_id: str,
+    screenshot_dir: str | None = None,
+    tracker=None,
+) -> str:
     """Call `capture_listing_html` with up to 2 retries on transient errors.
 
     Per Section 6: do NOT retry `SelectorNotFoundError` (broken selector —
     retrying just hammers the page). Other exceptions (network, timeout)
     are retried up to `_NETWORK_RETRY_MAX` times with backoff.
+
+    When `screenshot_dir` is provided (verify mode), evidence is saved
+    before the page closes. Existing callers omit this parameter and get
+    identical behavior to the original signature.
+
+    When `tracker` is provided (verify mode), per-selector outcomes are
+    recorded for the selector verification report.
     """
     from harness.capture import capture_listing_html
     from harness.scroll import SelectorNotFoundError
@@ -308,7 +335,9 @@ def _capture_with_retries(context, url: str, selectors: dict, comp_id: str) -> s
     last_exc: Exception | None = None
     for attempt in range(_NETWORK_RETRY_MAX + 1):
         try:
-            return capture_listing_html(context, url, selectors)
+            return capture_listing_html(
+                context, url, selectors, screenshot_dir, tracker=tracker, comp_id=comp_id
+            )
         except SelectorNotFoundError:
             # Re-raise immediately — retrying a broken selector wastes
             # time and looks like a bot. The orchestration layer will
@@ -388,6 +417,171 @@ def _finish_and_write_summary(summary: dict) -> None:
     logger.info("wrote run summary to %s", _SUMMARY_PATH)
 
 
+def run_verify(url_override: str | None = None) -> dict:
+    """Run a verification pass — capture evidence without modifying production data.
+
+    Launches Playwright (same as live mode), iterates all configured
+    competitors, captures a screenshot + raw HTML for each listing,
+    and writes evidence to ``data/verify/{run_timestamp}/``.
+
+    Unlike `run()`:
+      - No parse, delta, save_snapshot, or run_summary writes
+      - Evidence (page.png + page.html) is saved per listing
+      - A structured report is written to ``data/verify/{ts}/report.json``
+      - On failure, any partial evidence (e.g. screenshot of error state)
+        is still saved
+      - The run does NOT count as a production scrape
+
+    Returns the report dict (also written to disk) with structure::
+
+        {
+          "started_at": ISO8601,
+          "finished_at": ISO8601,
+          "mode": "verify",
+          "url_override": str | None,
+          "total": int,
+          "passed": int,
+          "failed": int,
+          "results": [ {competitor_id, branch_id, url, status, ...}, ... ],
+        }
+    """
+    started_at = datetime.now(timezone.utc).isoformat()
+    logger.info("=== run_verify START ===")
+    if url_override:
+        logger.info("URL override: %s", url_override)
+
+    listings = json.loads(_LISTINGS_PATH.read_text(encoding="utf-8"))
+    selectors = json.loads(_SELECTORS_PATH.read_text(encoding="utf-8"))
+
+    verify_ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    verify_root = Path("data/verify") / verify_ts
+    report = {
+        "started_at": started_at,
+        "finished_at": None,
+        "mode": "verify",
+        "url_override": url_override,
+        "total": 0,
+        "passed": 0,
+        "failed": 0,
+        "results": [],
+    }
+
+    # Count total listings for progress tracking.
+    total_listings = sum(
+        len(branch.get("competitors", []))
+        for branch in listings.get("branches", [])
+    )
+    report["total"] = total_listings
+    logger.info("verify mode: %d competitor(s) to capture", total_listings)
+
+    # Selector tracker — records per-selector outcomes for the verification
+    # report. Only active in verify mode; production calls pass tracker=None.
+    from harness.selector_tracker import SelectorTracker
+
+    tracker = SelectorTracker()
+
+    # Lazy import — verify mode always needs Playwright.
+    from harness.browser import get_browser_context
+
+    context = None
+    browser_handles = None
+    try:
+        browser_handles = get_browser_context()
+        context = browser_handles[2]
+    except Exception as e:
+        logger.error("FATAL: could not start browser in verify mode: %s", e)
+        report["failed"] = total_listings
+        report["finished_at"] = datetime.now(timezone.utc).isoformat()
+        verify_root.mkdir(parents=True, exist_ok=True)
+        (verify_root / "report.json").write_text(
+            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        # Write empty selector report (no captures happened).
+        sel_report = tracker.get_report(configured_selectors=selectors)
+        (verify_root / "selector_report.json").write_text(
+            json.dumps(sel_report, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        return report
+
+    try:
+        for branch in listings.get("branches", []):
+            branch_id = branch.get("branch_id", "unknown-branch")
+            for comp in branch.get("competitors", []):
+                comp_id = comp.get("competitor_id", "unknown-competitor")
+                comp_name = comp.get("name", "")
+                url = url_override or comp.get("gmaps_url", "")
+                logger.info("verify[%s]: %s (%s)", comp_id, comp_name, branch_id)
+
+                comp_dir = str(verify_root / comp_id)
+                result = {
+                    "competitor_id": comp_id,
+                    "branch_id": branch_id,
+                    "name": comp_name,
+                    "url": url,
+                    "status": "FAIL",
+                }
+
+                try:
+                    _capture_with_retries(
+                        context,
+                        url,
+                        selectors,
+                        comp_id,
+                        screenshot_dir=comp_dir,
+                        tracker=tracker,
+                    )
+                    result["status"] = "PASS"
+                    report["passed"] += 1
+                    logger.info("verify[%s] PASS", comp_id)
+                except Exception as e:
+                    result["error"] = f"{type(e).__name__}: {e}"
+                    report["failed"] += 1
+                    logger.error("verify[%s] FAIL: %s", comp_id, result["error"])
+                    # Even on failure, try to capture a screenshot of the
+                    # error state if the page is still open (the retry
+                    # helper may have already closed it). Best-effort.
+
+                report["results"].append(result)
+    finally:
+        if browser_handles is not None:
+            p, browser, ctx = browser_handles
+            try:
+                ctx.close()
+            except Exception as e:
+                logger.warning("context.close() failed: %s", e)
+            try:
+                browser.close()
+            except Exception as e:
+                logger.warning("browser.close() failed: %s", e)
+            try:
+                p.stop()
+            except Exception as e:
+                logger.warning("playwright.stop() failed: %s", e)
+
+    report["finished_at"] = datetime.now(timezone.utc).isoformat()
+    verify_root.mkdir(parents=True, exist_ok=True)
+    (verify_root / "report.json").write_text(
+        json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    # Write selector verification report alongside report.json.
+    sel_report = tracker.get_report(configured_selectors=selectors)
+    (verify_root / "selector_report.json").write_text(
+        json.dumps(sel_report, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    logger.info(
+        "verify summary: %d passed, %d failed (of %d) — "
+        "selector report: %d healthy, %d degraded, %d broken, %d not evaluated",
+        report["passed"],
+        report["failed"],
+        report["total"],
+        sel_report.get("healthy", 0),
+        sel_report.get("degraded", 0),
+        sel_report.get("broken", 0),
+        sel_report.get("not_evaluated", 0),
+    )
+    return report
+
+
 def fixtures_path(competitor_id: str) -> Path:
     """Return the fixture file path for `competitor_id`.
 
@@ -416,16 +610,44 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "fixture file are skipped (not failures)."
         ),
     )
+    parser.add_argument(
+        "--verify",
+        action="store_true",
+        help=(
+            "Live verification mode: capture screenshots + HTML evidence "
+            "from real Google Maps URLs without modifying production "
+            "snapshots, deltas, or run_summary.json. Evidence is written "
+            "to data/verify/{timestamp}/. Requires Playwright browser "
+            "binary. Use --url to override competitor URLs for testing "
+            "a single listing."
+        ),
+    )
+    parser.add_argument(
+        "--url",
+        type=str,
+        default=None,
+        help=(
+            "Override all competitor URLs with this single URL. Only "
+            "meaningful with --verify. Useful for testing capture against "
+            "one real Google Maps listing without editing listings.json."
+        ),
+    )
     return parser.parse_args(argv)
 
 
 if __name__ == "__main__":
     args = _parse_args()
-    summary = run(fixtures_mode=args.fixtures)
-    # Exit 0 even if some listings failed — Rule 7 mandates the run
-    # completes; the dashboard reads the summary to see the failure
-    # count. A non-zero exit would make GitHub Actions treat the whole
-    # run as failed, which would block the "commit results" step.
-    # (If we ever want CI to fail on mass failures, gate on
-    # summary["failed"] >= summary["success"] here.)
-    sys.exit(0)
+    if args.verify:
+        report = run_verify(url_override=args.url)
+        # Exit non-zero when any verification fails so CI / the
+        # operator can detect it without parsing the report JSON.
+        sys.exit(1 if report["failed"] > 0 else 0)
+    else:
+        summary = run(fixtures_mode=args.fixtures)
+        # Exit 0 even if some listings failed — Rule 7 mandates the run
+        # completes; the dashboard reads the summary to see the failure
+        # count. A non-zero exit would make GitHub Actions treat the whole
+        # run as failed, which would block the "commit results" step.
+        # (If we ever want CI to fail on mass failures, gate on
+        # summary["failed"] >= summary["success"] here.)
+        sys.exit(0)

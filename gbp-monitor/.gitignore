@@ -20,6 +20,9 @@ playwright-report/
 # Captured raw HTML (per Section 3 — large + potentially PII)
 data/raw_html/
 
+# Verification evidence (screenshots + captured HTML — large, transient, PII)
+data/verify/
+
 # Local-only Python version manager files
 .python-version
 

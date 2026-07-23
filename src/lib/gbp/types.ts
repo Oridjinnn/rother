@@ -156,6 +156,9 @@ export interface ScrapeTriggerErrorResponse {
   ok: false;
   error: string;
   stderr: string;
+  stage: string;
+  probable_cause: string;
+  suggested_fix: string;
 }
 
 /** One run's worth of new-review deltas, grouped by competitor.
