@@ -1,10 +1,57 @@
 {
-  "last_verified": "2026-07-20",
-  "verified_by": "seed",
-  "_verification_note": "Selectors seeded from public reference implementations (gaspa93/googlemaps-scraper et al.) known to be ~2023 vintage. UNPROVEN against current Google Maps DOM per EXECUTION_RULES.md Rule 3. A browser_agent verification pass is required before production use; until then, parse failures are expected and must be surfaced loudly by the orchestration layer (see Section 6 of GBP_MONITOR_PLAN.md).",
-  "cookie_reject_button": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
-  "reviews_tab_button": "button[aria-label*='Reviews']",
-  "review_container": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
+  "_meta": {
+    "last_verified": null,
+    "verified_by": null,
+    "schema_version": 2,
+    "_documentation_url": "https://github.com/anomalyco/gbp-monitor/wiki/Selector-Maintenance",
+    "descriptions": {
+      "cookie_reject_button": "EU cookie consent 'Reject all' button",
+      "reviews_tab_button": "Reviews tab in Google Maps listing sidebar",
+      "review_container": "Scrollable review list container (feed region)",
+      "review_item": "Individual review card element (seed for parser locator tier 5)",
+      "review_id_attr": "HTML attribute holding the unique review ID (data-review-id)",
+      "reviewer_name_attr": "HTML attribute holding the reviewer display name",
+      "review_text_selector": "CSS selector for review text content span",
+      "rating_selector": "CSS selector for star rating element",
+      "rating_attr": "HTML attribute holding numeric star rating value",
+      "relative_date_selector": "CSS selector for relative date text (e.g. '2 weeks ago')",
+      "expand_text_button": "Expand/See-more button on truncated review cards"
+    },
+    "selector_types": {
+      "cookie_reject_button": "xpath_or_css",
+      "reviews_tab_button": "css",
+      "review_container": "css",
+      "review_item": "css",
+      "review_id_attr": "attribute",
+      "reviewer_name_attr": "attribute",
+      "review_text_selector": "css",
+      "rating_selector": "css",
+      "rating_attr": "attribute",
+      "relative_date_selector": "css",
+      "expand_text_button": "css"
+    },
+    "fallback_notes": {
+      "cookie_reject_button": "Google may serve variant banner text or layout by locale — primary selector covers EN 'Reject all'; first fallback uses has-text which is more resilient to wrapper changes",
+      "reviews_tab_button": "aria-label may vary by locale (Reviews/Avis/Recensioni) — first fallback covers French, second uses role=tab for broader DOM matching",
+      "review_container": "Primary is the 2023-vintage CSS class triple; first fallback uses role=feed (more semantic, less likely to change across redesigns); second fallback uses role=region within a known parent class",
+      "expand_text_button": "Primary targets known class; fallbacks use text content matching as the W3C accessibility tree approach recommends"
+    }
+  },
+  "cookie_reject_button": [
+    "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
+    "button:has-text('Reject all')",
+    "form[action*='cookie'] button:first-of-type"
+  ],
+  "reviews_tab_button": [
+    "button[aria-label*='Reviews']",
+    "button[aria-label*='Avis']",
+    "[role='tab'][aria-label*='Review']"
+  ],
+  "review_container": [
+    "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
+    "div[role='feed']",
+    "div.m6QErb[role='region']"
+  ],
   "review_item": "div.jftiEf.fontBodyMedium",
   "review_id_attr": "data-review-id",
   "reviewer_name_attr": "aria-label",
@@ -12,5 +59,9 @@
   "rating_selector": "span.kvMYJc",
   "rating_attr": "aria-label",
   "relative_date_selector": "span.rsqaWe",
-  "expand_text_button": "button.w8nwRe.kyuRq"
+  "expand_text_button": [
+    "button.w8nwRe.kyuRq",
+    "button:has-text('More')",
+    "button:has-text('See more')"
+  ]
 }

@@ -57,11 +57,21 @@ export interface ListingsConfig {
 
 export type VerifiedBy = "seed" | "browser_agent" | "manual_human";
 
+export interface SelectorsMeta {
+  last_verified: string | null;
+  verified_by: VerifiedBy | null;
+  schema_version: number;
+  descriptions: Record<string, string>;
+  selector_types: Record<string, string>;
+  fallback_notes?: Record<string, string>;
+}
+
 export interface SelectorsConfig {
-  last_verified: string;
-  verified_by: VerifiedBy;
+  _meta?: SelectorsMeta;
+  last_verified?: string;
+  verified_by?: VerifiedBy;
   _verification_note?: string;
-  [key: string]: string;
+  [key: string]: unknown;
 }
 
 /** Per-competitor aggregated stats, computed by the API layer. */

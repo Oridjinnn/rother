@@ -1321,3 +1321,62 @@ Created a two-package system controlled by the `?mode=dev` URL query parameter:
   - `hasRunLogsTab: true`, `hasConfigTab: true` ✓
   - Footer: "Client view" switcher link ✓
 - **Mode switcher**: Both modes have a footer button to toggle between them ✓
+
+---
+Task ID: KILLCRITIC-M2C (Threading → Playwright-native timeout)
+Agent: main (orchestrator)
+Task: Replace the threading-based capture timeout with Playwright-native timeout
+architecture. Required because threading.Thread + Playwright Sync API produces
+``greenlet.error: cannot switch to a different thread`` on every live call.
+
+## Root Cause
+
+``_run_capture_with_timeout()`` in ``orchestration/run_all.py`` ran
+``capture_listing_html`` inside a ``threading.Thread`` (daemon) and used
+``threading.Event.wait(timeout=90)`` to enforce a hard wall-clock limit.
+
+Playwright's Sync API is built on **greenlet** — a cooperative coroutine
+library. Each Playwright operation runs inside its own greenlet within the
+**current thread**. When the capture was spawned in a separate OS thread, the
+greenlets in that thread could not be switched to from the main thread.
+
+There is **no workaround** within the threading model — it's a fundamental
+constraint of greenlet's thread-safety design.
+
+## Solution
+
+Removed all threading. Replaced with three same-thread mechanisms:
+
+1. **Playwright-native timeouts**: ``page.set_default_navigation_timeout(30000)``
+   and ``page.set_default_timeout(10000)`` cap individual operations.
+2. **Wall-clock deadline** (``time.time() > deadline``) checked after each
+   major capture phase — no thread switch needed.
+3. **Scroll deadline** passed to ``scroll_review_container`` — partial data
+   on timeout.
+
+New ``CaptureTimeoutError`` with ``stage``, ``probable_cause``, ``suggested_fix``.
+
+## Files Changed
+
+| File | Change |
+|---|---|
+| ``harness/capture.py`` | Added ``CaptureTimeoutError``; ``total_timeout_s`` param; Playwright-native timeouts; deadline checks |
+| ``harness/scroll.py`` | Added ``deadline`` param; checks before each scroll iteration |
+| ``orchestration/run_all.py`` | Removed ``import threading``; removed ``_run_capture_with_timeout()`` (40 lines); ``_capture_with_retries`` calls ``capture_listing_html`` directly |
+| ``docs/engineering/KILLCRITIC.md`` | Root cause + architecture + validation + blockers |
+
+## Validation
+
+**Baseline:** ``python -m tests.verify_baseline`` — 61/61 passed.
+
+**Live M2C:** ``python -m orchestration.run_all --verify`` — 6/6 all PASSED,
+zero greenlet errors. comp-canggu-01 (real place_id) captured 517KB real HTML
+with ``data-review-id`` attributes, star ratings, review text, owner responses.
+Screenshot at 953KB saved to ``data/verify/20260723T090653Z/``.
+
+## Remaining Blockers
+
+1. **11/12 competitors have mock URLs** — data-entry blocker (M1).
+2. **Selector verification UNPROVEN** — seeded selectors may not match live DOM.
+3. **Run killed at 5min bash timeout** — 6 of 12 processed. The verify report
+   JSON was not finalized. Increase bash timeout for full completion.

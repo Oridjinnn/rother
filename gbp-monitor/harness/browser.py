@@ -233,7 +233,39 @@ def get_browser_context():
     # page script on every new page in this context.
     context.add_init_script(_USER_AGENT_DATA_INIT_SCRIPT)
 
+    # Auto-dismiss unexpected dialogs (location, "Stay updated", feedback).
+    # Maps can show these at any time — a blocking dialog stops all interaction.
+    context.on("dialog", lambda dialog: dialog.accept())
+
     return p, browser, context
+
+
+class PageCrashError(Exception):
+    """Raised when the Playwright page crashes (OOM, renderer crash, etc.).
+
+    Distinct from ``SelectorNotFoundError`` and generic ``Exception`` so the
+    orchestration layer can log it distinctly and avoid retrying (a crashed
+    page will crash again immediately).
+    """
+
+
+def setup_page_handlers(page, comp_id: str = "") -> None:
+    """Attach crash and error handlers to *page*.
+
+    Call this after creating a new page in ``capture_listing_html`` so that:
+      - Page crashes raise ``PageCrashError`` immediately (rather than a
+        generic ``Error: page crashed`` that gets lost in the retry loop).
+      - ``pageerror`` events are logged (JS exceptions on the page).
+    """
+
+    def _on_crash():
+        raise PageCrashError(f"page crashed for {comp_id}")
+
+    def _on_pageerror(exc):
+        logger.debug("pageerror[%s]: %s", comp_id, exc)
+
+    page.on("crash", _on_crash)
+    page.on("pageerror", _on_pageerror)
 
 
 def _apply_cdp_user_agent_override(context) -> None:

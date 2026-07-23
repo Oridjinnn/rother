@@ -1,5 +1,6 @@
 {
-  "_comment": "Sample/mock listings for Copenhagen Bali — 6 branches with 2 competitors each. Real competitor URLs (M1 milestone) are a client data-entry blocker; these mock URLs are used for development and dashboard seeding per GBP_MONITOR_PLAN.md Section 8.",
+  "_comment": "Competitor listings for 6 Copenhagen Bali branches. Each competitor has a gmaps_url (currently mock place IDs for fixture compatibility) and an optional place_id field for live Google Maps navigation. When place_id is set and the scraper runs in live mode, the real URL is constructed; otherwise the mock gmaps_url is used (which will gracefully fail reachability checks in live mode, resulting in a skip, not a crash).",
+  "_note": "comp-canggu-01 has a live place_id (ChIJ9fhCoBBH0i0R4h17JYdA484 — known working place ID from B1 verification). Set other place_ids after obtaining real Google Maps place IDs from client data entry.",
   "branches": [
     {
       "branch_id": "cph-seminyak",
@@ -8,12 +9,14 @@
         {
           "competitor_id": "comp-seminyak-01",
           "name": "Revolver Espresso Seminyak",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_revolver_seminyak"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_revolver_seminyak",
+          "place_id": null
         },
         {
           "competitor_id": "comp-seminyak-02",
           "name": "Anomali Coffee Seminyak",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_anomali_seminyak"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_anomali_seminyak",
+          "place_id": null
         }
       ]
     },
@@ -24,12 +27,14 @@
         {
           "competitor_id": "comp-canggu-01",
           "name": "Crate Cafe Canggu",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_crate_canggu"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_crate_canggu",
+          "place_id": "ChIJ9fhCoBBH0i0R4h17JYdA484"
         },
         {
           "competitor_id": "comp-canggu-02",
           "name": "The Shady Shack Canggu",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_shadyshack_canggu"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_shadyshack_canggu",
+          "place_id": null
         }
       ]
     },
@@ -40,12 +45,14 @@
         {
           "competitor_id": "comp-ubud-01",
           "name": "Seniman Coffee Studio Ubud",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_seniman_ubud"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_seniman_ubud",
+          "place_id": null
         },
         {
           "competitor_id": "comp-ubud-02",
           "name": "Kafe Ubud",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_kafe_ubud"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_kafe_ubud",
+          "place_id": null
         }
       ]
     },
@@ -56,12 +63,14 @@
         {
           "competitor_id": "comp-uluwatu-01",
           "name": "Single Fin Uluwatu",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_singlefin_uluwatu"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_singlefin_uluwatu",
+          "place_id": null
         },
         {
           "competitor_id": "comp-uluwatu-02",
           "name": "Suluban Cliffs Uluwatu",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_suluban_uluwatu"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_suluban_uluwatu",
+          "place_id": null
         }
       ]
     },
@@ -72,12 +81,14 @@
         {
           "competitor_id": "comp-nusadua-01",
           "name": "Bumbu Bali Nusa Dua",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_bumbu_nusadua"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_bumbu_nusadua",
+          "place_id": null
         },
         {
           "competitor_id": "comp-nusadua-02",
           "name": "Salsa Nusa Dua",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_salsa_nusadua"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_salsa_nusadua",
+          "place_id": null
         }
       ]
     },
@@ -88,12 +99,14 @@
         {
           "competitor_id": "comp-sanur-01",
           "name": "Byrd House Sanur",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_byrdhouse_sanur"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_byrdhouse_sanur",
+          "place_id": null
         },
         {
           "competitor_id": "comp-sanur-02",
           "name": "Lilla Pantai Sanur",
-          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_lilla_sanur"
+          "gmaps_url": "https://www.google.com/maps/place/?q=place_id:ChIJmock_lilla_sanur",
+          "place_id": null
         }
       ]
     }

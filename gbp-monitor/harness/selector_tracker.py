@@ -1,32 +1,9 @@
-"""Record per-selector lookup outcomes during verification mode.
-
-Used exclusively by the ``--verify`` code path. Inert when not passed to
-capture functions (default ``tracker=None``) — zero overhead in production
-and fixture modes.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime, timezone
 
 
 class SelectorTracker:
-    """Accumulates per-selector lookup results across a verify run.
-
-    Usage::
-
-        tracker = SelectorTracker()
-        # ... during capture ...
-        tracker.record(
-            selector_key="cookie_reject_button",
-            selector_value="//button[...]",
-            found=False,
-            competitor_id="comp-canggu-01",
-            phase="dismiss_cookie",
-        )
-        report = tracker.get_report(configured_selectors)
-    """
-
     def __init__(self) -> None:
         self._entries: list[dict] = []
 
@@ -43,7 +20,6 @@ class SelectorTracker:
         competitor_id: str = "",
         phase: str = "",
     ) -> None:
-        """Append one selector-lookup observation."""
         self._entries.append(
             {
                 "selector_key": selector_key,
@@ -59,25 +35,13 @@ class SelectorTracker:
         )
 
     def get_report(self, configured_selectors: dict | None = None) -> dict:
-        """Build the selector verification report.
-
-        Args:
-            configured_selectors: The full ``selectors.json`` dict. Used to
-                cross-reference which selectors exist in config vs which were
-                actually evaluated during the verify run.
-
-        Returns:
-            A dict suitable for writing as ``selector_report.json``.
-        """
         configured_keys = list(configured_selectors.keys()) if configured_selectors else []
 
-        # Separate metadata fields from actual selector keys.
-        meta_keys: set[str] = {"last_verified", "verified_by", "_verification_note"}
+        meta_keys: set[str] = {"last_verified", "verified_by", "_verification_note", "_meta"}
         relevant_keys = [k for k in configured_keys if k not in meta_keys]
         tested_keys: set[str] = {e["selector_key"] for e in self._entries}
         not_tested = [k for k in relevant_keys if k not in tested_keys]
 
-        # Build per-selector aggregate.
         by_selector: dict[str, dict] = {}
         for key in relevant_keys:
             entries = [e for e in self._entries if e["selector_key"] == key]
@@ -91,23 +55,33 @@ class SelectorTracker:
                 continue
 
             found_count = sum(1 for e in entries if e["found"])
+            expected_missing_count = sum(1 for e in entries if e.get("expected_missing"))
             durations = [e["duration_ms"] for e in entries if e["duration_ms"] > 0]
             avg_dur = round(sum(durations) / len(durations), 1) if durations else None
             all_errors = [e["error"] for e in entries if e["error"]]
+
+            total_attempts = len(entries)
+            # Confidence: found / total, treating expected_missing as neutral (banner may not appear)
+            effective_found = found_count + expected_missing_count
+            confidence = round(effective_found / total_attempts, 3) if total_attempts > 0 else 0.0
 
             if found_count == len(entries):
                 status = "healthy"
             elif found_count > 0:
                 status = "degraded"
+            elif expected_missing_count == len(entries):
+                status = "healthy"
             else:
                 status = "broken"
 
             by_selector[key] = {
                 "selector_value": (configured_selectors or {}).get(key),
                 "status": status,
-                "total_lookups": len(entries),
+                "confidence": confidence,
+                "total_lookups": total_attempts,
                 "times_found": found_count,
-                "times_not_found": len(entries) - found_count,
+                "times_not_found": total_attempts - found_count,
+                "expected_missing_count": expected_missing_count,
                 "avg_duration_ms": avg_dur,
                 "error_examples": all_errors[:3],
                 "per_competitor": {
@@ -121,17 +95,18 @@ class SelectorTracker:
                 },
             }
 
-        healthy = sum(
-            1 for s in by_selector.values() if s.get("status") == "healthy"
-        )
-        degraded = sum(
-            1 for s in by_selector.values() if s.get("status") == "degraded"
-        )
-        broken = sum(
-            1 for s in by_selector.values() if s.get("status") == "broken"
-        )
-        not_evaluated = sum(
-            1 for s in by_selector.values() if s.get("status") == "not_evaluated"
+        healthy = sum(1 for s in by_selector.values() if s.get("status") == "healthy")
+        degraded = sum(1 for s in by_selector.values() if s.get("status") == "degraded")
+        broken = sum(1 for s in by_selector.values() if s.get("status") == "broken")
+        not_evaluated = sum(1 for s in by_selector.values() if s.get("status") == "not_evaluated")
+        avg_confidence = (
+            round(
+                sum(s["confidence"] for s in by_selector.values() if "confidence" in s)
+                / max(len([s for s in by_selector.values() if "confidence" in s]), 1),
+                3,
+            )
+            if by_selector
+            else 0.0
         )
 
         return {
@@ -143,6 +118,7 @@ class SelectorTracker:
             "degraded": degraded,
             "broken": broken,
             "not_evaluated": not_evaluated,
+            "avg_confidence": avg_confidence,
             "by_selector": by_selector,
             "details": list(self._entries),
         }

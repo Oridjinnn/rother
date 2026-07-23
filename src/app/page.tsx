@@ -184,8 +184,8 @@ export default function Home() {
       .then((s) => {
         if (s) {
           setSelectorVerification({
-            verified_by: s.verified_by,
-            last_verified: s.last_verified,
+            verified_by: s.verified_by ?? (s as Record<string, unknown>)._health?.["verified_by"] as VerifiedBy ?? "seed",
+            last_verified: s.last_verified ?? (s as Record<string, unknown>)._health?.["last_verified"] as string ?? "unknown",
           });
         }
       })

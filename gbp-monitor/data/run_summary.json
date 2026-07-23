@@ -1,11 +1,14 @@
 {
-  "started_at": "2026-07-23T07:15:45.849478+00:00",
-  "finished_at": "2026-07-23T07:15:46.080817+00:00",
-  "mode": "fixtures",
-  "success": 3,
+  "started_at": "2026-07-23T09:50:48.910919+00:00",
+  "finished_at": "2026-07-23T10:03:13.912481+00:00",
+  "mode": "live",
+  "success": 12,
   "failed": 0,
-  "skipped": 9,
+  "skipped": 0,
   "new_reviews": 0,
-  "total_reviews": 20,
+  "total_reviews": 33,
+  "total_competitors": 12,
+  "preflight_warnings": 2,
+  "duration_seconds": 745.0,
   "errors": []
 }

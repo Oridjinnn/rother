@@ -124,9 +124,10 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function SelectorsHeader({ selectors }: { selectors: SelectorsConfig }) {
-  const meta = verificationMeta[selectors.verified_by] ?? verificationMeta.seed;
+  const verifiedBy = selectors.verified_by ?? "seed";
+  const meta = verificationMeta[verifiedBy] ?? verificationMeta.seed;
   const VIcon = meta.icon;
-  const isUnproven = selectors.verified_by === "seed";
+  const isUnproven = verifiedBy === "seed";
   return (
     <div className="space-y-3">
       {isUnproven && (
