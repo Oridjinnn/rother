@@ -6,9 +6,6 @@ import {
   AlertTriangle,
   Bell,
   CheckCircle2,
-  ExternalLink,
-  Info,
-  MessageSquare,
   RefreshCw,
   Sparkles,
   TrendingUp,
@@ -107,6 +104,7 @@ export function AlertsSection({ refreshKey }: AlertsSectionProps) {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAlerts();
   }, [fetchAlerts, refreshKey]);
 

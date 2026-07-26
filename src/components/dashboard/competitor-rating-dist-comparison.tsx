@@ -31,13 +31,6 @@ interface CompetitorRatingDistComparisonProps {
   refreshKey?: number;
 }
 
-interface CompetitorDist {
-  competitor_id: string;
-  name: string;
-  distribution: number[]; // [1★,2★,3★,4★,5★]
-  total: number;
-}
-
 interface RatingDistResponse {
   competitors: Array<{
     competitor_id: string;
@@ -94,6 +87,7 @@ export function CompetitorRatingDistComparison({
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchData();
   }, [fetchData, refreshKey]);

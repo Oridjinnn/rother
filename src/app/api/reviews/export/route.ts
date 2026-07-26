@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import type { Review } from "@/lib/gbp/types";
 import { readAllSnapshots, readListings } from "@/lib/gbp/server-data";
 
@@ -18,7 +19,7 @@ export const revalidate = 0;
  *
  * The export is synchronous and reads from disk on every call (no caching).
  * For very large datasets a future streaming implementation would be better,
- * but for the GBP Monitor's scale (≤ low-thousands of reviews per scrape)
+ * but for Rother's scale (≤ low-thousands of reviews per scrape)
  * this is fine.
  */
 export async function GET(request: Request) {
@@ -174,7 +175,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "reviews export failed",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: sanitizeError(err),
       },
       { status: 500 },
     );

@@ -84,6 +84,7 @@ export function ReviewLengthsCard({ refreshKey }: ReviewLengthsCardProps) {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchData();
   }, [fetchData, refreshKey]);
@@ -173,7 +174,7 @@ export function ReviewLengthsCard({ refreshKey }: ReviewLengthsCardProps) {
                   />
                   <Tooltip
                     cursor={{ fill: "var(--muted)", opacity: 0.4 }}
-                    content={renderTooltip}
+                    content={renderTooltip as unknown as React.ReactElement}
                   />
                   <Bar
                     dataKey="count"

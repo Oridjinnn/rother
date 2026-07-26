@@ -33,7 +33,7 @@ import { AlertsSection } from "@/components/dashboard/alerts-section";
 import { ShortcutsHelpDialog } from "@/components/dashboard/shortcuts-help-dialog";
 import { ExportDashboardDialog } from "@/components/dashboard/export-dashboard-dialog";
 import { useAppMode } from "@/hooks/use-app-mode";
-import type { TextMap } from "@/lib/app-mode";
+
 
 import type {
   BranchesResponse,
@@ -41,7 +41,6 @@ import type {
   RunSummary,
   ScrapeTriggerErrorResponse,
   ScrapeTriggerAsyncResponse,
-  ScrapeTriggerResponse,
   SelectorsConfig,
   VerifiedBy,
 } from "@/lib/gbp/types";
@@ -211,6 +210,7 @@ export default function Home() {
 
   // Initial loads.
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOverview();
     fetchBranches();
   }, [fetchOverview, fetchBranches, refreshKey]);
@@ -251,8 +251,8 @@ export default function Home() {
       runId = json.runId;
 
       // Poll for completion
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       let summary: RunSummary | null = null;
-      let pollError: string | null = null;
       const pollInterval = setInterval(async () => {
         try {
           const sr = await fetch(`/api/scrape/status?runId=${runId}`, {
@@ -391,6 +391,7 @@ export default function Home() {
       window.removeEventListener("keydown", onKey);
       if (resetTimer) clearTimeout(resetTimer);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleRunNow]); // SHORTCUT_TAB_MAP + TABS are module/stable consts
 
   return (

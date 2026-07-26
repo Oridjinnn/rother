@@ -9,6 +9,7 @@ import {
   GBP_RUN_SUMMARY_PATH,
 } from "./paths";
 import type { RunSummary } from "./types";
+import { sanitizeErrorMessage } from "./sanitize";
 
 export interface RunStatus {
   runId: string;
@@ -91,6 +92,11 @@ async function countSnapshots(): Promise<number> {
   }
 }
 
+const PROCESS_TIMEOUT_MS = parseInt(
+  process.env.SCRAPER_TIMEOUT_MS ?? "600_000",
+  10,
+);
+
 class ScrapeRunManager {
   private runs = new Map<string, ActiveRun>();
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
@@ -153,15 +159,27 @@ class ScrapeRunManager {
         activeRun.status = "completed";
       } catch (err) {
         activeRun.status = "failed";
-        activeRun.error = `run_summary.json missing or corrupt: ${
-          err instanceof Error ? err.message : String(err)
-        }`;
+        activeRun.error = sanitizeErrorMessage(
+          err instanceof Error ? err.message : String(err),
+        );
       }
     });
 
     proc.on("error", (err) => {
       activeRun.status = "failed";
       activeRun.error = err.message;
+    });
+
+    const timeout = setTimeout(() => {
+      if (activeRun.status === "running") {
+        activeRun.status = "failed";
+        activeRun.error = `Process timed out after ${PROCESS_TIMEOUT_MS / 1000}s`;
+        proc.kill();
+      }
+    }, PROCESS_TIMEOUT_MS);
+
+    proc.on("close", () => {
+      clearTimeout(timeout);
     });
 
     this.runs.set(runId, activeRun);
@@ -198,6 +216,13 @@ class ScrapeRunManager {
   private cleanup() {
     const now = Date.now();
     for (const [runId, run] of this.runs.entries()) {
+      // Kill processes that have been running too long
+      if (run.status === "running" && now - run.startedAt > PROCESS_TIMEOUT_MS * 2) {
+        run.proc.kill();
+        run.status = "failed";
+        run.error = `Process killed by cleanup after ${PROCESS_TIMEOUT_MS * 2 / 1000}s`;
+      }
+      // Remove old completed/failed entries
       if (
         (run.status === "completed" || run.status === "failed") &&
         now - run.startedAt > 300_000

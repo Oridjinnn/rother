@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Pause, Play, RefreshCw } from "lucide-react";
+import { Play, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {

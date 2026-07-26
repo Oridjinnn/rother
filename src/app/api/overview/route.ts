@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import type {
   OverviewResponse,
   RatingDistribution,
@@ -81,6 +82,12 @@ export async function GET() {
               ) / 100;
         const delta = await readLatestDelta(comp.competitor_id);
         branchCount += delta.length;
+        const lastScrapedAt =
+          reviews.length > 0
+            ? reviews.reduce((latest, r) =>
+                r.scraped_at > latest ? r.scraped_at : latest,
+              "")
+            : null;
         competitorStats.push({
           competitor_id: comp.competitor_id,
           name: comp.name,
@@ -88,6 +95,7 @@ export async function GET() {
           total_reviews: reviews.length,
           average_rating: avg,
           new_reviews_count: delta.length,
+          last_scraped_at: lastScrapedAt && lastScrapedAt !== "" ? lastScrapedAt : null,
         });
       }
       newReviewsLastRun += branchCount;
@@ -130,7 +138,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: "overview aggregation failed",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: sanitizeError(err),
       },
       { status: 500 },
     );

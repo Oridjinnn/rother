@@ -1,4 +1,4 @@
-# Priority Matrix — Rother (GBP Monitor)
+# Priority Matrix — Rother
 
 **Date:** 2026-07-22
 **Source:** Architecture Audits AUDIT-01 through AUDIT-07

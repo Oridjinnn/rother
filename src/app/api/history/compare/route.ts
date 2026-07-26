@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import {
   readAllSnapshots,
   readSnapshotAt,
@@ -148,7 +149,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "history comparison failed",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: sanitizeError(err),
       },
       { status: 500 },
     );

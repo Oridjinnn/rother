@@ -1,4 +1,4 @@
-# Implementation Backlog — Rother (GBP Monitor)
+# Implementation Backlog — Rother
 
 **Date:** 2026-07-22
 **Source:** Architecture Audits AUDIT-01 through AUDIT-07

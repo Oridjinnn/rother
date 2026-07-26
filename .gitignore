@@ -52,3 +52,18 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Runtime data (never commit)
+db/
+data/
+gbp-monitor/data/backups/
+gbp-monitor/data/run.log
+tool-results/
+_audit_reviews_*.json
+.zscripts/dev.pid
+
+# Nested or accidental git artifacts
+Rother - *
+
+# Prisma migrations (generate on deploy)
+prisma/migrations/

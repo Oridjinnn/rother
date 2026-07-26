@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import type { Review, ReviewsResponse } from "@/lib/gbp/types";
 import { readAllSnapshots, readListings } from "@/lib/gbp/server-data";
 import { parseRelativeDate } from "@/lib/gbp/format";
@@ -130,7 +131,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "reviews query failed",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: sanitizeError(err),
       },
       { status: 500 },
     );

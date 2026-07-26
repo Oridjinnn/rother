@@ -30,6 +30,7 @@ export function ScrapeSchedule() {
   const [now, setNow] = React.useState<number | null>(null);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -37,7 +38,7 @@ export function ScrapeSchedule() {
 
   // Compute the next scheduled run: 22:00 UTC = 06:00 WITA (UTC+8) the next day.
   // The cron is `0 22 * * *`, so the next run is the next 22:00 UTC.
-  const { nextRunUtc, nextRunWita, countdown, isToday } = React.useMemo(() => {
+  const { nextRunUtc, nextRunWita, countdown } = React.useMemo(() => {
     if (now === null) {
       // Placeholder during SSR — return a safe default that won't mismatch
       const placeholder = new Date(0); // epoch
@@ -45,7 +46,6 @@ export function ScrapeSchedule() {
         nextRunUtc: placeholder,
         nextRunWita: placeholder,
         countdown: "—",
-        isToday: false,
       };
     }
     const d = new Date(now);
@@ -66,8 +66,6 @@ export function ScrapeSchedule() {
     // since that's what actually runs.
     const witaDate = new Date(next.getTime() + 8 * 60 * 60 * 1000);
     const diffMs = next.getTime() - now;
-    const isToday = d.getUTCDate() === next.getUTCDate() && d.getUTCHours() < 22;
-
     // Format countdown as "Xd Yh Zm Ws"
     const totalSec = Math.max(0, Math.floor(diffMs / 1000));
     const days = Math.floor(totalSec / 86400);
@@ -89,7 +87,6 @@ export function ScrapeSchedule() {
       nextRunUtc: next,
       nextRunWita: witaDate,
       countdown,
-      isToday,
     };
   }, [now]);
 

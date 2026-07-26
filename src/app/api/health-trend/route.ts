@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 
+import { sanitizeError } from "@/lib/gbp/sanitize";
+
 import { GBP_RUN_LOG_PATH } from "@/lib/gbp/paths";
 
 export const dynamic = "force-dynamic";
@@ -112,7 +114,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: "health-trend query failed",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: sanitizeError(err),
       },
       { status: 500 },
     );

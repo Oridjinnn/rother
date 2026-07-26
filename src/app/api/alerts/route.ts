@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import {
   readAllSnapshots,
   readAllDeltas,
@@ -32,6 +33,7 @@ export async function GET() {
   try {
     const alerts: Alert[] = [];
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [snapshots, deltas, listings, runSummary] = await Promise.all([
       readAllSnapshots(),
       readAllDeltas(),
@@ -167,7 +169,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: "alerts query failed",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: sanitizeError(err),
       },
       { status: 500 },
     );

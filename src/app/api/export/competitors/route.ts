@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import { readAllSnapshots, readLatestDelta, readListings, readAllDeltas } from "@/lib/gbp/server-data";
 
 export const dynamic = "force-dynamic";
@@ -97,7 +99,7 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     return NextResponse.json(
-      { error: "export failed", detail: err instanceof Error ? err.message : String(err) },
+      { error: "export failed", detail: sanitizeError(err) },
       { status: 500 },
     );
   }

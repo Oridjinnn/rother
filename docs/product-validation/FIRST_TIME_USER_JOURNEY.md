@@ -14,7 +14,7 @@ Sarah hears about "Rother" from a colleague. She searches for it and finds... no
 
 **Experience:** Confusing. Product name doesn't match project name.
 
-> **Issue P0-1:** Package name is `nextjs_tailwind_shadcn_ts`, project title is "GBP Monitor — Copenhagen Bali", UI says "Rother". Three different names.
+> **Issue P0-1:** Package name is `nextjs_tailwind_shadcn_ts`, project title is "Rother", UI says "Rother". Three different names.
 
 ### Step 1.2 — Reading the README
 Sarah opens the README. It says:
@@ -61,12 +61,12 @@ She opens `http://localhost:3000` in Chrome.
 ### Step 2.1 — Initial page load
 Sarah sees:
 
-**Browser tab:** "GBP Monitor — Copenhagen Bali"  
+**Browser tab:** "Rother"  
 **Header logo:** A coffee cup icon with a sparkle  
 **Header text:** "Rother v0.0.1" — "Competitor review insights"
 
 **First impression confusion:**
-- Tab says "GBP Monitor" — she thought this was "Rother"
+- Tab says "Rother" — consistent with product name
 - Subtitle says "Competitor review insights" — generic
 - Coffee cup icon — charming but unprofessional
 
@@ -194,7 +194,7 @@ She uses the Reviews tab export. She clicks "CSV". A file downloads. The file na
 - Auto-refresh toggle is nice
 
 ### Step 5.2 — What Confused Sarah
-- "What is this product called?" (tab says GBP Monitor, UI says Rother)
+- "What is this product called?" (tab says Rother, UI says Rother)
 - "Why are 10 of 12 competitors showing 'no data'?"
 - "Where is the Add Competitor button?"
 - "Why do I need to install Python to use a web dashboard?"

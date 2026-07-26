@@ -135,7 +135,7 @@ function SelectorsHeader({ selectors }: { selectors: SelectorsConfig }) {
           </AlertTitle>
           <AlertDescription className="text-amber-700/90 dark:text-amber-300/90">
             <code className="font-mono">verified_by</code> is{" "}
-            <code className="font-mono font-semibold">"seed"</code>.
+             <code className="font-mono font-semibold">&quot;seed&quot;</code>.
           </AlertDescription>
         </Alert>
       )}
@@ -176,6 +176,7 @@ function EditableJsonCard({
   const [saving, setSaving] = React.useState(false);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(json);
   }, [json]);
 
@@ -290,6 +291,7 @@ export function ConfigSection({ refreshKey }: ConfigSectionProps) {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchConfig();
   }, [fetchConfig, refreshKey]);
 

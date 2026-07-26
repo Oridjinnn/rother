@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { OnlineStatusProvider } from "@/hooks/use-online-status";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,8 +56,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            {children}
-            <SonnerToaster position="bottom-right" richColors closeButton />
+            <OnlineStatusProvider>
+              {children}
+              <SonnerToaster position="bottom-right" richColors closeButton />
+            </OnlineStatusProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

@@ -182,7 +182,7 @@ export function ReviewsPerCompetitorChart({ data }: ReviewsPerCompetitorChartPro
   if (sorted.length === 0) {
     return (
       <div className="flex h-[260px] items-center justify-center text-sm text-muted-foreground">
-        No reviews yet — the scraper hasn't produced any snapshots.
+        No reviews yet — the scraper hasn&apos;t produced any snapshots.
       </div>
     );
   }
@@ -292,8 +292,6 @@ export function NewReviewsPerBranchChart({ data }: NewReviewsPerBranchChartProps
   // Max count for the "no data" bar height — 0-value bars render at ~20% of
   // the chart height so the hatched pattern is visible but clearly distinct
   // from real data.
-  const maxCount = Math.max(1, ...sorted.map((d) => d.count));
-
   // Custom bar shape: renders a normal rounded bar for count > 0, and a
   // hatched "no data" placeholder bar for count === 0. The hatched bar sits
   // at a fixed small height (20% of the chart) so the branch name on the
@@ -553,7 +551,7 @@ export function SentimentDistributionChart({
                 <Cell key={s.key} fill={s.color} />
               ))}
             </Pie>
-            <Tooltip content={renderTooltip} />
+            <Tooltip content={renderTooltip as unknown as React.ReactElement} />
           </PieChart>
         </ResponsiveContainer>
         {/* Center label */}
@@ -694,7 +692,7 @@ export function ReviewsOverTimeChart({ data }: ReviewsOverTimeChartProps) {
           />
           <Tooltip
             cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1, strokeDasharray: "3 3" }}
-            content={renderTooltip}
+            content={renderTooltip as unknown as React.ReactElement}
           />
           <Area
             type="monotone"

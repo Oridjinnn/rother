@@ -1,5 +1,5 @@
 /**
- * Server-side helpers for reading the GBP Monitor's JSON files.
+ * Server-side helpers for reading Rother's JSON files.
  *
  * All functions are defensive: a missing or corrupt file returns a safe
  * empty value rather than throwing, so the dashboard always renders.

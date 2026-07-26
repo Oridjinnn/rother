@@ -138,6 +138,7 @@ export function LogsSection() {
 
   // Initial fetch + re-fetch when requestedLines changes.
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const controller = new AbortController();
     fetchLogs(controller.signal);

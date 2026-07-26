@@ -17,7 +17,6 @@ import {
 
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -36,7 +35,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
@@ -154,7 +152,7 @@ function CompetitorRow({
       {!hasReviews && (
         <p className="mt-2 text-[11px] italic text-muted-foreground">
           No snapshot yet — this competitor has no fixture in fixtures mode and
-          hasn't been scraped live.
+          hasn&apos;t been scraped live.
         </p>
       )}
     </button>
@@ -181,6 +179,7 @@ function CompetitorReviewList({
     if (!open || !comp) return;
     let cancelled = false;
     const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
     const url = `/api/reviews?competitor_id=${encodeURIComponent(

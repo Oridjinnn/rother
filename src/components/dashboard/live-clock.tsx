@@ -41,6 +41,7 @@ export function LiveClock({ lastRunAt, isRunning, className }: LiveClockProps) {
 
   React.useEffect(() => {
     // Set the initial time immediately on mount, then tick every second.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);

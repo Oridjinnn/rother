@@ -17,9 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 
 import { StarRating } from "./star-rating";
 import { EmptyState } from "./empty-state";
@@ -56,6 +54,7 @@ export function CompetitorDetailDialog({
 
   React.useEffect(() => {
     if (!competitor) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReviews([]);
       setError(null);
       return;

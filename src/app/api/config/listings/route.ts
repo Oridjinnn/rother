@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import { readListings } from "@/lib/gbp/server-data";
 import { GBP_LISTINGS_PATH } from "@/lib/gbp/paths";
 import { promises as fs } from "node:fs";
-import type { BranchConfig, CompetitorConfig } from "@/lib/gbp/types";
+import type { BranchConfig } from "@/lib/gbp/types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -156,7 +157,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       {
         error: "config update failed",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: sanitizeError(err),
       },
       { status: 500 },
     );

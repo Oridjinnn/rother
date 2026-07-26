@@ -1,4 +1,4 @@
-# Executive Summary — Rother (GBP Monitor)
+# Executive Summary — Rother
 
 **Date:** 2026-07-22
 **Version:** 0.0.1
@@ -8,7 +8,7 @@
 
 ## Project Description
 
-Rother (internally "GBP Monitor") is a **zero-cost competitor review monitoring system** built for Copenhagen Bali, a coffee shop chain with 6 branches in Bali. It monitors Google Business Profile reviews for 12 competitor businesses (2 per branch), detects new reviews via daily delta computation, and visualizes results in a rich Next.js dashboard.
+Rother is a **zero-cost competitor review monitoring system** built for a coffee shop chain with 6 branches in Bali. It monitors Google Business Profile reviews for 12 competitor businesses (2 per branch), detects new reviews via daily delta computation, and visualizes results in a rich Next.js dashboard.
 
 The system operates across two independent subsystems connected by JSON files on disk:
 

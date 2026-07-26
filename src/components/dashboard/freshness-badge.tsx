@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Clock, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 import {
   Tooltip,
@@ -114,6 +114,7 @@ export function FreshnessBadge({
   // During SSR + first paint, render a neutral placeholder; after mount,
   // compute the actual freshness.
   const [mounted, setMounted] = React.useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   React.useEffect(() => setMounted(true), []);
 
   const info = mounted ? computeFreshness(lastScrapedAt) : {

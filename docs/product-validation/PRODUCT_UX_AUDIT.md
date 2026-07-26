@@ -12,15 +12,15 @@
 | Issue | Severity | Detail |
 |-------|:--------:|--------|
 | Package name `"nextjs_tailwind_shadcn_ts"` | P0 | Shows in taskbar, process list, and developer tools |
-| HTML `<title>` says "GBP Monitor — Copenhagen Bali" | P0 | Browser tab never shows "Rother" |
-| Header says "Rother" but subtitle says "Copenhagen Bali · competitor review watch" | P1 | End user doesn't know "Copenhagen Bali" — product should be self-standing |
+| HTML `<title>` says "Rother" | P0 | Browser tab never shows "Rother" |
+| Header says "Rother" but subtitle says "Competitor review insights" | P1 | End user should see the product as self-standing |
 | App-mode system creates two brands: "Rother" vs "Rother (Dev)" | P2 | End users see only "Rother", but the Dev suffix leaks into screenshots |
 | Favicon is a generic SVG from a CDN | P1 | No custom favicon — uses third-party URL that could break |
-| OG metadata references "GBP Monitor — Copenhagen Bali" | P2 | Social share previews use old name |
+| OG metadata references "Rother" | P2 | Social share previews use old name |
 | VSCode/explorer shows "nextjs_tailwind_shadcn_ts" folder | P1 | The root folder name is "Rother - 0.0.1" but the package is not renamed |
 
 ### Root cause
-The product was built as "GBP Monitor for Copenhagen Bali" (a client project) and later rebranded to "Rother" (a product name). The rebranding was done in the UI layer (`app-mode.ts`) but not in the project metadata, package configuration, or build output.
+The product was originally built for a specific client and later rebranded to "Rother" (a product name). The rebranding was done in the UI layer (`app-mode.ts`) but not in the project metadata, package configuration, or build output.
 
 ### Recommended solutions
 - Rename `package.json` → `"name": "rother"`

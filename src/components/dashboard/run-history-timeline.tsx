@@ -180,6 +180,7 @@ export function RunHistoryTimeline({ refreshKey }: RunHistoryTimelineProps) {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchHistory();
   }, [fetchHistory, refreshKey]);

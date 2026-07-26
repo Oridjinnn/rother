@@ -62,6 +62,7 @@ import { TopReviewers } from "./top-reviewers";
 import { ScrapeSchedule } from "./scrape-schedule";
 import { ReviewLanguageDistribution } from "./review-language-distribution";
 import { CompetitorCorrelation } from "./competitor-correlation";
+import type { CompetitorStats } from "@/lib/gbp/types";
 import { CompetitorRatingDistComparison } from "./competitor-rating-dist-comparison";
 import { formatTimestamp } from "@/lib/gbp/format";
 import type { OverviewResponse } from "@/lib/gbp/types";
@@ -491,7 +492,7 @@ export function OverviewSection({
               </>
             ) : (
               <>
-                The last update couldn't refresh{" "}
+                The last update couldn&apos;t refresh{" "}
                 {data.runSummary?.failed} of{" "}
                 {data.runSummary
                   ? data.runSummary.success + data.runSummary.failed
@@ -746,7 +747,7 @@ export function OverviewSection({
 
         {/* Competitor Leaderboard — sortable ranked list */}
         <CompetitorLeaderboard
-          data={data.competitorStats}
+          data={data.competitorStats as CompetitorStats[]}
           loading={loading}
         />
       </div>
@@ -761,7 +762,7 @@ export function OverviewSection({
         skeletonHeight={320}
       >
         {hasReviews ? (
-          <CompetitorRadarChart data={data.competitorStats} topN={3} />
+          <CompetitorRadarChart data={data.competitorStats as CompetitorStats[]} topN={3} />
         ) : (
           <EmptyState
             icon={RadarIcon}
@@ -786,7 +787,7 @@ export function OverviewSection({
 
         {/* Competitor growth rate — reviews per day */}
         <CompetitorGrowthRate
-          data={data.competitorStats}
+          data={data.competitorStats as CompetitorStats[]}
           loading={loading}
         />
       </div>

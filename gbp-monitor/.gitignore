@@ -26,6 +26,12 @@ data/verify/
 # Local-only Python version manager files
 .python-version
 
+# Runtime logs (large, transient)
+data/run.log
+
+# Backup archives (never commit)
+data/backups/
+
 # Editor
 .vscode/
 .idea/

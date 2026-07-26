@@ -18,7 +18,7 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // The GBP Monitor data only changes when a scrape runs (manual trigger
+        // The Rother data only changes when a scrape runs (manual trigger
         // or daily cron). A 30s staleTime is plenty for the dashboard's
         // interactive feel without re-fetching on every tab switch.
         staleTime: 30_000,

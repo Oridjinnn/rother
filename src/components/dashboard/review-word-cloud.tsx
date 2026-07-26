@@ -154,6 +154,7 @@ export function ReviewWordCloud({ refreshKey }: ReviewWordCloudProps) {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchReviews();
   }, [fetchReviews, refreshKey]);

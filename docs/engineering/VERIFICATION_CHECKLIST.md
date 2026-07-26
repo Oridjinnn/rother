@@ -1,4 +1,4 @@
-# Verification Checklist — Rother (GBP Monitor)
+# Verification Checklist — Rother
 
 **Date:** 2026-07-22
 **Purpose:** Step-by-step procedure for an engineer to verify the system is working correctly after a clean checkout or code change.

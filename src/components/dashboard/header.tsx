@@ -36,7 +36,7 @@ interface HeaderProps {
  * Sticky app header: logo + project title + theme toggle + manual run button.
  * Collapses to a compact layout on mobile.
  */
-export function Header({ onRunNow, isRunning, runProgress, onShowShortcuts, onShowExport, lastRunAt, T, mode }: HeaderProps) {
+export function Header({ onRunNow, isRunning, runProgress, onShowShortcuts, onShowExport, lastRunAt, T }: HeaderProps) {
   const pct = runProgress
     ? Math.round((runProgress.completed / runProgress.total) * 100)
     : 0;

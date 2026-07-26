@@ -1,4 +1,4 @@
-# Master Risk Register — Rother (GBP Monitor)
+# Master Risk Register — Rother
 
 **Date:** 2026-07-22
 **Source:** Architecture Audits AUDIT-01 through AUDIT-07

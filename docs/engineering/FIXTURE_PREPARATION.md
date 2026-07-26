@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-24
 **Purpose:** Document how to promote a live Google Maps capture into a regression
-test fixture for the Rother GBP Monitor scraper.
+test fixture for the Rother scraper.
 
 ---
 

@@ -8,7 +8,6 @@ import {
   ArrowUp,
   Building2,
   CalendarClock,
-  ExternalLink,
   MapPin,
   MessageSquare,
   Star,
@@ -56,8 +55,8 @@ interface BranchComparisonSectionProps {
 }
 
 /**
- * Branch Comparison tab: a side-by-side grid of all 6 Copenhagen Bali
- * branches, each card showing the branch's aggregate stats (total reviews,
+ * Branch Comparison tab: a side-by-side grid of all 6 branches,
+ * each card showing the branch's aggregate stats (total reviews,
  * avg rating, new reviews) + its 2 competitors in a compact list.
  *
  * Unlike the Branches tab (which is an accordion for deep-dive), this view

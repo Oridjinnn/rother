@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import type { LogsResponse } from "@/lib/gbp/types";
 import { tailLog } from "@/lib/gbp/server-data";
 
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "log tail failed",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: sanitizeError(err),
       },
       { status: 500 },
     );

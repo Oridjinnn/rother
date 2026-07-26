@@ -93,6 +93,7 @@ export function CompetitorCorrelation({ refreshKey }: CompetitorCorrelationProps
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchData();
   }, [fetchData, refreshKey]);

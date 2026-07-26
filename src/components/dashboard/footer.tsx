@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Coffee, Github, ShieldCheck, ShieldAlert, Activity } from "lucide-react";
+import { Coffee, Github, ShieldCheck, ShieldAlert } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {

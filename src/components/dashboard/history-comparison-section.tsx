@@ -4,15 +4,10 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
-  ArrowDown,
-  ArrowUp,
   ArrowLeftRight,
-  Minus,
   Plus,
   RefreshCw,
-  Search,
   Star,
-  X,
 } from "lucide-react";
 
 import {
@@ -23,7 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -32,11 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+
 
 import { EmptyState } from "./empty-state";
 import { StarRating } from "./star-rating";
-import { cleanReviewerName } from "@/lib/gbp/format";
+
 import type {
   BranchesResponse,
   BranchWithStats,
@@ -93,8 +88,6 @@ export function HistoryComparisonSection({ refreshKey }: HistoryComparisonSectio
       setLoading(false);
     }
   }, [competitorId]);
-
-  const selectedComp = competitorOptions.find((c) => c.competitor_id === competitorId);
 
   return (
     <motion.div

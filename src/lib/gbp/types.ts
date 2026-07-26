@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript types for the GBP Monitor dashboard.
+ * Shared TypeScript types for the Rother dashboard.
  *
  * These mirror the actual JSON shapes produced by the Python scraper at
  * `/home/z/my-project/gbp-monitor/data/` (see Task 2-a's worklog entry).
@@ -131,6 +131,7 @@ export interface OverviewResponse {
     total_reviews: number;
     average_rating: number | null;
     new_reviews_count: number;
+    last_scraped_at: string | null;
   }[];
 }
 

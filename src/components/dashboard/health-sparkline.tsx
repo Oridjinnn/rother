@@ -60,6 +60,7 @@ export function HealthSparkline({
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
     const id = setInterval(fetchData, pollMs);
     return () => clearInterval(id);

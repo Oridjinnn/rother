@@ -1,4 +1,4 @@
-# Milestone Plan — Rother (GBP Monitor)
+# Milestone Plan — Rother
 
 **Date:** 2026-07-22
 **Source:** Architecture Audits AUDIT-01 through AUDIT-07

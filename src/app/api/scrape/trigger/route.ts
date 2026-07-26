@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 
 import type { ScrapeTriggerAsyncResponse, ScrapeTriggerErrorResponse } from "@/lib/gbp/types";
 import { scrapeRunManager } from "@/lib/gbp/scrape-runner";
-import { GBP_ROOT } from "@/lib/gbp/paths";
-import { promises as fs } from "node:fs";
+import { sanitizeError } from "@/lib/gbp/sanitize";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,29 +15,15 @@ export async function POST(request?: Request) {
   }
   if (mode !== "fixtures" && mode !== "live") {
     return NextResponse.json(
-      { ok: false, error: `Invalid mode: ${mode}` } satisfies ScrapeTriggerErrorResponse,
-      { status: 400 },
-    );
-  }
-
-  let rootExists = false;
-  try {
-    await fs.access(GBP_ROOT);
-    rootExists = true;
-  } catch {
-    rootExists = false;
-  }
-  if (!rootExists) {
-    return NextResponse.json(
       {
         ok: false,
-        error: `GBP_ROOT directory does not exist: ${GBP_ROOT}`,
+        error: `Invalid mode: ${mode}`,
         stderr: "",
-        stage: "spawn_failed",
-        probable_cause: "GBP_ROOT directory is missing",
-        suggested_fix: "Check GBP_ROOT environment variable or ensure gbp-monitor directory exists",
+        stage: "validation",
+        probable_cause: "Invalid mode parameter",
+        suggested_fix: "Use 'fixtures' or 'live'",
       } satisfies ScrapeTriggerErrorResponse,
-      { status: 500 },
+      { status: 400 },
     );
   }
 
@@ -49,11 +34,11 @@ export async function POST(request?: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error: err instanceof Error ? err.message : String(err),
+        error: sanitizeError(err),
         stderr: "",
         stage: "spawn_failed",
-        probable_cause: "Could not spawn Python scraper process",
-        suggested_fix: "Verify Python is installed and accessible from PATH",
+        probable_cause: "Could not start scraper process.",
+        suggested_fix: "Verify Python is installed and accessible from PATH, and GBP_ROOT is configured correctly.",
       } satisfies ScrapeTriggerErrorResponse,
       { status: 500 },
     );
@@ -66,10 +51,5 @@ export async function POST(request?: Request) {
 }
 
 export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    gbp_root: GBP_ROOT,
-    gbp_root_exists: await fs.access(GBP_ROOT).then(() => true).catch(() => false),
-    platform: process.platform,
-  });
+  return NextResponse.json({ ok: true });
 }

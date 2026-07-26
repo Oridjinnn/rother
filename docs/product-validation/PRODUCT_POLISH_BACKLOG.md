@@ -12,7 +12,7 @@ These issues make the product confusing, unusable, or untrustworthy for a first-
 | # | Issue | Area | Effort | Description |
 |:-:|-------|:----:|:------:|-------------|
 | P0.1 | **Brand identity — package name** | Branding | Low | `package.json` name is `"nextjs_tailwind_shadcn_ts"`. Rename to `"rother"`. Affects taskbar, process list, developer tools |
-| P0.2 | **Brand identity — HTML title** | Branding | Low | `layout.tsx` metadata.title is `"GBP Monitor — Copenhagen Bali"`. Change to `"Rother"` |
+| P0.2 | **Brand identity — HTML title** | Branding | Low | `layout.tsx` metadata.title is `"Rother"`. Change to `"Rother"` |
 | P0.3 | **No "Add Competitor" form** | Config UX | High | Only way to configure is raw JSON editing. Build a form UI with fields: branch name, competitor name, Google Maps URL, place_id. Must be accessible in client mode |
 | P0.4 | **Config tab hidden in client mode** | IA | Medium | `showConfigTab: false` in client mode. End users cannot add/remove competitors. Need to either show Config tab with limited options or add "Add Competitor" inline in the Branches tab |
 | P0.5 | **No server-side rendering** | Performance | High | Entire page is `"use client"`. No SSR, no loading.tsx, no error.tsx. Add Suspense boundaries, route-level loading/error states |

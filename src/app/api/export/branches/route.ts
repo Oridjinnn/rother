@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import { readAllSnapshots, readLatestDelta, readListings } from "@/lib/gbp/server-data";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +22,7 @@ export async function GET(request: Request) {
       let totalReviews = 0;
       let totalNew = 0;
       let compCount = 0;
-      let scrapedDates: string[] = [];
+      const scrapedDates: string[] = [];
 
       for (const comp of branch.competitors) {
         compCount++;
@@ -73,7 +75,7 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     return NextResponse.json(
-      { error: "export failed", detail: err instanceof Error ? err.message : String(err) },
+      { error: "export failed", detail: sanitizeError(err) },
       { status: 500 },
     );
   }

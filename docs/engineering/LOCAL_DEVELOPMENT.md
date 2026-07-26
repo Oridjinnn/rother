@@ -1,4 +1,4 @@
-# Local Development Guide — Rother (GBP Monitor)
+# Local Development Guide — Rother
 
 **Date:** 2026-07-22
 **Version:** 0.0.1

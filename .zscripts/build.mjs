@@ -1,5 +1,5 @@
 import { execSync } from "child_process";
-import { copyFileSync, cpSync, existsSync, mkdirSync } from "fs";
+import { cpSync, existsSync, mkdirSync } from "fs";
 import { resolve } from "path";
 
 const root = resolve(import.meta.dirname, "..");

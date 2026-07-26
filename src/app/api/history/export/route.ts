@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import { readAllDeltas } from "@/lib/gbp/server-data";
 import { readListings } from "@/lib/gbp/server-data";
 
@@ -166,7 +167,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "history export failed",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: sanitizeError(err),
       },
       { status: 500 },
     );

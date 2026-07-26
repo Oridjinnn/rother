@@ -1,4 +1,4 @@
-# Engineering Baseline — Rother (GBP Monitor)
+# Engineering Baseline — Rother
 
 **Date:** 2026-07-22
 **Version:** 0.0.1

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { sanitizeError } from "@/lib/gbp/sanitize";
 import { readAllSnapshots } from "@/lib/gbp/server-data";
 
 export const dynamic = "force-dynamic";
@@ -117,7 +118,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: "competitor-correlation query failed",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: sanitizeError(err),
       },
       { status: 500 },
     );

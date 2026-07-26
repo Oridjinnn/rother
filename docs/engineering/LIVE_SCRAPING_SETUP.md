@@ -1,6 +1,6 @@
 # Live Scraping Setup Guide
 
-Configure and run the GBP Monitor against real Google Maps listings.
+Configure and run Rother against real Google Maps listings.
 
 ## Architecture
 

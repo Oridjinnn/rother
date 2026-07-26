@@ -102,7 +102,7 @@ npm run dev
 
 # Step 4: Open browser
 # Navigate to http://localhost:3000
-# Result: HTTP 200, 40 KB HTML, title "GBP Monitor - Copenhagen Bali"
+# Result: HTTP 200, 40 KB HTML, title "Rother"
 ```
 
 ### Optional commands

@@ -35,6 +35,8 @@ interface ReviewerEntry {
   name: string;
   reviewCount: number;
   avgRating: number;
+  ratingSum: number;
+  ratingCount: number;
   competitors: Set<string>;
   branches: Set<string>;
   latestDate: string | null;
@@ -80,6 +82,7 @@ export function TopReviewers({ refreshKey }: TopReviewersProps) {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchReviews();
   }, [fetchReviews, refreshKey]);

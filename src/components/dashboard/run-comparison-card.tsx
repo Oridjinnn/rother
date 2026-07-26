@@ -7,7 +7,6 @@ import {
   GitCompareArrows,
   RefreshCw,
   Store,
-  TrendingUp,
 } from "lucide-react";
 
 import {
@@ -30,7 +29,7 @@ import {
 
 import { EmptyState } from "./empty-state";
 import { formatTimestamp } from "@/lib/gbp/format";
-import type { HistoryResponse, HistoryRun } from "@/lib/gbp/types";
+import type { HistoryResponse } from "@/lib/gbp/types";
 
 interface RunComparisonCardProps {
   /** Bump to force a refetch. */
@@ -65,8 +64,8 @@ export function RunComparisonCard({ refreshKey }: RunComparisonCardProps) {
   // a dependency (we don't want to re-fetch when the user changes dropdowns).
   const runIdARef = React.useRef(runIdA);
   const runIdBRef = React.useRef(runIdB);
-  runIdARef.current = runIdA;
-  runIdBRef.current = runIdB;
+  React.useEffect(() => { runIdARef.current = runIdA; }, [runIdA]);
+  React.useEffect(() => { runIdBRef.current = runIdB; }, [runIdB]);
 
   const fetchData = React.useCallback(async () => {
     try {
@@ -91,6 +90,7 @@ export function RunComparisonCard({ refreshKey }: RunComparisonCardProps) {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchData();
   }, [fetchData, refreshKey]);

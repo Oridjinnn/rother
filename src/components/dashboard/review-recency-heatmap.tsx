@@ -88,6 +88,7 @@ export function ReviewRecencyHeatmap({ refreshKey }: ReviewRecencyHeatmapProps) 
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchData();
   }, [fetchData, refreshKey]);

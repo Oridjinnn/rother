@@ -1,5 +1,5 @@
 /**
- * Absolute filesystem paths to the GBP Monitor Python project's data + config.
+ * Absolute filesystem paths to the Rother Python project's data + config.
  *
  * The Python scraper writes to these locations. The dashboard reads from them.
  * All API routes use these constants — never relative paths or hard-coded
