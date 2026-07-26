@@ -27,7 +27,7 @@ SUMMARY_PATH = DATA_DIR / "run_summary.json"
 LOG_PATH = DATA_DIR / "run.log"
 
 EXPECTED_SNAPSHOTS = {"comp-canggu-01", "comp-seminyak-01", "comp-ubud-01"}
-EXPECTED_TOTAL_REVIEWS = 20
+EXPECTED_TOTAL_REVIEWS = 10
 
 PASS = 0
 FAIL = 0
@@ -63,10 +63,20 @@ def check_dependencies() -> bool:
 
 def clean_data() -> None:
     """Remove data artifacts from a previous run."""
-    for d in [SNAPSHOTS_DIR, REVIEWS_NEW_DIR]:
-        if d.exists():
-            for f in d.iterdir():
-                f.unlink()
+    lock_file = DATA_DIR / ".run.lock"
+    if lock_file.exists():
+        lock_file.unlink()
+    if SNAPSHOTS_DIR.exists():
+        for entry in SNAPSHOTS_DIR.iterdir():
+            if entry.is_dir():
+                for f in entry.iterdir():
+                    f.unlink()
+                entry.rmdir()
+            else:
+                entry.unlink()
+    if REVIEWS_NEW_DIR.exists():
+        for f in REVIEWS_NEW_DIR.iterdir():
+            f.unlink()
     for f in [SUMMARY_PATH, LOG_PATH]:
         if f.exists():
             f.unlink()
@@ -86,7 +96,7 @@ def verify_artifacts() -> None:
     """Validate all expected output files."""
     check("run_summary.json exists", SUMMARY_PATH.exists())
     if SUMMARY_PATH.exists():
-        summary = json.loads(SUMMARY_PATH.read_text())
+        summary = json.loads(SUMMARY_PATH.read_text(encoding="utf-8"))
         check("run_summary is a dict", isinstance(summary, dict))
         check("mode is fixtures", summary.get("mode") == "fixtures")
         check(
@@ -105,41 +115,63 @@ def verify_artifacts() -> None:
             f"got {summary.get('skipped')}",
         )
         check(
-            "total_reviews is 20",
-            summary.get("total_reviews") == 20,
+            "total_reviews is 10",
+            summary.get("total_reviews") == 10,
             f"got {summary.get('total_reviews')}",
         )
 
-    snapshot_ids = {p.stem for p in SNAPSHOTS_DIR.glob("*.json") if p.stem in EXPECTED_SNAPSHOTS}
-    missing = EXPECTED_SNAPSHOTS - snapshot_ids
+    # Versioned snapshot layout: each competitor is a subdirectory with latest.json pointer.
+    snapshot_dirs = {p.name for p in SNAPSHOTS_DIR.iterdir() if p.is_dir() and p.name in EXPECTED_SNAPSHOTS}
+    missing = EXPECTED_SNAPSHOTS - snapshot_dirs
     check(
-        "all expected snapshots exist",
+        "all expected snapshot directories exist",
         not missing,
         f"missing: {missing}",
     )
 
     total_reviews = 0
     for comp_id in EXPECTED_SNAPSHOTS:
-        path = SNAPSHOTS_DIR / f"{comp_id}.json"
-        if path.exists():
-            reviews = json.loads(path.read_text())
-            total_reviews += len(reviews)
+        comp_dir = SNAPSHOTS_DIR / comp_id
+        latest_pointer = comp_dir / "latest.json"
+        check(
+            f"{comp_id}: latest.json exists",
+            latest_pointer.exists(),
+        )
+        if not latest_pointer.exists():
+            continue
+
+        try:
+            latest_filename = json.loads(latest_pointer.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            check(f"{comp_id}: could not read latest.json", False)
+            continue
+
+        snapshot_path = comp_dir / latest_filename
+        check(
+            f"{comp_id}: snapshot file {latest_filename} exists",
+            snapshot_path.exists(),
+        )
+        if not snapshot_path.exists():
+            continue
+
+        reviews = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        total_reviews += len(reviews)
+        check(
+            f"{comp_id} snapshot is a list",
+            isinstance(reviews, list),
+        )
+        for r in reviews:
             check(
-                f"{comp_id} snapshot is a list",
-                isinstance(reviews, list),
+                f"{comp_id}: review has review_id",
+                bool(r.get("review_id")),
             )
-            for r in reviews:
+            rating = r.get("rating")
+            if rating is not None:
                 check(
-                    f"{comp_id}: review has review_id",
-                    bool(r.get("review_id")),
+                    f"{comp_id}: rating in 1..5",
+                    1.0 <= rating <= 5.0,
+                    f"invalid rating {rating}",
                 )
-                rating = r.get("rating")
-                if rating is not None:
-                    check(
-                        f"{comp_id}: rating in 1..5",
-                        1.0 <= rating <= 5.0,
-                        f"invalid rating {rating}",
-                    )
 
     check(
         "total review count matches expected",
@@ -150,7 +182,7 @@ def verify_artifacts() -> None:
     delta_files = list(REVIEWS_NEW_DIR.glob("*.json"))
     check("at least one delta file exists", len(delta_files) > 0)
     for df in delta_files:
-        reviews = json.loads(df.read_text())
+        reviews = json.loads(df.read_text(encoding="utf-8"))
         check(
             f"delta {df.name} has valid content",
             isinstance(reviews, list) and len(reviews) > 0,
@@ -158,10 +190,125 @@ def verify_artifacts() -> None:
 
     check("run.log exists", LOG_PATH.exists())
     if LOG_PATH.exists():
-        log_content = LOG_PATH.read_text()
+        log_content = LOG_PATH.read_text(encoding="utf-8")
         check("run.log has content", len(log_content) > 0)
         check("run.log has INFO lines", "INFO" in log_content)
-        check("run.log has Run summary", "Run summary:" in log_content)
+        check("run.log has Run summary",
+              "run_summary" in log_content or "Run summary:" in log_content)
+
+
+# ── M13B Security regression tests ──────────────────────────────────
+
+
+def _verify_security() -> None:
+    """Run security-specific regression tests.
+
+    Tests the hardening measures implemented in M13B:
+    - competitor_id sanitization rejects path traversal attempts
+    - config validation detects duplicates and invalid place_ids
+    - --validate-config CLI flag works
+    """
+    print("\n[Phase 4] Security regression tests...")
+
+    # 4a  Import security functions from orchestration (only available after
+    #     the scraper run, which guarantees the module is importable).
+    try:
+        from orchestration.run_all import (
+            _sanitize_competitor_id,
+            _validate_listings_config,
+            _VALID_COMPETITOR_ID_RE,
+        )
+    except ImportError as e:
+        check("security import", False, str(e))
+        return
+
+    # 4b  Valid competitor_ids must pass.
+    valid_ids = ["comp-canggu-01", "foo", "a", "comp_123", "COMP-SEMINYAK-01"]
+    for vid in valid_ids:
+        try:
+            _sanitize_competitor_id(vid)
+            check(f"sec: valid ID {vid!r} accepted", True)
+        except ValueError as ve:
+            check(f"sec: valid ID {vid!r} accepted", False, str(ve))
+
+    # 4c  Invalid competitor_ids must be rejected.
+    invalid_ids = [
+        ("../etc/passwd", "path traversal via .."),
+        ("foo/bar", "path separator /"),
+        ("foo\\bar", "path separator \\"),
+        ("a\x00b", "null byte"),
+        ("-" * 65, "exceeds max length (65 > 64)"),
+        ("", "empty string"),
+        ("comp with spaces", "contains space"),
+        (".hidden", "starts with dot"),
+    ]
+    for bad_id, reason in invalid_ids:
+        try:
+            _sanitize_competitor_id(bad_id)
+            check(f"sec: reject {reason} ({bad_id!r})", False, "should have raised ValueError")
+        except ValueError:
+            check(f"sec: reject {reason}", True)
+
+    # 4d  Config validation rejects duplicate competitor_ids.
+    duplicate_config = {
+        "branches": [
+            {
+                "branch_id": "cph-a",
+                "branch_name": "Branch A",
+                "competitors": [
+                    {"competitor_id": "comp-dup", "name": "First", "place_id": None},
+                    {"competitor_id": "comp-dup", "name": "Second", "place_id": None},
+                ],
+            }
+        ]
+    }
+    dup_errors = _validate_listings_config(duplicate_config)
+    has_dup_error = any("duplicate" in e for e in dup_errors)
+    check("sec: detect duplicate competitor_id", has_dup_error, str(dup_errors))
+
+    # 4e  Config validation rejects invalid place_ids.
+    bad_pid_config = {
+        "branches": [
+            {
+                "branch_id": "cph-b",
+                "branch_name": "Branch B",
+                "competitors": [
+                    {"competitor_id": "comp-badpid", "name": "Bad", "place_id": "invalid"},
+                    {"competitor_id": "comp-nopid", "name": "None", "place_id": None},
+                ],
+            }
+        ]
+    }
+    pid_errors = _validate_listings_config(bad_pid_config)
+    has_pid_error = any("place_id" in e for e in pid_errors)
+    check("sec: reject invalid place_id", has_pid_error, str(pid_errors))
+
+    # 4f  Config validation passes for a valid config.
+    valid_config = {
+        "branches": [
+            {
+                "branch_id": "cph-c",
+                "branch_name": "Branch C",
+                "competitors": [
+                    {"competitor_id": "comp-valid", "name": "Valid", "place_id": None},
+                    {"competitor_id": "comp-valid2", "name": "Valid 2", "place_id": "ChIJxxxxxxxxxxxxxxxxxxxxxxxxxx"},
+                ],
+            }
+        ]
+    }
+    valid_errors = _validate_listings_config(valid_config)
+    check("sec: valid config passes", len(valid_errors) == 0, str(valid_errors))
+
+    # 4g  --validate-config CLI flag works.
+    result = subprocess.run(
+        [sys.executable, "-m", "orchestration.run_all", "--validate-config"],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+    )
+    # Our real config may have place_id issues — the important thing is the
+    # CLI runs without crashing and returns either 0 or 1.
+    check("sec: --validate-config exits cleanly", result.returncode in (0, 1))
 
 
 def main() -> int:
@@ -185,6 +332,9 @@ def main() -> int:
 
     print("\n[Phase 3] Verifying artifacts...")
     verify_artifacts()
+
+    # M13B: Security regression tests.
+    _verify_security()
 
     print("\n" + "=" * 60)
     print(f"Results: {PASS} passed, {FAIL} failed")

@@ -1,0 +1,312 @@
+{
+  "_meta": {
+    "last_verified": "20260723T101225Z",
+    "verified_by": "M5-LiveCapture",
+    "schema_version": 2,
+    "_documentation_url": "https://github.com/anomalyco/gbp-monitor/wiki/Selector-Maintenance",
+    "descriptions": {
+      "cookie_reject_button": "EU cookie consent 'Reject all' button",
+      "reviews_tab_button": "Reviews tab in Google Maps listing sidebar",
+      "review_container": "Scrollable review list container (feed region)",
+      "review_item": "Individual review card element (seed for parser locator tier 5)",
+      "review_id_attr": "HTML attribute holding the unique review ID (data-review-id)",
+      "reviewer_name_attr": "HTML attribute holding the reviewer display name",
+      "review_text_selector": "CSS selector for review text content span",
+      "rating_selector": "CSS selector for star rating element",
+      "rating_attr": "HTML attribute holding numeric star rating value",
+      "relative_date_selector": "CSS selector for relative date text (e.g. '2 weeks ago')",
+      "expand_text_button": "Expand/See-more button on truncated review cards"
+    },
+    "selector_types": {
+      "cookie_reject_button": "xpath_or_css",
+      "reviews_tab_button": "css",
+      "review_container": "css",
+      "review_item": "css",
+      "review_id_attr": "attribute",
+      "reviewer_name_attr": "attribute",
+      "review_text_selector": "css",
+      "rating_selector": "css",
+      "rating_attr": "attribute",
+      "relative_date_selector": "css",
+      "expand_text_button": "css"
+    },
+    "fallback_notes": {
+      "cookie_reject_button": "Google may serve variant banner text or layout by locale — primary selector covers EN 'Reject all'; first fallback uses has-text which is more resilient to wrapper changes",
+      "reviews_tab_button": "aria-label may vary by locale (Reviews/Avis/Recensioni) — first fallback covers French, second uses role=tab for broader DOM matching",
+      "review_container": "Primary is the 2023-vintage CSS class triple; first fallback uses role=feed (more semantic, less likely to change across redesigns); second fallback uses role=region within a known parent class",
+      "expand_text_button": "Primary targets known class; fallbacks use text content matching as the W3C accessibility tree approach recommends"
+    },
+    "selector_health": {
+      "cookie_reject_button": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
+            "status": "degraded",
+            "confidence": "none",
+            "matches": 0
+          },
+          {
+            "tier": 1,
+            "selector": "button:has-text('Reject all')",
+            "status": "live",
+            "confidence": "high",
+            "matches": 154
+          },
+          {
+            "tier": 2,
+            "selector": "form[action*='cookie'] button:first-of-type",
+            "status": "live",
+            "confidence": "medium",
+            "matches": 1
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 1,
+        "active_selector": "button:has-text('Reject all')"
+      },
+      "reviews_tab_button": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "button[aria-label*='Reviews']",
+            "status": "live",
+            "confidence": "high",
+            "matches": 154
+          },
+          {
+            "tier": 1,
+            "selector": "button[aria-label*='Avis']",
+            "status": "live",
+            "confidence": "high",
+            "matches": 154
+          },
+          {
+            "tier": 2,
+            "selector": "[role='tab'][aria-label*='Review']",
+            "status": "degraded",
+            "confidence": "none",
+            "matches": 0
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 0,
+        "active_selector": "button[aria-label*='Reviews']"
+      },
+      "review_container": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
+            "status": "live",
+            "confidence": "high",
+            "matches": 253
+          },
+          {
+            "tier": 1,
+            "selector": "div[role='feed']",
+            "status": "live",
+            "confidence": "high",
+            "matches": 1483
+          },
+          {
+            "tier": 2,
+            "selector": "div.m6QErb[role='region']",
+            "status": "live",
+            "confidence": "high",
+            "matches": 1439
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 0,
+        "active_selector": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf"
+      },
+      "review_item": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "div.jftiEf.fontBodyMedium",
+            "status": "live",
+            "confidence": "high",
+            "matches": 895
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 0,
+        "active_selector": "div.jftiEf.fontBodyMedium"
+      },
+      "review_id_attr": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "data-review-id",
+            "status": "live",
+            "confidence": "high",
+            "matches": 33
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 0,
+        "active_selector": "data-review-id"
+      },
+      "reviewer_name_attr": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "aria-label",
+            "status": "live",
+            "confidence": "high",
+            "matches": 301
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 0,
+        "active_selector": "aria-label"
+      },
+      "review_text_selector": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "span.wiI7pd",
+            "status": "live",
+            "confidence": "high",
+            "matches": 1011
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 0,
+        "active_selector": "span.wiI7pd"
+      },
+      "rating_selector": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "span.kvMYJc",
+            "status": "live",
+            "confidence": "high",
+            "matches": 935
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 0,
+        "active_selector": "span.kvMYJc"
+      },
+      "rating_attr": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "aria-label",
+            "status": "live",
+            "confidence": "high",
+            "matches": 301
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 0,
+        "active_selector": "aria-label"
+      },
+      "relative_date_selector": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "span.rsqaWe",
+            "status": "live",
+            "confidence": "high",
+            "matches": 947
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 0,
+        "active_selector": "span.rsqaWe"
+      },
+      "expand_text_button": {
+        "verified_by": "M5-LiveCapture",
+        "last_verified": "20260723T101225Z",
+        "tiers": [
+          {
+            "tier": 0,
+            "selector": "button.w8nwRe.kyuRq",
+            "status": "degraded",
+            "confidence": "none",
+            "matches": 0
+          },
+          {
+            "tier": 1,
+            "selector": "button:has-text('More')",
+            "status": "live",
+            "confidence": "high",
+            "matches": 154
+          },
+          {
+            "tier": 2,
+            "selector": "button:has-text('See more')",
+            "status": "live",
+            "confidence": "high",
+            "matches": 154
+          }
+        ],
+        "overall_status": "live",
+        "overall_confidence": "high",
+        "active_tier": 1,
+        "active_selector": "button:has-text('More')"
+      }
+    }
+  },
+  "cookie_reject_button": [
+    "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
+    "button:has-text('Reject all')",
+    "form[action*='cookie'] button:first-of-type"
+  ],
+  "reviews_tab_button": [
+    "button[aria-label*='Reviews']",
+    "button[aria-label*='Avis']",
+    "[role='tab'][aria-label*='Review']"
+  ],
+  "review_container": [
+    "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
+    "div[role='feed']",
+    "div.m6QErb[role='region']"
+  ],
+  "review_item": "div.jftiEf.fontBodyMedium",
+  "review_id_attr": "data-review-id",
+  "reviewer_name_attr": "aria-label",
+  "review_text_selector": "span.wiI7pd",
+  "rating_selector": "span.kvMYJc",
+  "rating_attr": "aria-label",
+  "relative_date_selector": "span.rsqaWe",
+  "expand_text_button": [
+    "button.w8nwRe.kyuRq",
+    "button:has-text('More')",
+    "button:has-text('See more')"
+  ]
+}

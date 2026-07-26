@@ -28,6 +28,10 @@ interface ExportDashboardDialogProps {
   totalReviews?: number;
   /** Total history runs count (for the history export label). */
   totalRuns?: number;
+  /** Total competitors count (for competitor export label). */
+  totalCompetitors?: number;
+  /** Total branches count (for branch export label). */
+  totalBranches?: number;
 }
 
 interface ExportOption {
@@ -53,6 +57,8 @@ export function ExportDashboardDialog({
   onOpenChange,
   totalReviews = 0,
   totalRuns = 0,
+  totalCompetitors = 0,
+  totalBranches = 0,
 }: ExportDashboardDialogProps) {
   const [exporting, setExporting] = React.useState<string | null>(null);
 
@@ -103,6 +109,44 @@ export function ExportDashboardDialog({
       description: "Raw structured review data with enriched fields.",
       icon: FileJson,
       url: "/api/reviews/export?format=json",
+      color: "text-teal-600 dark:text-teal-400",
+    },
+  ];
+
+  const competitorOptions: ExportOption[] = [
+    {
+      id: "competitors-csv",
+      label: "Competitors CSV",
+      description: "All competitors with reviews, ratings, trends.",
+      icon: FileSpreadsheet,
+      url: "/api/export/competitors?format=csv",
+      color: "text-emerald-600 dark:text-emerald-400",
+    },
+    {
+      id: "competitors-json",
+      label: "Competitors JSON",
+      description: "Raw competitor intelligence data.",
+      icon: FileJson,
+      url: "/api/export/competitors?format=json",
+      color: "text-teal-600 dark:text-teal-400",
+    },
+  ];
+
+  const branchOptions: ExportOption[] = [
+    {
+      id: "branches-csv",
+      label: "Branches CSV",
+      description: "Branch-level aggregate stats.",
+      icon: FileSpreadsheet,
+      url: "/api/export/branches?format=csv",
+      color: "text-emerald-600 dark:text-emerald-400",
+    },
+    {
+      id: "branches-json",
+      label: "Branches JSON",
+      description: "Structured branch data.",
+      icon: FileJson,
+      url: "/api/export/branches?format=json",
       color: "text-teal-600 dark:text-teal-400",
     },
   ];
@@ -197,6 +241,34 @@ export function ExportDashboardDialog({
             </div>
             <div className="space-y-2">
               {historyOptions.map((opt) => renderOption(opt, totalRuns))}
+            </div>
+          </div>
+
+          <Separator className="my-3" />
+
+          {/* Competitors section */}
+          <div className="mb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Competitors ({totalCompetitors})
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {competitorOptions.map((opt) => renderOption(opt, totalCompetitors))}
+            </div>
+          </div>
+
+          <Separator className="my-3" />
+
+          {/* Branches section */}
+          <div className="mb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Branches ({totalBranches})
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {branchOptions.map((opt) => renderOption(opt, totalBranches))}
             </div>
           </div>
 

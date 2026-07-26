@@ -34,7 +34,74 @@ class SelectorTracker:
             }
         )
 
-    def get_report(self, configured_selectors: dict | None = None) -> dict:
+    @staticmethod
+    def compare_with_history(
+        current: dict,
+        previous: dict | None,
+    ) -> dict | None:
+        """Compare current selector report against the previous run.
+
+        Returns a diff dict with per-selector confidence changes and
+        overall drift indicators, or None if no previous report exists.
+        """
+        if not previous:
+            return None
+
+        current_selectors = current.get("by_selector", {})
+        previous_selectors = previous.get("by_selector", {}) if previous else {}
+
+        drift = {
+            "healthy_delta": current.get("healthy", 0) - previous.get("healthy", 0),
+            "degraded_delta": current.get("degraded", 0) - previous.get("degraded", 0),
+            "broken_delta": current.get("broken", 0) - previous.get("broken", 0),
+            "confidence_delta": round(
+                current.get("avg_confidence", 0.0) - previous.get("avg_confidence", 0.0), 3
+            ),
+            "newly_broken": [],
+            "newly_degraded": [],
+            "recovered": [],
+            "per_selector": {},
+        }
+
+        degraded_threshold = -0.2  # confidence dropped more than 20%
+
+        for key in current_selectors:
+            c = current_selectors[key]
+            p = previous_selectors.get(key, {})
+            c_conf = c.get("confidence", 0.0) if c.get("status") != "not_evaluated" else None
+            p_conf = p.get("confidence", 0.0) if p.get("status") != "not_evaluated" else None
+
+            change = None
+            if c_conf is not None and p_conf is not None:
+                change = round(c_conf - p_conf, 3)
+
+            status_change = None
+            p_status = p.get("status", "not_evaluated")
+            c_status = c.get("status", "not_evaluated")
+            if p_status != c_status:
+                status_change = f"{p_status}→{c_status}"
+                if c_status == "broken":
+                    drift["newly_broken"].append(key)
+                elif c_status == "degraded" and p_status == "healthy":
+                    drift["newly_degraded"].append(key)
+                elif p_status in ("broken", "degraded") and c_status == "healthy":
+                    drift["recovered"].append(key)
+
+            drift["per_selector"][key] = {
+                "previous_status": p_status,
+                "current_status": c_status,
+                "status_change": status_change,
+                "confidence_change": change,
+                "alert": change is not None and change < degraded_threshold,
+            }
+
+        return drift
+
+    def get_report(
+        self,
+        configured_selectors: dict | None = None,
+        previous_report: dict | None = None,
+    ) -> dict:
         configured_keys = list(configured_selectors.keys()) if configured_selectors else []
 
         meta_keys: set[str] = {"last_verified", "verified_by", "_verification_note", "_meta"}
@@ -61,7 +128,6 @@ class SelectorTracker:
             all_errors = [e["error"] for e in entries if e["error"]]
 
             total_attempts = len(entries)
-            # Confidence: found / total, treating expected_missing as neutral (banner may not appear)
             effective_found = found_count + expected_missing_count
             confidence = round(effective_found / total_attempts, 3) if total_attempts > 0 else 0.0
 
@@ -99,17 +165,10 @@ class SelectorTracker:
         degraded = sum(1 for s in by_selector.values() if s.get("status") == "degraded")
         broken = sum(1 for s in by_selector.values() if s.get("status") == "broken")
         not_evaluated = sum(1 for s in by_selector.values() if s.get("status") == "not_evaluated")
-        avg_confidence = (
-            round(
-                sum(s["confidence"] for s in by_selector.values() if "confidence" in s)
-                / max(len([s for s in by_selector.values() if "confidence" in s]), 1),
-                3,
-            )
-            if by_selector
-            else 0.0
-        )
+        confidence_vals = [s["confidence"] for s in by_selector.values() if "confidence" in s]
+        avg_confidence = round(sum(confidence_vals) / max(len(confidence_vals), 1), 3) if confidence_vals else 0.0
 
-        return {
+        report = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "selectors_configured": len(relevant_keys),
             "selectors_tested": len(tested_keys),
@@ -122,3 +181,22 @@ class SelectorTracker:
             "by_selector": by_selector,
             "details": list(self._entries),
         }
+
+        # Compute drift vs previous report.
+        drift = self.compare_with_history(report, previous_report)
+        if drift:
+            report["drift"] = drift
+            if drift["newly_broken"]:
+                report["drift_alerts"] = [
+                    f"Selector '{s}' went broken (was {p}→broken)"
+                    for s in drift["newly_broken"]
+                ]
+            if drift["newly_degraded"]:
+                degraded_alerts = report.get("drift_alerts", [])
+                degraded_alerts.extend(
+                    f"Selector '{s}' degraded (healthy→degraded)"
+                    for s in drift["newly_degraded"]
+                )
+                report["drift_alerts"] = degraded_alerts
+
+        return report

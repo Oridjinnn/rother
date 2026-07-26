@@ -85,6 +85,9 @@ export interface CompetitorStats {
   average_rating: number | null;
   last_scraped_at: string | null;
   new_reviews_count: number;
+  latest_review: { text: string | null; relative_date: string | null; rating: number | null } | null;
+  average_review_length: number | null;
+  trend_indicator: "up" | "down" | "stable" | null;
 }
 
 /** Branch tree enriched with per-competitor stats. */
@@ -94,6 +97,8 @@ export interface BranchWithStats {
   competitors: CompetitorStats[];
   total_reviews: number;
   new_reviews_count: number;
+  review_velocity: number | null;
+  last_scrape: string | null;
 }
 
 export interface RatingDistribution {
@@ -155,6 +160,11 @@ export interface LogsResponse {
   lines: string[];
   totalLines: number;
   requestedLines: number;
+}
+
+export interface ScrapeTriggerAsyncResponse {
+  ok: true;
+  runId: string;
 }
 
 export interface ScrapeTriggerResponse {
@@ -227,4 +237,53 @@ export interface ReviewLengthsResponse {
     min: number;
     max: number;
   };
+}
+
+export type AlertType =
+  | "new_reviews"
+  | "rating_drop"
+  | "scrape_failure"
+  | "run_failure"
+  | "selector_degradation"
+  | "large_review_increase";
+
+export type AlertSeverity = "info" | "warning" | "error";
+
+export interface Alert {
+  id: string;
+  type: AlertType;
+  severity: AlertSeverity;
+  title: string;
+  description: string;
+  detail?: string;
+  competitor_id?: string;
+  branch_id?: string;
+  delta_count?: number;
+  source: string;
+  timestamp: string;
+}
+
+export interface AlertsResponse {
+  alerts: Alert[];
+  total: number;
+}
+
+export interface ConfigUpdateRequest {
+  branches?: BranchConfig[];
+  [key: string]: unknown;
+}
+
+export interface HistoricalComparisonResponse {
+  competitor_id: string;
+  competitor_name: string;
+  branch_name: string;
+  older: { review_id: string; rating: number | null; text: string | null; relative_date: string | null; scraped_at: string }[];
+  newer: { review_id: string; rating: number | null; text: string | null; relative_date: string | null; scraped_at: string }[];
+  older_timestamp: string | null;
+  newer_timestamp: string | null;
+  older_count: number;
+  newer_count: number;
+  new_in_newer: string[];
+  removed_from_newer: string[];
+  rating_changed: { review_id: string; old_rating: number | null; new_rating: number | null }[];
 }

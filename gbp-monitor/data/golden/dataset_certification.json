@@ -1,0 +1,152 @@
+{
+  "certification_id": "M11-20260724",
+  "mission": "M11",
+  "date": "2026-07-24",
+  "verified_run_id": "20260724T142317Z",
+  "regression_run_id": "20260724T142952Z",
+  "overall_status": "CERTIFIED_PARTIAL",
+  "certified_count": 2,
+  "total_count": 12,
+  "blocked_count": 10,
+  "blocked_reason": "place_ids not yet provided by client data entry",
+  "regression": {
+    "total_checks": 46,
+    "passed": 46,
+    "failed": 0,
+    "status": "PASS"
+  },
+  "live_verify": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0,
+    "status": "PASS"
+  },
+  "competitors": [
+    {
+      "competitor_id": "comp-canggu-01",
+      "business_name": "Crate Cafe Canggu",
+      "place_id": "ChIJOaEQDnk40i0Rzhou4NcRx-w",
+      "place_id_valid": true,
+      "fixture_certified": true,
+      "fixture_source": "live_capture_20260724",
+      "fixture_size_bytes": 518000,
+      "place_id_correction_applied": true
+    },
+    {
+      "competitor_id": "comp-seminyak-01",
+      "business_name": "Revolver Espresso Seminyak",
+      "place_id": "ChIJ9fhCoBBH0i0R4h17JYdA484",
+      "place_id_valid": true,
+      "fixture_certified": true,
+      "fixture_source": "live_capture_20260724",
+      "fixture_size_bytes": 409000,
+      "place_id_correction_applied": true
+    },
+    {
+      "competitor_id": "comp-seminyak-02",
+      "business_name": "Anomali Coffee Seminyak",
+      "place_id": null,
+      "place_id_valid": false,
+      "fixture_certified": false,
+      "fixture_source": null,
+      "place_id_correction_applied": false
+    },
+    {
+      "competitor_id": "comp-canggu-02",
+      "business_name": "The Shady Shack Canggu",
+      "place_id": null,
+      "place_id_valid": false,
+      "fixture_certified": false,
+      "fixture_source": null,
+      "place_id_correction_applied": false
+    },
+    {
+      "competitor_id": "comp-ubud-01",
+      "business_name": "Seniman Coffee Studio Ubud",
+      "place_id": null,
+      "place_id_valid": false,
+      "fixture_certified": false,
+      "fixture_source": "legacy_mock",
+      "place_id_correction_applied": false
+    },
+    {
+      "competitor_id": "comp-ubud-02",
+      "business_name": "Kafe Ubud",
+      "place_id": null,
+      "place_id_valid": false,
+      "fixture_certified": false,
+      "fixture_source": null,
+      "place_id_correction_applied": false
+    },
+    {
+      "competitor_id": "comp-uluwatu-01",
+      "business_name": "Single Fin Uluwatu",
+      "place_id": null,
+      "place_id_valid": false,
+      "fixture_certified": false,
+      "fixture_source": null,
+      "place_id_correction_applied": false
+    },
+    {
+      "competitor_id": "comp-uluwatu-02",
+      "business_name": "Suluban Cliffs Uluwatu",
+      "place_id": null,
+      "place_id_valid": false,
+      "fixture_certified": false,
+      "fixture_source": null,
+      "place_id_correction_applied": false
+    },
+    {
+      "competitor_id": "comp-nusadua-01",
+      "business_name": "Bumbu Bali Nusa Dua",
+      "place_id": null,
+      "place_id_valid": false,
+      "fixture_certified": false,
+      "fixture_source": null,
+      "place_id_correction_applied": false
+    },
+    {
+      "competitor_id": "comp-nusadua-02",
+      "business_name": "Salsa Nusa Dua",
+      "place_id": null,
+      "place_id_valid": false,
+      "fixture_certified": false,
+      "fixture_source": null,
+      "place_id_correction_applied": false
+    },
+    {
+      "competitor_id": "comp-sanur-01",
+      "business_name": "Byrd House Sanur",
+      "place_id": null,
+      "place_id_valid": false,
+      "fixture_certified": false,
+      "fixture_source": null,
+      "place_id_correction_applied": false
+    },
+    {
+      "competitor_id": "comp-sanur-02",
+      "business_name": "Lilla Pantai Sanur",
+      "place_id": null,
+      "place_id_valid": false,
+      "fixture_certified": false,
+      "fixture_source": null,
+      "place_id_correction_applied": false
+    }
+  ],
+  "corrections": [
+    {
+      "competitor_id": "comp-canggu-01",
+      "field": "place_id",
+      "old_value": "ChIJ9fhCoBBH0i0R4h17JYdA484",
+      "new_value": "ChIJOaEQDnk40i0Rzhou4NcRx-w",
+      "reason": "old place_id resolved to Revolver Espresso Seminyak, not Crate Cafe Canggu"
+    },
+    {
+      "competitor_id": "comp-seminyak-01",
+      "field": "place_id",
+      "old_value": null,
+      "new_value": "ChIJ9fhCoBBH0i0R4h17JYdA484",
+      "reason": "place_id reassigned from comp-canggu-01 after live capture confirmed Revolver Espresso content"
+    }
+  ]
+}

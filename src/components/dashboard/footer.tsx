@@ -156,6 +156,12 @@ export function Footer({ verifiedBy, lastVerified, health, T, mode }: FooterProp
                     {health.success} success · {health.failed} failed ·{" "}
                     {health.skipped} skipped
                   </p>
+                  {health.skipped > 0 && (
+                    <p className="text-[10px] opacity-70">
+                      Skipped sources have no fixture data (fixtures mode) or were
+                      unreachable (live mode). Not an error.
+                    </p>
+                  )}
                   {health.lastRunAt && (
                     <p className="text-[10px] opacity-70">
                       {new Date(health.lastRunAt).toLocaleString()}

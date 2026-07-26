@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import {
   Activity,
+  Bell,
   Columns3,
   LayoutDashboard,
   MessageSquare,
@@ -28,6 +29,7 @@ import { BranchComparisonSection } from "@/components/dashboard/branch-compariso
 import { ReviewsSection } from "@/components/dashboard/reviews-section";
 import { LogsSection } from "@/components/dashboard/logs-section";
 import { ConfigSection } from "@/components/dashboard/config-section";
+import { AlertsSection } from "@/components/dashboard/alerts-section";
 import { ShortcutsHelpDialog } from "@/components/dashboard/shortcuts-help-dialog";
 import { ExportDashboardDialog } from "@/components/dashboard/export-dashboard-dialog";
 import { useAppMode } from "@/hooks/use-app-mode";
@@ -38,6 +40,7 @@ import type {
   OverviewResponse,
   RunSummary,
   ScrapeTriggerErrorResponse,
+  ScrapeTriggerAsyncResponse,
   ScrapeTriggerResponse,
   SelectorsConfig,
   VerifiedBy,
@@ -48,6 +51,7 @@ type TabValue =
   | "branches"
   | "compare"
   | "reviews"
+  | "alerts"
   | "logs"
   | "config";
 
@@ -77,6 +81,12 @@ const TABS: { value: TabValue; label: string; icon: typeof Activity; description
     description: "Searchable, sortable, paginated review table.",
   },
   {
+    value: "alerts",
+    label: "Alerts",
+    icon: Bell,
+    description: "System alerts: failures, new reviews, selector issues.",
+  },
+  {
     value: "logs",
     label: "Run Logs",
     icon: ScrollText,
@@ -86,7 +96,7 @@ const TABS: { value: TabValue; label: string; icon: typeof Activity; description
     value: "config",
     label: "Config",
     icon: Settings2,
-    description: "Read-only view of listings.json + selectors.json.",
+    description: "Edit monitored competitors, branches, place IDs.",
   },
 ];
 
@@ -122,6 +132,11 @@ export default function Home() {
   // ── Refresh signal — bumped after a manual scrape so all sections refetch ─
   const [refreshKey, setRefreshKey] = React.useState(0);
   const [isRunning, setIsRunning] = React.useState(false);
+  const [runProgress, setRunProgress] = React.useState<{
+    completed: number;
+    total: number;
+    elapsed: number;
+  } | null>(null);
 
   // ── Auto-refresh (Overview tab) — opt-in, 30s interval ──────────────────
   const AUTO_REFRESH_SECONDS = 30;
@@ -218,9 +233,11 @@ export default function Home() {
   const handleRunNow = React.useCallback(async () => {
     if (isRunning) return;
     setIsRunning(true);
+    setRunProgress(null);
     const toastId = toast.loading(T.runToastLoading, {
       description: T.runToastDesc,
     });
+    let runId: string | null = null;
     try {
       const r = await fetch("/api/scrape/trigger", {
         method: "POST",
@@ -230,33 +247,65 @@ export default function Home() {
         const err = (await r.json()) as ScrapeTriggerErrorResponse;
         throw new Error(err.error || `HTTP ${r.status}`);
       }
-      const json = (await r.json()) as ScrapeTriggerResponse;
-      const summary: RunSummary = json.summary;
-      toast.success(T.runToastSuccess, {
-        id: toastId,
-        description: `+${summary.new_reviews} new review${
-          summary.new_reviews === 1 ? "" : "s"
-        } · ${summary.success} ok · ${summary.failed} failed · ${
-          summary.skipped
-        } skipped`,
-      });
-      // Bump refreshKey so Overview / Branches / Reviews / Config all refetch.
-      setRefreshKey((k) => k + 1);
-      // Immediate refetch of overview + branches for instant feedback.
-      fetchOverview();
-      fetchBranches();
-      if (summary.failed > 0 && summary.failed >= summary.success) {
-        toast.error("Update alert: some data couldn't be refreshed", {
-          description: `${summary.failed} of ${
-            summary.success + summary.failed
-          } sources had issues.${T.showRunLogsTab ? " Check the Run Logs tab." : ""}`,
-        });
-      }
+      const json = (await r.json()) as ScrapeTriggerAsyncResponse;
+      runId = json.runId;
+
+      // Poll for completion
+      let summary: RunSummary | null = null;
+      let pollError: string | null = null;
+      const pollInterval = setInterval(async () => {
+        try {
+          const sr = await fetch(`/api/scrape/status?runId=${runId}`, {
+            cache: "no-store",
+          });
+          if (!sr.ok) return;
+          const data = await sr.json();
+          setRunProgress({
+            completed: data.progress.completed,
+            total: data.progress.total,
+            elapsed: data.elapsed,
+          });
+          if (data.status === "completed") {
+            clearInterval(pollInterval);
+            summary = data.summary;
+            setIsRunning(false);
+            setRunProgress(null);
+            toast.success(T.runToastSuccess, {
+              id: toastId,
+              description: `+${data.summary.new_reviews} new review${
+                data.summary.new_reviews === 1 ? "" : "s"
+              } · ${data.summary.success} ok · ${data.summary.failed} failed · ${
+                data.summary.skipped
+              } skipped${data.summary.skipped > 0 ? " (no fixtures)" : ""}`,
+            });
+            setRefreshKey((k) => k + 1);
+            fetchOverview();
+            fetchBranches();
+            if (data.summary.failed > 0 && data.summary.failed >= data.summary.success) {
+              toast.error("Update alert: some data couldn't be refreshed", {
+                description: `${data.summary.failed} of ${
+                  data.summary.success + data.summary.failed
+                } sources had issues.${T.showRunLogsTab ? " Check the Run Logs tab." : ""}`,
+              });
+            }
+          } else if (data.status === "failed") {
+            clearInterval(pollInterval);
+            setIsRunning(false);
+            setRunProgress(null);
+            toast.error("Update failed", {
+              id: toastId,
+              description: data.error || "Unknown error",
+            });
+          }
+        } catch {
+          // ignore polling errors, keep retrying
+        }
+      }, 1_500);
     } catch (e) {
+      setIsRunning(false);
+      setRunProgress(null);
       const msg = e instanceof Error ? e.message : String(e);
       toast.error("Update failed", { id: toastId, description: msg });
-    } finally {
-      setIsRunning(false);
     }
   }, [isRunning, fetchOverview, fetchBranches, T]);
 
@@ -276,6 +325,7 @@ export default function Home() {
     b: "branches",
     m: "compare",
     v: "reviews",
+    a: "alerts",
     l: "logs",
     c: "config",
   };
@@ -348,6 +398,7 @@ export default function Home() {
       <Header
         onRunNow={handleRunNow}
         isRunning={isRunning}
+        runProgress={runProgress}
         onShowShortcuts={() => setShowShortcutsHelp(true)}
         onShowExport={() => setShowExportDialog(true)}
         lastRunAt={
@@ -440,11 +491,16 @@ export default function Home() {
                 data={branches}
                 loading={branchesLoading}
                 error={branchesError}
+                refreshKey={refreshKey}
               />
             </TabsContent>
 
             <TabsContent value="reviews" className="mt-0 focus-visible:outline-none">
               <ReviewsSection refreshKey={refreshKey} />
+            </TabsContent>
+
+            <TabsContent value="alerts" className="mt-0 focus-visible:outline-none">
+              <AlertsSection refreshKey={refreshKey} />
             </TabsContent>
 
             <TabsContent value="logs" className="mt-0 focus-visible:outline-none">
@@ -489,6 +545,8 @@ export default function Home() {
         onOpenChange={setShowExportDialog}
         totalReviews={overview?.totalReviews ?? 0}
         totalRuns={overview?.runSummary ? 1 : 0}
+        totalCompetitors={overview?.totalCompetitors ?? 0}
+        totalBranches={overview?.totalBranches ?? 0}
       />
     </div>
   );

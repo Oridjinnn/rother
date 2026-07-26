@@ -1,0 +1,23 @@
+{
+  "competitor_id": "comp-canggu-01",
+  "branch_id": "cph-canggu",
+  "total_reviews": 3,
+  "average_rating": 3.67,
+  "rating_distribution": {
+    "1": 1,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 2
+  },
+  "reviewer_names": [
+    "Ashfia Pramita Nurfitriani",
+    "Chelvy Soetanto",
+    "hannah ko"
+  ],
+  "relative_dates": [
+    "seminggu lalu",
+    "sebulan lalu",
+    "2 bulan lalu"
+  ]
+}

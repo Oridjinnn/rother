@@ -510,7 +510,7 @@ export function OverviewSection({
           value={data.totalBranches}
           icon={Building2}
           accent="primary"
-          hint="Copenhagen Bali locations"
+          hint="All locations"
         />
         <KpiCard
           label="Competitors"
@@ -660,7 +660,7 @@ export function OverviewSection({
         <ChartCard
           title="New Reviews per Branch"
           icon={MapPin}
-          description="New reviews detected in the latest run, grouped by Copenhagen Bali branch"
+          description="New reviews detected in the latest run, grouped by branch"
           loading={loading}
           skeletonHeight={260}
         >

@@ -1,0 +1,55 @@
+{
+  "analysis_id": "M10-20260724",
+  "generated_at": "2026-07-24T20:00:00Z",
+  "source": "data/selector_report.json (2026-07-23) + offline DOM audit (2026-07-24)",
+  "summary": {
+    "total_attempts": 142,
+    "total_successes": 13,
+    "total_failures": 129,
+    "overall_hit_rate": 0.092,
+    "total_waste_seconds": 508,
+    "projected_waste_after_optimization_seconds": 0
+  },
+  "per_selector": [
+    {
+      "selector_key": "cookie_reject_button",
+      "attempts": 36,
+      "successes": 0,
+      "failures": 36,
+      "hit_rate": 0.0,
+      "avg_lookup_time_ms": 4010,
+      "waste_seconds": 144,
+      "status": "obsolete"
+    },
+    {
+      "selector_key": "reviews_tab_button",
+      "attempts": 36,
+      "successes": 0,
+      "failures": 36,
+      "hit_rate": 0.0,
+      "avg_lookup_time_ms": 4012,
+      "waste_seconds": 144,
+      "status": "obsolete"
+    },
+    {
+      "selector_key": "review_container",
+      "attempts": 34,
+      "successes": 12,
+      "failures": 22,
+      "hit_rate": 0.353,
+      "avg_lookup_time_ms": 6482,
+      "waste_seconds": 220,
+      "status": "restructured"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "attempts": 36,
+      "successes": 1,
+      "failures": 35,
+      "hit_rate": 0.028,
+      "avg_lookup_time_ms": 10,
+      "waste_seconds": 0,
+      "status": "semi-stable"
+    }
+  ]
+}

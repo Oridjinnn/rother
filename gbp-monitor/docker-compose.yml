@@ -1,0 +1,41 @@
+# GBP Monitor — Docker Compose deployment
+#
+# Per M13A PADR-004: Docker Compose is the primary production deployment model.
+#
+# Usage:
+#   docker compose up -d          # Start daily scraper (exits after run)
+#   docker compose run --rm scraper  # Run one-off scrape
+#   docker compose down           # Stop
+#
+# Environment:
+#   Copy .env.example to .env and configure before first run.
+
+services:
+  scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gbp-monitor:latest
+    container_name: gbp-monitor-scraper
+    restart: "no"  # Scraper runs once per invocation and exits
+    env_file:
+      - .env
+    environment:
+      - TZ=${TZ:-Asia/Makassar}
+      - PYTHONUNBUFFERED=1
+      - GBP_MONITOR_MODE=${GBP_MONITOR_MODE:-live}
+      - GBP_MONITOR_NO_SANDBOX=${GBP_MONITOR_NO_SANDBOX:-true}
+    volumes:
+      - gbp-data:/app/data
+      - ./config:/app/config:ro
+      - ./tests/fixtures:/app/tests/fixtures:ro
+    healthcheck:
+      test: ["CMD", "python", "-m", "orchestration.health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  gbp-data:
+    name: gbp-monitor-data

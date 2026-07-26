@@ -1,0 +1,55 @@
+# GBP Monitor .dockerignore
+#
+# Exclude development artifacts and local-only files from the Docker build
+# context. This keeps the image small and avoids cache invalidation from
+# irrelevant file changes.
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Data (mounted as volume in production)
+data/
+!data/.gitkeep
+
+# Node (not used in scraper image, but exclude just in case)
+node_modules/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (not needed at runtime)
+docs/
+
+# Audit scripts (not needed at runtime)
+audit/
+
+# Schedule/GitHub Actions (not needed at runtime)
+schedule/
+
+# Requirements lock (if generated)
+requirements-locked.txt
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Environment
+.env
+.env.*

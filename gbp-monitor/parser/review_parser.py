@@ -12,7 +12,7 @@ from .schema import Review
 
 logger = logging.getLogger("gbp-monitor.parser")
 
-_RATING_PATTERN = re.compile(r"(\d(?:\.\d)?)\s*(?:out of|/)\s*5", re.IGNORECASE)
+_RATING_PATTERN = re.compile(r"(\d+(?:[.,]\d+)?)\s*(?:out\s*of\s*5\b|[\s/]*5|bintang|star|estrella|sterne)?", re.IGNORECASE)
 
 
 def _first(selectors: dict, key: str, default: str = "") -> str:
@@ -115,7 +115,8 @@ def _safe_parse_rating(item: Selector, selectors: dict) -> float | None:
         match = _RATING_PATTERN.search(label)
         if not match:
             return None
-        return float(match.group(1))
+        raw = match.group(1).replace(",", ".")
+        return float(raw)
     except Exception as e:
         logger.debug("rating parse failed: %s", e)
         return None

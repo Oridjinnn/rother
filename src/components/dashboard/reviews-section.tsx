@@ -90,6 +90,8 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
   const [selectedRatings, setSelectedRatings] = React.useState<Set<number>>(
     new Set(),
   );
+  const [dateFrom, setDateFrom] = React.useState("");
+  const [dateTo, setDateTo] = React.useState("");
   const [search, setSearch] = React.useState("");
   const [debouncedSearch, setDebouncedSearch] = React.useState("");
 
@@ -111,7 +113,7 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
   // Reset to page 1 when any filter changes.
   React.useEffect(() => {
     setPage(1);
-  }, [branchId, competitorId, selectedRatings, debouncedSearch, pageSize]);
+  }, [branchId, competitorId, selectedRatings, dateFrom, dateTo, debouncedSearch, pageSize]);
 
   // Debounce search input.
   React.useEffect(() => {
@@ -185,6 +187,8 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
       params.set("rating", Array.from(selectedRatings).sort().join(","));
     }
     if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
+    if (dateFrom) params.set("date_from", dateFrom);
+    if (dateTo) params.set("date_to", dateTo);
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
 
@@ -225,6 +229,8 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
     branchId,
     competitorId,
     selectedRatings,
+    dateFrom,
+    dateTo,
     debouncedSearch,
     page,
     pageSize,
@@ -333,12 +339,16 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
     branchId !== "all" ||
     competitorId !== "all" ||
     selectedRatings.size > 0 ||
+    dateFrom.length > 0 ||
+    dateTo.length > 0 ||
     debouncedSearch.trim().length > 0;
 
   const clearFilters = () => {
     setBranchId("all");
     setCompetitorId("all");
     setSelectedRatings(new Set());
+    setDateFrom("");
+    setDateTo("");
     setSearch("");
   };
 
@@ -378,7 +388,7 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
         </CardHeader>
         <CardContent>
           {/* Filter bar */}
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-6">
             <div className="space-y-1.5">
               <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 Branch
@@ -454,6 +464,32 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
 
             <div className="space-y-1.5">
               <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                From
+              </label>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-8 text-xs"
+                aria-label="Date from"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                To
+              </label>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-8 text-xs"
+                aria-label="Date to"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 Search
               </label>
               <div className="relative">
@@ -503,6 +539,16 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
                 {selectedRatings.size > 0 && (
                   <Badge variant="secondary" className="gap-1 text-[11px]">
                     Ratings: {Array.from(selectedRatings).sort().join(", ")}★
+                  </Badge>
+                )}
+                {dateFrom && (
+                  <Badge variant="secondary" className="gap-1 text-[11px]">
+                    From: {dateFrom}
+                  </Badge>
+                )}
+                {dateTo && (
+                  <Badge variant="secondary" className="gap-1 text-[11px]">
+                    To: {dateTo}
                   </Badge>
                 )}
                 {debouncedSearch.trim() && (

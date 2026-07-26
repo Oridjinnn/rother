@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import type { BranchesResponse, BranchWithStats, CompetitorStats } from "@/lib/gbp/types";
-import { readAllSnapshots, readLatestDelta, readListings } from "@/lib/gbp/server-data";
+import { readAllSnapshots, readLatestDelta, readAllDeltas, readListings } from "@/lib/gbp/server-data";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -17,10 +17,18 @@ export const revalidate = 0;
  */
 export async function GET() {
   try {
-    const [listings, snapshots] = await Promise.all([
+    const [listings, snapshots, allDeltas] = await Promise.all([
       readListings(),
       readAllSnapshots(),
+      readAllDeltas(),
     ]);
+
+    const deltasByComp = new Map<string, typeof allDeltas>();
+    for (const d of allDeltas) {
+      const arr = deltasByComp.get(d.competitor_id) ?? [];
+      arr.push(d);
+      deltasByComp.set(d.competitor_id, arr);
+    }
 
     const branches: BranchWithStats[] = [];
     let totalCompetitors = 0;
@@ -30,6 +38,7 @@ export async function GET() {
       const competitors: CompetitorStats[] = [];
       let branchTotal = 0;
       let branchNew = 0;
+      let branchLastScrape: string | null = null;
 
       for (const comp of branch.competitors) {
         totalCompetitors += 1;
@@ -48,11 +57,39 @@ export async function GET() {
           .filter(Boolean)
           .sort();
         const last_scraped_at = scrapedDates.length > 0 ? scrapedDates[scrapedDates.length - 1] : null;
+        if (last_scraped_at && (!branchLastScrape || last_scraped_at > branchLastScrape)) {
+          branchLastScrape = last_scraped_at;
+        }
         const delta = await readLatestDelta(comp.competitor_id);
 
         branchTotal += reviews.length;
         branchNew += delta.length;
         totalReviews += reviews.length;
+
+        const latestReview = reviews.length > 0
+          ? reviews
+              .filter((r) => r.text || r.relative_date)
+              .sort(
+                (a, b) => (b.scraped_at || "").localeCompare(a.scraped_at || ""),
+              )[0] ?? null
+          : null;
+
+        const texts = reviews.map((r) => r.text).filter(Boolean) as string[];
+        const avgLen =
+          texts.length > 0
+            ? Math.round(texts.reduce((s, t) => s + t.length, 0) / texts.length)
+            : null;
+
+        const compDeltas = (deltasByComp.get(comp.competitor_id) ?? [])
+          .sort((a, b) => a.run_timestamp.localeCompare(b.run_timestamp));
+        const trend =
+          compDeltas.length >= 2
+            ? compDeltas[compDeltas.length - 1].reviews.length > compDeltas[0].reviews.length
+              ? "up"
+              : compDeltas[compDeltas.length - 1].reviews.length < compDeltas[0].reviews.length
+                ? "down"
+                : "stable"
+            : null;
 
         competitors.push({
           competitor_id: comp.competitor_id,
@@ -64,8 +101,20 @@ export async function GET() {
           average_rating,
           last_scraped_at,
           new_reviews_count: delta.length,
+          latest_review: latestReview
+            ? { text: latestReview.text, relative_date: latestReview.relative_date, rating: latestReview.rating }
+            : null,
+          average_review_length: avgLen,
+          trend_indicator: trend,
         });
       }
+
+      const velocity =
+        branchNew > 0 && branchLastScrape
+          ? Math.round(branchNew / Math.max(1, Math.ceil(
+              (Date.now() - new Date(branchLastScrape).getTime()) / (1000 * 60 * 60 * 24),
+            )) * 100) / 100
+          : null;
 
       branches.push({
         branch_id: branch.branch_id,
@@ -73,6 +122,8 @@ export async function GET() {
         competitors,
         total_reviews: branchTotal,
         new_reviews_count: branchNew,
+        review_velocity: velocity,
+        last_scrape: branchLastScrape,
       });
     }
 

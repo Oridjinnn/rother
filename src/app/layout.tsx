@@ -16,28 +16,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GBP Monitor — Copenhagen Bali",
+  title: "Rother — Dashboard",
   description:
-    "Zero-cost Google Business Profile competitor review monitor for Copenhagen Bali. Scrapes daily, surfaces new reviews, alerts on selector breakage. No AI/LLM in this phase.",
+    "Competitor review monitoring dashboard. Track Google Business Profile reviews across branches and competitors automatically.",
   keywords: [
-    "GBP",
-    "Google Business Profile",
-    "Copenhagen Bali",
-    "coffee shop",
+    "Rother",
     "review monitor",
-    "Bali",
-    "Seminyak",
-    "Canggu",
-    "Ubud",
+    "competitor tracking",
+    "Google Business Profile",
+    "dashboard",
   ],
-  authors: [{ name: "Copenhagen Bali — GBP Monitor" }],
+  authors: [{ name: "Rother" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/rother-icon.svg",
   },
   openGraph: {
-    title: "GBP Monitor — Copenhagen Bali",
+    title: "Rother — Dashboard",
     description:
-      "Zero-cost competitor review monitor for Copenhagen Bali's 6 branches.",
+      "Competitor review monitoring dashboard. Track reviews across branches and competitors automatically.",
     type: "website",
   },
 };

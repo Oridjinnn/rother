@@ -5,8 +5,6 @@ Automated monitoring of competitor Google Business Profile reviews for
 No AI/LLM features in this phase.
 
 **Governing documents:**
-- `EXECUTION_RULES.md` (in `/home/z/my-project/upload/`) — binding rules
-- `GBP_MONITOR_PLAN.md` (in `/home/z/my-project/upload/`) — technical plan
 - `CHANGELOG.md` (in this directory) — change record per Rule 2
 
 ## Quickstart (development)
@@ -14,10 +12,20 @@ No AI/LLM features in this phase.
 ```bash
 cd gbp-monitor
 pip install -r requirements.txt
-playwright install chromium
-python -m orchestration.run_all            # full run (mock listings)
-python -m orchestration.run_all --fixtures # run against static HTML fixtures only
+playwright install chromium      # only needed for live mode
+python -m orchestration.run_all --fixtures  # test with static fixtures
 ```
+
+## Live Scraping
+
+Before running live mode, you need valid Google Maps `place_id` values:
+
+1. Get place_ids for each competitor (see `docs/engineering/LIVE_SCRAPING_GUIDE.md`)
+2. Set them in `config/listings.json`
+3. Run: `python -m orchestration.run_all`
+
+The scraper validates place_id format (must start with `ChIJ`, ≥25 chars).
+Invalid/missing place_ids fall back to mock URLs and skip gracefully.
 
 ## Baseline Verification
 
@@ -28,22 +36,33 @@ cd gbp-monitor
 python -m tests.verify_baseline
 ```
 
-Expected output: 20+ checks pass, exit code 0.
+Expected output: 67 checks pass, exit code 0.
+
+## Fixture Preparation
+
+After a successful live capture, promote evidence to a golden dataset:
+
+```bash
+python -m golden.promote {verify_timestamp}
+```
+
+See `docs/engineering/FIXTURE_PREPARATION.md` for the full workflow.
 
 ## Layout
 
-See `GBP_MONITOR_PLAN.md` Section 3 for the canonical directory structure.
-Each Python package (`harness`, `parser`, `storage`, `discovery`,
-`orchestration`) has exactly one responsibility — do not merge them.
-
-## Dashboard
-
-A Next.js dashboard at the parent project's `/` route visualizes the
-snapshots produced by this scraper. It reads from `data/snapshots/`,
-`data/reviews_new/`, and `data/run.log`.
-
-See `docs/engineering/` at the project root for full setup, execution, and
-verification guides.
+```
+gbp-monitor/
+├── orchestration/run_all.py   # Main entry point: capture → parse → store
+├── harness/                    # Browser lifecycle, capture, scrolling, selectors
+├── parser/                     # Review parsing (parsel.Selector)
+├── storage/                    # Versioned snapshot persistence
+├── discovery/                  # URL reachability pre-checks
+├── config/                     # listings.json, selectors.json
+├── tests/                      # 3 HTML fixtures + verify_baseline.py
+├── golden/                     # promote.py — evidence → golden dataset
+├── data/                       # Runtime data: snapshots, deltas, logs
+└── docs/                       # Guides (see docs/engineering/)
+```
 
 ## Status
 

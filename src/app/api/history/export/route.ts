@@ -88,7 +88,7 @@ export async function GET(request: Request) {
         status: 200,
         headers: {
           "Content-Type": "application/json; charset=utf-8",
-          "Content-Disposition": `attachment; filename="gbp-history-${stamp}.json"`,
+          "Content-Disposition": `attachment; filename="rother-history-${stamp}.json"`,
           "Cache-Control": "no-store",
         },
       });
@@ -158,7 +158,7 @@ export async function GET(request: Request) {
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="gbp-history-${stamp}.csv"`,
+        "Content-Disposition": `attachment; filename="rother-history-${stamp}.csv"`,
         "Cache-Control": "no-store",
       },
     });

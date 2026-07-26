@@ -1,7 +1,6 @@
-# Rother — GBP Competitor Review Monitor
+# Rother — Competitor Review Monitor
 
-Automated monitoring of competitor Google Business Profile reviews for
-**Copenhagen Bali** (6 branches). Two subsystems:
+Automated monitoring of competitor Google Business Profile reviews. Two subsystems:
 
 - **gbp-monitor/** — Python scraper (Playwright + Parsel)
 - **src/** — Next.js dashboard (App Router, shadcn/ui, Recharts)
@@ -42,7 +41,7 @@ Open http://localhost:3000 in your browser.
 | `npm install` | 669 packages, 447ms |
 | `npx prisma db push` | Database already in sync, client generated (567ms) |
 | `npm run dev` | Next.js 16.2.11, Turbopack, ready in 512ms |
-| `curl http://localhost:3000` | HTTP 200, 40 KB HTML, `<title>GBP Monitor - Copenhagen Bali</title>` |
+| `curl http://localhost:3000` | HTTP 200, 40 KB HTML, `<title>Rother — Dashboard</title>` |
 | `npm run lint` | 24 pre-existing warnings (no startup blockers) |
 
 ---
@@ -140,6 +139,18 @@ Copy `.env` from the repository — the default path works for both Windows and 
 ```
 
 ---
+
+## Features (M3)
+
+| Feature | Description | API | UI |
+|---------|-------------|-----|-----|
+| **Overview** | KPIs, rating distribution, review trends, run history | `GET /api/overview` | Overview tab |
+| **Branches** | 6 branches x 2 competitors with per-competitor intelligence | `GET /api/branches` | Branches tab |
+| **Compare** | Side-by-side branch comparison + historical snapshot diff | `GET /api/branches`, `GET /api/history/compare` | Compare tab |
+| **Review Explorer** | Searchable, filterable, paginated review table with export | `GET /api/reviews`, `GET /api/reviews/export` | Reviews tab |
+| **Alerts** | Dashboard alerts for scrapes, new reviews, selector issues | `GET /api/alerts` | Alerts tab |
+| **Configuration** | Edit branches/competitors via inline JSON editor | `GET/PATCH /api/config/listings` | Config tab |
+| **Export** | CSV/JSON export for reviews, competitors, branches, history | `GET /api/reviews/export`, `GET /api/export/competitors`, `GET /api/export/branches`, `GET /api/history/export` | Export dialog |
 
 ## Scraper (gbp-monitor/)
 

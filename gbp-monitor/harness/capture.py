@@ -195,10 +195,22 @@ def capture_listing_html(
         _validate_capture_output(html, comp_id, logger)
 
         if screenshot_dir:
+            # M13B: Defense-in-depth — verify screenshot_dir does not escape
+            # its expected parent. The caller (run_all.py) already sanitizes
+            # competitor_id, but this catches any future mis-use.
             spath = Path(screenshot_dir)
-            spath.mkdir(parents=True, exist_ok=True)
-            page.screenshot(path=str(spath / "page.png"), full_page=True)
-            spath.joinpath("page.html").write_text(html, encoding="utf-8")
+            resolved = spath.resolve()
+            # Check the resolved path doesn't contain path traversal artifacts
+            # (the caller constructs paths under data/verify/{ts}/{comp_id}/).
+            if ".." in str(spath) or ".." in str(resolved):
+                logger.error(
+                    "Path traversal detected in screenshot_dir %r — skipping evidence save",
+                    screenshot_dir,
+                )
+            else:
+                spath.mkdir(parents=True, exist_ok=True)
+                page.screenshot(path=str(spath / "page.png"), full_page=True)
+                spath.joinpath("page.html").write_text(html, encoding="utf-8")
 
         logger.info("capture[%s] phases: %s", comp_id, ", ".join(f"{k}={v}s" for k, v in phase_timings.items()))
         return html

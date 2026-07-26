@@ -1,0 +1,250 @@
+{
+  "capture_timestamp": "20260723T101225Z",
+  "capture_source": "live_gmaps",
+  "verified_by": "M5-LiveCapture",
+  "selector_health": {
+    "cookie_reject_button": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
+          "status": "degraded",
+          "confidence": "none",
+          "matches": 0
+        },
+        {
+          "tier": 1,
+          "selector": "button:has-text('Reject all')",
+          "status": "live",
+          "confidence": "high",
+          "matches": 154
+        },
+        {
+          "tier": 2,
+          "selector": "form[action*='cookie'] button:first-of-type",
+          "status": "live",
+          "confidence": "medium",
+          "matches": 1
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 1,
+      "active_selector": "button:has-text('Reject all')"
+    },
+    "reviews_tab_button": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "button[aria-label*='Reviews']",
+          "status": "live",
+          "confidence": "high",
+          "matches": 154
+        },
+        {
+          "tier": 1,
+          "selector": "button[aria-label*='Avis']",
+          "status": "live",
+          "confidence": "high",
+          "matches": 154
+        },
+        {
+          "tier": 2,
+          "selector": "[role='tab'][aria-label*='Review']",
+          "status": "degraded",
+          "confidence": "none",
+          "matches": 0
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 0,
+      "active_selector": "button[aria-label*='Reviews']"
+    },
+    "review_container": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
+          "status": "live",
+          "confidence": "high",
+          "matches": 253
+        },
+        {
+          "tier": 1,
+          "selector": "div[role='feed']",
+          "status": "live",
+          "confidence": "high",
+          "matches": 1483
+        },
+        {
+          "tier": 2,
+          "selector": "div.m6QErb[role='region']",
+          "status": "live",
+          "confidence": "high",
+          "matches": 1439
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 0,
+      "active_selector": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf"
+    },
+    "review_item": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "div.jftiEf.fontBodyMedium",
+          "status": "live",
+          "confidence": "high",
+          "matches": 895
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 0,
+      "active_selector": "div.jftiEf.fontBodyMedium"
+    },
+    "review_id_attr": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "data-review-id",
+          "status": "live",
+          "confidence": "high",
+          "matches": 33
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 0,
+      "active_selector": "data-review-id"
+    },
+    "reviewer_name_attr": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "aria-label",
+          "status": "live",
+          "confidence": "high",
+          "matches": 301
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 0,
+      "active_selector": "aria-label"
+    },
+    "review_text_selector": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "span.wiI7pd",
+          "status": "live",
+          "confidence": "high",
+          "matches": 1011
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 0,
+      "active_selector": "span.wiI7pd"
+    },
+    "rating_selector": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "span.kvMYJc",
+          "status": "live",
+          "confidence": "high",
+          "matches": 935
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 0,
+      "active_selector": "span.kvMYJc"
+    },
+    "rating_attr": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "aria-label",
+          "status": "live",
+          "confidence": "high",
+          "matches": 301
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 0,
+      "active_selector": "aria-label"
+    },
+    "relative_date_selector": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "span.rsqaWe",
+          "status": "live",
+          "confidence": "high",
+          "matches": 947
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 0,
+      "active_selector": "span.rsqaWe"
+    },
+    "expand_text_button": {
+      "verified_by": "M5-LiveCapture",
+      "last_verified": "20260723T101225Z",
+      "tiers": [
+        {
+          "tier": 0,
+          "selector": "button.w8nwRe.kyuRq",
+          "status": "degraded",
+          "confidence": "none",
+          "matches": 0
+        },
+        {
+          "tier": 1,
+          "selector": "button:has-text('More')",
+          "status": "live",
+          "confidence": "high",
+          "matches": 154
+        },
+        {
+          "tier": 2,
+          "selector": "button:has-text('See more')",
+          "status": "live",
+          "confidence": "high",
+          "matches": 154
+        }
+      ],
+      "overall_status": "live",
+      "overall_confidence": "high",
+      "active_tier": 1,
+      "active_selector": "button:has-text('More')"
+    }
+  }
+}

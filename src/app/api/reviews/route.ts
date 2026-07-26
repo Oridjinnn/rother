@@ -2,20 +2,20 @@ import { NextResponse } from "next/server";
 
 import type { Review, ReviewsResponse } from "@/lib/gbp/types";
 import { readAllSnapshots, readListings } from "@/lib/gbp/server-data";
+import { parseRelativeDate } from "@/lib/gbp/format";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 /**
- * GET /api/reviews?branch_id=&competitor_id=&rating=&q=&page=1&pageSize=25
+ * GET /api/reviews?branch_id=&competitor_id=&rating=&date_from=&date_to=&q=&page=1&pageSize=25
  *
  * Paginated, filtered view of ALL reviews across all competitor snapshots.
  * - branch_id: optional, filters by branch
- * - competitor_id: optional, filters by competitor (must belong to branch_id
- *     if both are supplied — but we don't enforce that here, we just filter)
+ * - competitor_id: optional, filters by competitor
  * - rating: optional, comma-separated list of star ratings to include
- *     (e.g. "1,3,5"). Reviews with null rating are excluded when this filter
- *     is set.
+ * - date_from: optional, ISO date string, filters scraped_at >= date_from
+ * - date_to: optional, ISO date string, filters scraped_at <= date_to
  * - q: optional, case-insensitive substring match on reviewer_name + text
  * - page: 1-indexed, default 1
  * - pageSize: default 25, capped at 100
@@ -33,6 +33,8 @@ export async function GET(request: Request) {
     const branchId = searchParams.get("branch_id") || undefined;
     const competitorId = searchParams.get("competitor_id") || undefined;
     const ratingParam = searchParams.get("rating") || undefined;
+    const dateFrom = searchParams.get("date_from") || undefined;
+    const dateTo = searchParams.get("date_to") || undefined;
     const q = (searchParams.get("q") || "").trim().toLowerCase() || undefined;
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
     const pageSizeRaw = parseInt(searchParams.get("pageSize") || "25", 10) || 25;
@@ -87,12 +89,18 @@ export async function GET(request: Request) {
       for (const r of reviews) all.push(r);
     }
 
-    // Apply rating + text filters.
+    // Apply rating + date + text filters.
     const filtered = all.filter((r) => {
       if (ratingFilter) {
         if (r.rating === null) return false;
         const bucket = Math.round(r.rating);
         if (!ratingFilter.has(bucket)) return false;
+      }
+      if (dateFrom || dateTo) {
+        const reviewDate =
+          parseRelativeDate(r.relative_date, r.scraped_at) ?? r.scraped_at?.slice(0, 10) ?? null;
+        if (dateFrom && reviewDate && reviewDate < dateFrom) return false;
+        if (dateTo && reviewDate && reviewDate > dateTo) return false;
       }
       if (q) {
         const name = (r.reviewer_name || "").toLowerCase();

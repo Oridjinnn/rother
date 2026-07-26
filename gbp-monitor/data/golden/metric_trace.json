@@ -1,0 +1,44 @@
+{
+  "total_reviews": {
+    "html": 33,
+    "parser": 3,
+    "deduped_unique": 3,
+    "snapshot": 3,
+    "dashboard_would_show": 3,
+    "notes": "HTML has 33 data-review-id (duplicated DOM). Parser dedups to 3 unique. Snapshot stores 3."
+  },
+  "average_rating": {
+    "html_raw": "5, 1, 5 (from '5 bintang' × 2, '1 bintang' × 1)",
+    "parser": 3.67,
+    "snapshot": 3.67,
+    "expected": 3.67,
+    "notes": "Derived from 3 review cards, not aggregate header. Ratings extracted correctly via updated regex."
+  },
+  "rating_distribution": {
+    "expected": {
+      "5": 2,
+      "4": 0,
+      "3": 0,
+      "2": 0,
+      "1": 1
+    },
+    "snapshot": {
+      "5": 2,
+      "1": 1
+    },
+    "notes": "Snapshot has 3+2=5 total bintang mentions in HTML (3 on review cards + 2 aggregate). Aggregate header shows summary stars, not individual reviews."
+  },
+  "latest_review": {
+    "expected": "Chelvy Soetanto, rating=5.0, 'seminggu lalu'",
+    "notes": "All 3 reviews share same scraped_at. Any deterministic sort yields one of the 3."
+  },
+  "review_velocity": {
+    "expected": null,
+    "notes": "No delta files exist for post-migration scrape. Velocity requires ≥1 run delta."
+  },
+  "alerts": {
+    "expected": "run_summary errors (4 mock alerts from seed data)",
+    "snapshot_shows": "4 alerts (all from run_summary errors in seed data)",
+    "notes": "Alerts are computed from run_summary + deltas + selector_report. No selector_degradation alerts since selectors are now M5-verified."
+  }
+}

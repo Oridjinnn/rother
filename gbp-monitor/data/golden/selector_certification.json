@@ -1,0 +1,202 @@
+{
+  "certification_id": "M10-20260724",
+  "certified_by": "browser_agent",
+  "certification_date": "2026-07-24T20:00:00Z",
+  "method": "Offline parsel DOM audit against live capture (data/verify/20260724T121337Z/comp-canggu-01/page.html) + Playwright selector_report.json (data/selector_report.json, 2026-07-23)",
+  "mode": "live_capture",
+  "evidence_path": "data/verify/20260724T121337Z/",
+  "summary": {
+    "total_selectors": 15,
+    "certified_stable": 6,
+    "certified_semi_stable": 2,
+    "certified_fragile": 2,
+    "certified_obsolete": 6,
+    "certified_unknown": 0,
+    "overall_confidence": 0.77
+  },
+  "selectors": {
+    "cookie_reject_button": {
+      "classification": "obsolete",
+      "confidence": 1.0,
+      "purpose": "Dismiss EU cookie consent banner",
+      "dom_snippet": "NOT FOUND",
+      "text_evidence": "0 occurrences of 'Reject all' or 'cookie' in 517KB HTML",
+      "match_count": 0,
+      "attempts": 36,
+      "verification_date": "2026-07-24",
+      "recommendation": "Remove for en-US/Indonesia locale"
+    },
+    "reviews_tab_button": {
+      "classification": "obsolete",
+      "confidence": 1.0,
+      "purpose": "Click reviews tab to load review content",
+      "dom_snippet": "NOT FOUND",
+      "text_evidence": "33 data-review-id elements found in initial HTML without any tab click",
+      "match_count": 0,
+      "attempts": 36,
+      "verification_date": "2026-07-24",
+      "recommendation": "Remove — reviews are embedded in initial HTML"
+    },
+    "review_container_tier0": {
+      "classification": "fragile",
+      "confidence": 0.5,
+      "purpose": "Scrollable review container (auto-generated class tier)",
+      "selector": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
+      "dom_snippet": "<div class=\"m6QErb DxyBCb kA9KIf dS8AEf\" role=\"region\" ...",
+      "match_count": 1,
+      "avg_lookup_time_ms": 9.1,
+      "auto_generated_classes": ["m6QErb", "DxyBCb", "kA9KIf", "dS8AEf"],
+      "verification_date": "2026-07-24",
+      "recommendation": "Demote to tier 2; promote role='region' variant to tier 0"
+    },
+    "review_container_tier1": {
+      "classification": "obsolete",
+      "confidence": 1.0,
+      "purpose": "Scrollable review container (role=feed)",
+      "selector": "div[role='feed']",
+      "match_count": 0,
+      "verification_date": "2026-07-24",
+      "recommendation": "Remove — Google removed role='feed' from container"
+    },
+    "review_container_tier2": {
+      "classification": "stable",
+      "confidence": 0.9,
+      "purpose": "Scrollable review container (role=region)",
+      "selector": "div.m6QErb[role='region']",
+      "dom_snippet": "<div class=\"m6QErb DxyBCb kA9KIf dS8AEf\" role=\"region\" ...",
+      "match_count": 2,
+      "avg_lookup_time_ms": 8.0,
+      "verification_date": "2026-07-24",
+      "recommendation": "Promote to tier 0 — semantic selector, reliable on all page types"
+    },
+    "review_item": {
+      "classification": "stable",
+      "confidence": 1.0,
+      "purpose": "Seed CSS for parsing review card elements",
+      "selector": "div.jftiEf.fontBodyMedium",
+      "dom_snippet": "<div class=\"jftiEf fontBodyMedium\" data-review-id=\"...\">",
+      "match_count": 3,
+      "avg_lookup_time_ms": 1.8,
+      "verification_date": "2026-07-24",
+      "recommendation": "No changes needed"
+    },
+    "review_id_attr": {
+      "classification": "stable",
+      "confidence": 1.0,
+      "purpose": "HTML attribute for unique review ID",
+      "attribute": "data-review-id",
+      "elements_with_attr": 33,
+      "unique_ids_found": 3,
+      "verification_date": "2026-07-24",
+      "recommendation": "No changes needed"
+    },
+    "reviewer_name_attr": {
+      "classification": "stable",
+      "confidence": 1.0,
+      "purpose": "HTML attribute for reviewer display name",
+      "attribute": "aria-label",
+      "elements_with_attr": 301,
+      "sample_values": ["Chelvy Soetanto", "hannah ko", "Ashfia Pramita Nurfitriani"],
+      "verification_date": "2026-07-24",
+      "recommendation": "No changes needed"
+    },
+    "review_text_selector": {
+      "classification": "stable",
+      "confidence": 1.0,
+      "purpose": "CSS selector for review text content",
+      "selector": "span.wiI7pd",
+      "dom_snippet": "<span class=\"wiI7pd\">Vibes na enak banget...</span>",
+      "match_count": 3,
+      "avg_lookup_time_ms": 0.4,
+      "verification_date": "2026-07-24",
+      "recommendation": "No changes needed"
+    },
+    "rating_selector": {
+      "classification": "stable",
+      "confidence": 1.0,
+      "purpose": "CSS selector for rating element",
+      "selector": "span.kvMYJc",
+      "dom_snippet": "<span class=\"kvMYJc\" aria-label=\"5 bintang\">",
+      "match_count": 3,
+      "avg_lookup_time_ms": 0.4,
+      "sample_aria_labels": ["5 bintang", "1 bintang"],
+      "verification_date": "2026-07-24",
+      "recommendation": "No changes needed"
+    },
+    "rating_attr": {
+      "classification": "stable",
+      "confidence": 1.0,
+      "purpose": "HTML attribute for numeric star rating value",
+      "attribute": "aria-label",
+      "elements_with_attr": 301,
+      "verification_date": "2026-07-24",
+      "recommendation": "No changes needed"
+    },
+    "relative_date_selector": {
+      "classification": "stable",
+      "confidence": 1.0,
+      "purpose": "CSS selector for relative date text",
+      "selector": "span.rsqaWe",
+      "dom_snippet": "<span class=\"rsqaWe\">seminggu lalu</span>",
+      "match_count": 3,
+      "avg_lookup_time_ms": 0.4,
+      "sample_values": ["seminggu lalu", "sebulan lalu", "2 bulan lalu"],
+      "verification_date": "2026-07-24",
+      "recommendation": "No changes needed"
+    },
+    "expand_text_button_tier0": {
+      "classification": "fragile",
+      "confidence": 0.5,
+      "purpose": "Expand truncated reviews",
+      "selector": "button.w8nwRe.kyuRq",
+      "match_count": 5,
+      "avg_lookup_time_ms": 262.0,
+      "verification_date": "2026-07-24",
+      "recommendation": "Keep — works on real pages (262ms, 5 buttons)"
+    },
+    "expand_text_button_tier1": {
+      "classification": "semi_stable",
+      "confidence": 0.7,
+      "purpose": "Expand truncated reviews (text match fallback)",
+      "selector": "button:has-text('More')",
+      "match_count": 0,
+      "verification_date": "2026-07-24",
+      "recommendation": "Keep as Playwright-only fallback"
+    },
+    "expand_text_button_tier2": {
+      "classification": "obsolete",
+      "confidence": 1.0,
+      "purpose": "Expand truncated reviews (text match fallback)",
+      "selector": "button:has-text('See more')",
+      "match_count": 0,
+      "verification_date": "2026-07-24",
+      "recommendation": "Remove — text 'See more' not found in DOM"
+    },
+    "locator_tier_2": {
+      "classification": "obsolete",
+      "confidence": 1.0,
+      "purpose": "Review item locator (role=article)",
+      "selector": "[role='article'][aria-label]",
+      "match_count": 0,
+      "verification_date": "2026-07-24",
+      "recommendation": "Remove — role='article' removed by Google"
+    },
+    "locator_tier_4": {
+      "classification": "obsolete",
+      "confidence": 1.0,
+      "purpose": "Review item locator (role=article + data-review-id)",
+      "selector": "div[role='article'][data-review-id]",
+      "match_count": 0,
+      "verification_date": "2026-07-24",
+      "recommendation": "Remove — role='article' removed by Google"
+    }
+  },
+  "waste_analysis": {
+    "obsolete_selectors_seconds_per_competitor": 24,
+    "obsolete_selectors_seconds_all_12": 288,
+    "container_timeout_seconds_all_12_mock": 220,
+    "total_current_waste_seconds": 508,
+    "projected_after_optimization_seconds": 120,
+    "improvement_percent": 76
+  }
+}

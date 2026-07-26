@@ -98,7 +98,7 @@ export function getText(mode: AppMode): TextMap {
   if (mode === "dev") {
     return {
       name: "Rother (Dev)",
-      subtitle: "Copenhagen Bali · competitor review watch",
+      subtitle: "Competitor review insights",
       version: "0.0.1",
       tagline: "Zero-cost · No AI/LLM",
       runButton: "Run Now",

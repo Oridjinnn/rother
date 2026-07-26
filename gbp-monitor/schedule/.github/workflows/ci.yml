@@ -1,0 +1,72 @@
+# GBP Monitor — CI Pipeline
+#
+# Runs on every push and pull request to the main branch.
+# Verifies:
+#   1. Python regression tests (verify_baseline)
+#   2. Docker image build
+#
+# Per M13A PADR-004: Docker Compose is the primary deployment model,
+# so Docker build verification is required for every commit.
+
+name: GBP Monitor CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: gbp-monitor-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gbp-monitor
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: gbp-monitor/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Run baseline verification
+        run: python -m tests.verify_baseline
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gbp-monitor
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: gbp-monitor
+          push: false
+          tags: gbp-monitor:ci-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify Docker image builds
+        run: docker images gbp-monitor:ci-${{ github.sha }}

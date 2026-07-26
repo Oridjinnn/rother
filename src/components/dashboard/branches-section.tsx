@@ -4,6 +4,8 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   CalendarClock,
   ChevronRight,
   ExternalLink,
@@ -66,6 +68,11 @@ function CompetitorRow({
 }) {
   const ts = formatTimestamp(comp.last_scraped_at);
   const hasReviews = comp.total_reviews > 0;
+
+  const TrendIcon = comp.trend_indicator === "up" ? ArrowUp
+    : comp.trend_indicator === "down" ? ArrowDown
+    : null;
+
   return (
     <button
       type="button"
@@ -88,6 +95,16 @@ function CompetitorRow({
                 <Sparkles className="size-2.5" aria-hidden="true" />+
                 {comp.new_reviews_count} new
               </Badge>
+            )}
+            {TrendIcon && (
+              <TrendIcon
+                className={`size-3.5 ${
+                  comp.trend_indicator === "up"
+                    ? "text-emerald-500"
+                    : "text-red-500"
+                }`}
+                aria-label={`Trending ${comp.trend_indicator}`}
+              />
             )}
           </div>
           <div className="font-mono text-[11px] text-muted-foreground">
@@ -117,12 +134,27 @@ function CompetitorRow({
           <CalendarClock className="size-3" aria-hidden="true" />
           <span>Scraped {ts.relative}</span>
         </div>
+        {comp.average_review_length !== null && (
+          <>
+            <Separator orientation="vertical" className="h-4" />
+            <span className="text-muted-foreground">
+              ~{comp.average_review_length} char avg
+            </span>
+          </>
+        )}
       </div>
+
+      {comp.latest_review?.text && (
+        <p className="mt-2 text-xs text-muted-foreground/80 line-clamp-2">
+          <span className="font-medium text-foreground/60">Latest: </span>
+          {comp.latest_review.text}
+        </p>
+      )}
 
       {!hasReviews && (
         <p className="mt-2 text-[11px] italic text-muted-foreground">
           No snapshot yet — this competitor has no fixture in fixtures mode and
-          hasn’t been scraped live.
+          hasn't been scraped live.
         </p>
       )}
     </button>
@@ -365,7 +397,7 @@ export function BranchesSection({
             Branches &amp; Competitors
           </CardTitle>
           <CardDescription>
-            {data.branches.length} Copenhagen Bali branches ·{" "}
+            {data.branches.length} branches ·{" "}
             {data.totalCompetitors} competitors monitored ·{" "}
             {data.totalReviews} reviews captured
           </CardDescription>

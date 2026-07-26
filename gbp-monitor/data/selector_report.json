@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-23T10:03:13.905310+00:00",
-  "selectors_configured": 11,
+  "generated_at": "2026-07-25T04:36:11.272737+00:00",
+  "selectors_configured": 9,
   "selectors_tested": 4,
   "selectors_not_tested": [
     "review_item",
@@ -11,287 +11,96 @@
     "rating_attr",
     "relative_date_selector"
   ],
-  "healthy": 2,
-  "degraded": 2,
+  "healthy": 1,
+  "degraded": 1,
   "broken": 0,
   "not_evaluated": 7,
-  "avg_confidence": 0.595,
+  "avg_confidence": 0.521,
   "by_selector": {
-    "cookie_reject_button": {
-      "selector_value": [
-        "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
-        "button:has-text('Reject all')",
-        "form[action*='cookie'] button:first-of-type"
-      ],
-      "status": "healthy",
-      "confidence": 1.0,
-      "total_lookups": 36,
-      "times_found": 0,
-      "times_not_found": 36,
-      "expected_missing_count": 36,
-      "avg_duration_ms": 4010.3,
-      "error_examples": [
-        "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-        "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-        "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-      ],
-      "per_competitor": {
-        "comp-seminyak-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4011.9,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-seminyak-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4005.9,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-canggu-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4009.0,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-canggu-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4016.0,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-ubud-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4018.3,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-ubud-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4004.6,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-uluwatu-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4014.9,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-uluwatu-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4009.3,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-nusadua-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4005.5,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-nusadua-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4004.0,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-sanur-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4016.6,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        },
-        "comp-sanur-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4009.4,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n"
-        }
-      }
-    },
-    "reviews_tab_button": {
-      "selector_value": [
-        "button[aria-label*='Reviews']",
-        "button[aria-label*='Avis']",
-        "[role='tab'][aria-label*='Review']"
-      ],
-      "status": "healthy",
-      "confidence": 1.0,
-      "total_lookups": 36,
-      "times_found": 0,
-      "times_not_found": 36,
-      "expected_missing_count": 36,
-      "avg_duration_ms": 4012.3,
-      "error_examples": [
-        "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-        "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-        "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-      ],
-      "per_competitor": {
-        "comp-seminyak-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4017.9,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-seminyak-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4016.8,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-canggu-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4009.3,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-canggu-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4001.9,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-ubud-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4021.2,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-ubud-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4005.9,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-uluwatu-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4012.0,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-uluwatu-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4004.2,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-nusadua-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4014.4,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-nusadua-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4012.7,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-sanur-01": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4005.7,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        },
-        "comp-sanur-02": {
-          "found": false,
-          "match_count": 0,
-          "duration_ms": 4016.1,
-          "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n"
-        }
-      }
-    },
     "review_container": {
       "selector_value": [
-        "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-        "div[role='feed']",
-        "div.m6QErb[role='region']"
+        "div.m6QErb[role='region']",
+        "div.m6QErb.DxyBCb.kA9KIf.dS8AEf"
       ],
-      "status": "degraded",
-      "confidence": 0.353,
-      "total_lookups": 34,
+      "status": "healthy",
+      "confidence": 1.0,
+      "total_lookups": 12,
       "times_found": 12,
-      "times_not_found": 22,
+      "times_not_found": 0,
       "expected_missing_count": 0,
-      "avg_duration_ms": 6482.4,
-      "error_examples": [
-        "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
-        "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
-        "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n"
-      ],
+      "avg_duration_ms": 1436.3,
+      "error_examples": [],
       "per_competitor": {
         "comp-seminyak-01": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 8.7,
+          "duration_ms": 92.3,
           "error": null
         },
         "comp-seminyak-02": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 7.7,
+          "duration_ms": 2015.2,
           "error": null
         },
         "comp-canggu-01": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 9.1,
+          "duration_ms": 1174.7,
           "error": null
         },
         "comp-canggu-02": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 11.0,
+          "duration_ms": 1513.8,
           "error": null
         },
         "comp-ubud-01": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 8.0,
+          "duration_ms": 1527.0,
           "error": null
         },
         "comp-ubud-02": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 8.1,
+          "duration_ms": 1497.7,
           "error": null
         },
         "comp-uluwatu-01": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 8.8,
+          "duration_ms": 1639.8,
           "error": null
         },
         "comp-uluwatu-02": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 8.0,
+          "duration_ms": 1778.2,
           "error": null
         },
         "comp-nusadua-01": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 8.1,
+          "duration_ms": 1516.2,
           "error": null
         },
         "comp-nusadua-02": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 7.5,
+          "duration_ms": 1495.0,
           "error": null
         },
         "comp-sanur-01": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 10.7,
+          "duration_ms": 1492.9,
           "error": null
         },
         "comp-sanur-02": {
           "found": true,
           "match_count": 1,
-          "duration_ms": 8.7,
+          "duration_ms": 1493.0,
           "error": null
         }
       }
@@ -341,88 +150,87 @@
     "expand_text_button": {
       "selector_value": [
         "button.w8nwRe.kyuRq",
-        "button:has-text('More')",
-        "button:has-text('See more')"
+        "button:has-text('More')"
       ],
       "status": "degraded",
-      "confidence": 0.028,
-      "total_lookups": 36,
+      "confidence": 0.042,
+      "total_lookups": 24,
       "times_found": 1,
-      "times_not_found": 35,
+      "times_not_found": 23,
       "expected_missing_count": 0,
-      "avg_duration_ms": 10.4,
+      "avg_duration_ms": 25.5,
       "error_examples": [],
       "per_competitor": {
         "comp-seminyak-01": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 2.9,
+          "duration_ms": 14.7,
           "error": null
         },
         "comp-seminyak-02": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 7.8,
+          "duration_ms": 12.2,
           "error": null
         },
         "comp-canggu-01": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 8.1,
+          "duration_ms": 31.5,
           "error": null
         },
         "comp-canggu-02": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 3.6,
+          "duration_ms": 11.6,
           "error": null
         },
         "comp-ubud-01": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 2.8,
+          "duration_ms": 9.0,
           "error": null
         },
         "comp-ubud-02": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 2.7,
+          "duration_ms": 12.1,
           "error": null
         },
         "comp-uluwatu-01": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 3.5,
+          "duration_ms": 18.2,
           "error": null
         },
         "comp-uluwatu-02": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 3.3,
+          "duration_ms": 13.2,
           "error": null
         },
         "comp-nusadua-01": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 2.4,
+          "duration_ms": 10.8,
           "error": null
         },
         "comp-nusadua-02": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 2.4,
+          "duration_ms": 9.8,
           "error": null
         },
         "comp-sanur-01": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 3.2,
+          "duration_ms": 10.2,
           "error": null
         },
         "comp-sanur-02": {
           "found": false,
           "match_count": 0,
-          "duration_ms": 2.7,
+          "duration_ms": 10.5,
           "error": null
         }
       }
@@ -431,98 +239,32 @@
   "details": [
     {
       "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
+      "selector_value": null,
       "found": false,
       "match_count": 0,
-      "duration_ms": 4018.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4014.4,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4011.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.4,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.3,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4017.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10013.0,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
+      "duration_ms": 0.0,
+      "error": "not configured",
       "expected_missing": false,
       "competitor_id": "comp-seminyak-01",
-      "phase": "scroll"
+      "phase": "dismiss_cookie"
     },
     {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
       "found": false,
       "match_count": 0,
-      "duration_ms": 10003.1,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
+      "duration_ms": 0.0,
+      "error": "not configured",
       "expected_missing": false,
       "competitor_id": "comp-seminyak-01",
-      "phase": "scroll"
+      "phase": "click_reviews_tab"
     },
     {
       "selector_key": "review_container",
       "selector_value": "div.m6QErb[role='region']",
       "found": true,
       "match_count": 1,
-      "duration_ms": 8.7,
+      "duration_ms": 92.3,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-seminyak-01",
@@ -533,7 +275,7 @@
       "selector_value": "button.w8nwRe.kyuRq",
       "found": false,
       "match_count": 0,
-      "duration_ms": 3.7,
+      "duration_ms": 28.4,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-seminyak-01",
@@ -544,18 +286,7 @@
       "selector_value": "button:has-text('More')",
       "found": false,
       "match_count": 0,
-      "duration_ms": 3.3,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-seminyak-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.9,
+      "duration_ms": 14.7,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-seminyak-01",
@@ -563,98 +294,32 @@
     },
     {
       "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
+      "selector_value": null,
       "found": false,
       "match_count": 0,
-      "duration_ms": 4007.6,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.3,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4005.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4010.3,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4006.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.8,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-seminyak-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10016.3,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
+      "duration_ms": 0.0,
+      "error": "not configured",
       "expected_missing": false,
       "competitor_id": "comp-seminyak-02",
-      "phase": "scroll"
+      "phase": "dismiss_cookie"
     },
     {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
       "found": false,
       "match_count": 0,
-      "duration_ms": 10016.9,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
+      "duration_ms": 0.0,
+      "error": "not configured",
       "expected_missing": false,
       "competitor_id": "comp-seminyak-02",
-      "phase": "scroll"
+      "phase": "click_reviews_tab"
     },
     {
       "selector_key": "review_container",
       "selector_value": "div.m6QErb[role='region']",
       "found": true,
       "match_count": 1,
-      "duration_ms": 7.7,
+      "duration_ms": 2015.2,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-seminyak-02",
@@ -665,7 +330,7 @@
       "selector_value": "button.w8nwRe.kyuRq",
       "found": false,
       "match_count": 0,
-      "duration_ms": 2.6,
+      "duration_ms": 13.0,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-seminyak-02",
@@ -676,18 +341,7 @@
       "selector_value": "button:has-text('More')",
       "found": false,
       "match_count": 0,
-      "duration_ms": 2.8,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-seminyak-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 7.8,
+      "duration_ms": 12.2,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-seminyak-02",
@@ -695,353 +349,155 @@
     },
     {
       "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
+      "selector_value": null,
       "found": false,
       "match_count": 0,
-      "duration_ms": 4006.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-canggu-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4009.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-canggu-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4009.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
       "competitor_id": "comp-canggu-01",
       "phase": "dismiss_cookie"
     },
     {
       "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
+      "selector_value": null,
       "found": false,
       "match_count": 0,
-      "duration_ms": 4012.8,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-canggu-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4012.6,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-canggu-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4009.3,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
       "competitor_id": "comp-canggu-01",
       "phase": "click_reviews_tab"
     },
     {
       "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
+      "selector_value": "div.m6QErb[role='region']",
       "found": true,
       "match_count": 1,
+      "duration_ms": 1174.7,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-canggu-01",
+      "phase": "scroll"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button.w8nwRe.kyuRq",
+      "found": true,
+      "match_count": 3,
+      "duration_ms": 317.4,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-canggu-01",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button:has-text('More')",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 31.5,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-canggu-01",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "cookie_reject_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-canggu-02",
+      "phase": "dismiss_cookie"
+    },
+    {
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-canggu-02",
+      "phase": "click_reviews_tab"
+    },
+    {
+      "selector_key": "review_container",
+      "selector_value": "div.m6QErb[role='region']",
+      "found": true,
+      "match_count": 1,
+      "duration_ms": 1513.8,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-canggu-02",
+      "phase": "scroll"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button.w8nwRe.kyuRq",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 10.2,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-canggu-02",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button:has-text('More')",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 11.6,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-canggu-02",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "cookie_reject_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-ubud-01",
+      "phase": "dismiss_cookie"
+    },
+    {
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-ubud-01",
+      "phase": "click_reviews_tab"
+    },
+    {
+      "selector_key": "review_container",
+      "selector_value": "div.m6QErb[role='region']",
+      "found": true,
+      "match_count": 1,
+      "duration_ms": 1527.0,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-ubud-01",
+      "phase": "scroll"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button.w8nwRe.kyuRq",
+      "found": false,
+      "match_count": 0,
       "duration_ms": 9.1,
       "error": null,
       "expected_missing": false,
-      "competitor_id": "comp-canggu-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button.w8nwRe.kyuRq",
-      "found": true,
-      "match_count": 5,
-      "duration_ms": 261.7,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-canggu-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('More')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 3.9,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-canggu-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 8.1,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-canggu-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4008.6,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-canggu-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-canggu-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-canggu-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4014.6,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-canggu-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4015.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-canggu-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4001.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-canggu-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10012.2,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-canggu-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10005.6,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-canggu-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb[role='region']",
-      "found": true,
-      "match_count": 1,
-      "duration_ms": 11.0,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-canggu-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button.w8nwRe.kyuRq",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.6,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-canggu-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('More')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.9,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-canggu-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 3.6,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-canggu-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4013.7,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4003.7,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4018.3,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4015.1,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4013.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4021.2,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10033.1,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-ubud-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10018.0,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-ubud-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb[role='region']",
-      "found": true,
-      "match_count": 1,
-      "duration_ms": 8.0,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-ubud-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button.w8nwRe.kyuRq",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.8,
-      "error": null,
-      "expected_missing": false,
       "competitor_id": "comp-ubud-01",
       "phase": "expand"
     },
@@ -1050,18 +506,7 @@
       "selector_value": "button:has-text('More')",
       "found": false,
       "match_count": 0,
-      "duration_ms": 3.3,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-ubud-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.8,
+      "duration_ms": 9.0,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-ubud-01",
@@ -1069,98 +514,32 @@
     },
     {
       "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
+      "selector_value": null,
       "found": false,
       "match_count": 0,
-      "duration_ms": 4002.8,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.5,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4004.6,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4015.8,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4012.1,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4005.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-ubud-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10004.1,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
+      "duration_ms": 0.0,
+      "error": "not configured",
       "expected_missing": false,
       "competitor_id": "comp-ubud-02",
-      "phase": "scroll"
+      "phase": "dismiss_cookie"
     },
     {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
       "found": false,
       "match_count": 0,
-      "duration_ms": 10016.5,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
+      "duration_ms": 0.0,
+      "error": "not configured",
       "expected_missing": false,
       "competitor_id": "comp-ubud-02",
-      "phase": "scroll"
+      "phase": "click_reviews_tab"
     },
     {
       "selector_key": "review_container",
       "selector_value": "div.m6QErb[role='region']",
       "found": true,
       "match_count": 1,
-      "duration_ms": 8.1,
+      "duration_ms": 1497.7,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-ubud-02",
@@ -1171,7 +550,7 @@
       "selector_value": "button.w8nwRe.kyuRq",
       "found": false,
       "match_count": 0,
-      "duration_ms": 2.9,
+      "duration_ms": 9.1,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-ubud-02",
@@ -1182,18 +561,7 @@
       "selector_value": "button:has-text('More')",
       "found": false,
       "match_count": 0,
-      "duration_ms": 2.9,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-ubud-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.7,
+      "duration_ms": 12.1,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-ubud-02",
@@ -1201,771 +569,320 @@
     },
     {
       "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
+      "selector_value": null,
       "found": false,
       "match_count": 0,
-      "duration_ms": 4010.3,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4008.5,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4014.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4013.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4012.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10014.2,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
+      "duration_ms": 0.0,
+      "error": "not configured",
       "expected_missing": false,
       "competitor_id": "comp-uluwatu-01",
-      "phase": "scroll"
+      "phase": "dismiss_cookie"
     },
     {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
       "found": false,
       "match_count": 0,
-      "duration_ms": 10017.5,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
+      "duration_ms": 0.0,
+      "error": "not configured",
       "expected_missing": false,
       "competitor_id": "comp-uluwatu-01",
-      "phase": "scroll"
+      "phase": "click_reviews_tab"
     },
     {
       "selector_key": "review_container",
       "selector_value": "div.m6QErb[role='region']",
       "found": true,
       "match_count": 1,
+      "duration_ms": 1639.8,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-uluwatu-01",
+      "phase": "scroll"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button.w8nwRe.kyuRq",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 10.6,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-uluwatu-01",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button:has-text('More')",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 18.2,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-uluwatu-01",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "cookie_reject_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-uluwatu-02",
+      "phase": "dismiss_cookie"
+    },
+    {
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-uluwatu-02",
+      "phase": "click_reviews_tab"
+    },
+    {
+      "selector_key": "review_container",
+      "selector_value": "div.m6QErb[role='region']",
+      "found": true,
+      "match_count": 1,
+      "duration_ms": 1778.2,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-uluwatu-02",
+      "phase": "scroll"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button.w8nwRe.kyuRq",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 11.2,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-uluwatu-02",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button:has-text('More')",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 13.2,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-uluwatu-02",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "cookie_reject_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-nusadua-01",
+      "phase": "dismiss_cookie"
+    },
+    {
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-nusadua-01",
+      "phase": "click_reviews_tab"
+    },
+    {
+      "selector_key": "review_container",
+      "selector_value": "div.m6QErb[role='region']",
+      "found": true,
+      "match_count": 1,
+      "duration_ms": 1516.2,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-nusadua-01",
+      "phase": "scroll"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button.w8nwRe.kyuRq",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 10.5,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-nusadua-01",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button:has-text('More')",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 10.8,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-nusadua-01",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "cookie_reject_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-nusadua-02",
+      "phase": "dismiss_cookie"
+    },
+    {
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-nusadua-02",
+      "phase": "click_reviews_tab"
+    },
+    {
+      "selector_key": "review_container",
+      "selector_value": "div.m6QErb[role='region']",
+      "found": true,
+      "match_count": 1,
+      "duration_ms": 1495.0,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-nusadua-02",
+      "phase": "scroll"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button.w8nwRe.kyuRq",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 8.9,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-nusadua-02",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button:has-text('More')",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 9.8,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-nusadua-02",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "cookie_reject_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-sanur-01",
+      "phase": "dismiss_cookie"
+    },
+    {
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-sanur-01",
+      "phase": "click_reviews_tab"
+    },
+    {
+      "selector_key": "review_container",
+      "selector_value": "div.m6QErb[role='region']",
+      "found": true,
+      "match_count": 1,
+      "duration_ms": 1492.9,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-sanur-01",
+      "phase": "scroll"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button.w8nwRe.kyuRq",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 10.8,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-sanur-01",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button:has-text('More')",
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 10.2,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-sanur-01",
+      "phase": "expand"
+    },
+    {
+      "selector_key": "cookie_reject_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-sanur-02",
+      "phase": "dismiss_cookie"
+    },
+    {
+      "selector_key": "reviews_tab_button",
+      "selector_value": null,
+      "found": false,
+      "match_count": 0,
+      "duration_ms": 0.0,
+      "error": "not configured",
+      "expected_missing": false,
+      "competitor_id": "comp-sanur-02",
+      "phase": "click_reviews_tab"
+    },
+    {
+      "selector_key": "review_container",
+      "selector_value": "div.m6QErb[role='region']",
+      "found": true,
+      "match_count": 1,
+      "duration_ms": 1493.0,
+      "error": null,
+      "expected_missing": false,
+      "competitor_id": "comp-sanur-02",
+      "phase": "scroll"
+    },
+    {
+      "selector_key": "expand_text_button",
+      "selector_value": "button.w8nwRe.kyuRq",
+      "found": false,
+      "match_count": 0,
       "duration_ms": 8.8,
       "error": null,
       "expected_missing": false,
-      "competitor_id": "comp-uluwatu-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button.w8nwRe.kyuRq",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.7,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-uluwatu-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('More')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.6,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-uluwatu-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 3.5,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-uluwatu-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4003.4,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4009.3,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4005.1,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4014.7,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4004.2,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10016.3,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10013.8,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb[role='region']",
-      "found": true,
-      "match_count": 1,
-      "duration_ms": 8.0,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button.w8nwRe.kyuRq",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 3.6,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('More')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 3.6,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 3.3,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-uluwatu-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4003.4,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4012.5,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4005.5,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4014.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4015.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4014.4,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10006.1,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10016.5,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb[role='region']",
-      "found": true,
-      "match_count": 1,
-      "duration_ms": 8.1,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button.w8nwRe.kyuRq",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.4,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('More')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.8,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.4,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4009.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4015.3,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4004.0,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4012.5,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4003.5,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4012.7,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10016.9,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10013.0,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb[role='region']",
-      "found": true,
-      "match_count": 1,
-      "duration_ms": 7.5,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button.w8nwRe.kyuRq",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 3.3,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('More')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.6,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.4,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-nusadua-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4009.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4012.1,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.6,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-01",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4015.7,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4012.6,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4005.7,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-01",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10014.8,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-sanur-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10010.4,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-sanur-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb[role='region']",
-      "found": true,
-      "match_count": 1,
-      "duration_ms": 10.7,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-sanur-01",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button.w8nwRe.kyuRq",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.8,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-sanur-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('More')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.6,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-sanur-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 3.2,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-sanur-01",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4002.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"//button[contains(., 'Reject all')] | //span[contains(text(), 'Reject all')]\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "button:has-text('Reject all')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4008.9,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('Reject all')\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "cookie_reject_button",
-      "selector_value": "form[action*='cookie'] button:first-of-type",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4009.4,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"form[action*='cookie'] button:first-of-type\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-02",
-      "phase": "dismiss_cookie"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Reviews']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4004.6,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Reviews']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "button[aria-label*='Avis']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4013.6,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"button[aria-label*='Avis']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "reviews_tab_button",
-      "selector_value": "[role='tab'][aria-label*='Review']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 4016.1,
-      "error": "Page.wait_for_selector: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator(\"[role='tab'][aria-label*='Review']\") to be visible\n",
-      "expected_missing": true,
-      "competitor_id": "comp-sanur-02",
-      "phase": "click_reviews_tab"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb.DxyBCb.kA9KIf.dS8AEf",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10003.7,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div.m6QErb.DxyBCb.kA9KIf.dS8AEf\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-sanur-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div[role='feed']",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 10015.8,
-      "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"div[role='feed']\") to be visible\n",
-      "expected_missing": false,
-      "competitor_id": "comp-sanur-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "review_container",
-      "selector_value": "div.m6QErb[role='region']",
-      "found": true,
-      "match_count": 1,
-      "duration_ms": 8.7,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-sanur-02",
-      "phase": "scroll"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button.w8nwRe.kyuRq",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.7,
-      "error": null,
-      "expected_missing": false,
       "competitor_id": "comp-sanur-02",
       "phase": "expand"
     },
@@ -1974,22 +891,13 @@
       "selector_value": "button:has-text('More')",
       "found": false,
       "match_count": 0,
-      "duration_ms": 2.6,
-      "error": null,
-      "expected_missing": false,
-      "competitor_id": "comp-sanur-02",
-      "phase": "expand"
-    },
-    {
-      "selector_key": "expand_text_button",
-      "selector_value": "button:has-text('See more')",
-      "found": false,
-      "match_count": 0,
-      "duration_ms": 2.7,
+      "duration_ms": 10.5,
       "error": null,
       "expected_missing": false,
       "competitor_id": "comp-sanur-02",
       "phase": "expand"
     }
-  ]
+  ],
+  "run_id": "20260725T043144Z",
+  "run_timestamp": "2026-07-25T04:31:44.718451+00:00"
 }

@@ -1,0 +1,72 @@
+[
+  {
+    "review_id": "rev-ubud-01-aaa",
+    "competitor_id": "comp-ubud-01",
+    "branch_id": "cph-ubud",
+    "reviewer_name": "Olivia Brown, original",
+    "rating": 5.0,
+    "text": "Single-origin Bali Kintamani was eye-opening — citrusy and bright. The staff cupping session was a highlight of my Ubud trip.",
+    "relative_date": "2 days ago",
+    "scraped_at": "2026-07-26T08:18:40.609559+00:00"
+  },
+  {
+    "review_id": "rev-ubud-01-bbb",
+    "competitor_id": "comp-ubud-01",
+    "branch_id": "cph-ubud",
+    "reviewer_name": "Hendrik Müller, original",
+    "rating": 4.0,
+    "text": "Syphon brew was theatre and the cup was clean. Seating is on floor cushions which I found charming but my knees disagreed.",
+    "relative_date": "a week ago",
+    "scraped_at": "2026-07-26T08:18:40.609559+00:00"
+  },
+  {
+    "review_id": "rev-ubud-01-ccc",
+    "competitor_id": "comp-ubud-01",
+    "branch_id": "cph-ubud",
+    "reviewer_name": "Made Wijaya, original",
+    "rating": 5.0,
+    "text": "Kopi Bali yang dipanggang sendiri, rasanya konsisten. Kursus cupping mereka worth it sekali untuk coffee geek.",
+    "relative_date": "2 weeks ago",
+    "scraped_at": "2026-07-26T08:18:40.609559+00:00"
+  },
+  {
+    "review_id": "rev-ubud-01-eee",
+    "competitor_id": "comp-ubud-01",
+    "branch_id": "cph-ubud",
+    "reviewer_name": "Charlotte Dubois, original",
+    "rating": 5.0,
+    "text": "Cold brew with coconut milk — perfection. The shop's design (reclaimed wood + jazz) makes it easy to spend 2 hours here.",
+    "relative_date": "3 weeks ago",
+    "scraped_at": "2026-07-26T08:18:40.609559+00:00"
+  },
+  {
+    "review_id": "rev-ubud-01-fff",
+    "competitor_id": "comp-ubud-01",
+    "branch_id": "cph-ubud",
+    "reviewer_name": "Raj Patel, original",
+    "rating": 4.0,
+    "text": "Good coffee, knowledgeable baristas. A bit pricier than other Ubud cafes but the quality justifies it. Avoid lunch rush.",
+    "relative_date": "a month ago",
+    "scraped_at": "2026-07-26T08:18:40.609559+00:00"
+  },
+  {
+    "review_id": "rev-ubud-01-ggg",
+    "competitor_id": "comp-ubud-01",
+    "branch_id": "cph-ubud",
+    "reviewer_name": "Anna Kowalski, original",
+    "rating": 5.0,
+    "text": "Came for the coffee, stayed for the chocolate-tasting plate. Seniman understands that \"small producer\" matters — every cup has a story.",
+    "relative_date": "a month ago",
+    "scraped_at": "2026-07-26T08:18:40.609559+00:00"
+  },
+  {
+    "review_id": "rev-ubud-01-hhh",
+    "competitor_id": "comp-ubud-01",
+    "branch_id": "cph-ubud",
+    "reviewer_name": "Tom Baker, original",
+    "rating": 3.0,
+    "text": "Coffee is excellent but the queue moves slowly and there is no AC. Bring a fan and patience.",
+    "relative_date": "2 months ago",
+    "scraped_at": "2026-07-26T08:18:40.609559+00:00"
+  }
+]

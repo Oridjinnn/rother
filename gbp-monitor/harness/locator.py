@@ -20,10 +20,8 @@ class LocatorResult:
 def _build_tier_list(seed_review_item_selector: str) -> list[tuple[int, str]]:
     return [
         (1, "[data-review-id]"),
-        (2, "[role='article'][aria-label]"),
-        (3, "[data-review-id][aria-label]"),
-        (4, "div[role='article'][data-review-id]"),
-        (5, seed_review_item_selector),
+        (2, "[data-review-id][aria-label]"),
+        (3, seed_review_item_selector),
     ]
 
 

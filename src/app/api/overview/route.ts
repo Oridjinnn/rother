@@ -107,8 +107,8 @@ export async function GET() {
     const body: OverviewResponse = {
       runSummary,
       selectorVerification: {
-        verified_by: selectors?.verified_by ?? "seed",
-        last_verified: selectors?.last_verified ?? "—",
+        verified_by: selectors?._meta?.verified_by ?? selectors?.verified_by ?? "seed",
+        last_verified: selectors?._meta?.last_verified ?? selectors?.last_verified ?? "—",
         isUnproven,
         note: selectors?._verification_note,
       },

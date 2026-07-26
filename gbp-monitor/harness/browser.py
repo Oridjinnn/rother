@@ -64,6 +64,8 @@ reintroduce the idea.
 
 from __future__ import annotations
 
+import os
+
 # A desktop Chrome user agent string. Intentionally NOT the very latest
 # channel — a stable mid-range UA is what Google's bot heuristics tolerate
 # best for headless automation. Verified importable against Playwright 1.57
@@ -203,8 +205,14 @@ def get_browser_context():
     # Playwright's browser binaries — only the live mode actually requires it.
     from playwright.sync_api import sync_playwright
 
+    # M14: Disable Chromium sandbox when requested (Docker deployment).
+    # The GBP_MONITOR_NO_SANDBOX env var is set by docker-compose.yml.
+    launch_args = ["--disable-gpu"]
+    if os.environ.get("GBP_MONITOR_NO_SANDBOX", "").lower() in ("true", "1", "yes"):
+        launch_args.append("--no-sandbox")
+
     p = sync_playwright().start()
-    browser = p.chromium.launch(headless=True)
+    browser = p.chromium.launch(headless=True, args=launch_args)
     context = browser.new_context(
         user_agent=_REALISTIC_USER_AGENT,
         viewport=_REALISTIC_VIEWPORT,

@@ -1,0 +1,16 @@
+[
+  {
+    "run_id": "20260725T043144Z",
+    "timestamp": "2026-07-25T04:31:44.718451+00:00",
+    "healthy": 1,
+    "degraded": 1,
+    "broken": 0,
+    "not_evaluated": 7,
+    "avg_confidence": 0.521,
+    "selectors": {},
+    "trend": {
+      "healthy_delta": 0,
+      "confidence_delta": 0.0
+    }
+  }
+]

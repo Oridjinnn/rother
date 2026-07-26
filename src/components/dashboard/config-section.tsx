@@ -7,10 +7,13 @@ import {
   CheckCircle2,
   Copy,
   Check,
+  Edit3,
   FileJson,
+  Save,
   Settings2,
   ShieldAlert,
   ShieldCheck,
+  X,
 } from "lucide-react";
 
 import {
@@ -25,6 +28,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 import { EmptyState } from "./empty-state";
 import type { ListingsConfig, SelectorsConfig, VerifiedBy } from "@/lib/gbp/types";
@@ -33,9 +38,6 @@ interface ConfigSectionProps {
   refreshKey?: number;
 }
 
-/** A hand-rolled JSON syntax highlighter. Tokenizes JSON strings and wraps
- *  tokens in <span> with theme-aware CSS variable colors. Avoids the heavy
- *  react-syntax-highlighter bundle + handles light/dark via CSS variables. */
 function JsonHighlight({ value }: { value: string }) {
   const html = React.useMemo(() => tokenizeJson(value), [value]);
   return (
@@ -48,16 +50,11 @@ function JsonHighlight({ value }: { value: string }) {
   );
 }
 
-/** Tokenize a JSON string into colored HTML spans.
- *  Colors use inline styles with CSS variables so they adapt to dark mode. */
 function tokenizeJson(json: string): string {
-  // Escape HTML first.
   const esc = json
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-  // Regex matches: strings (keys + values), numbers, booleans, null.
-  // Keys are strings followed by ':'.
   return esc.replace(
     /("(?:\\.|[^"\\])*")\s*(:)|("(?:\\.|[^"\\])*")|(\b-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)|(\btrue\b|\bfalse\b)|(\bnull\b)/g,
     (match, key, colon, str, num, bool, nul) => {
@@ -90,7 +87,7 @@ const verificationMeta: Record<
   manual_human: { label: "manual_human", icon: ShieldCheck, tone: "ok" },
 };
 
-function CopyButton({ text }: { text: string }) {
+function CopyBtn({ text }: { text: string }) {
   const [copied, setCopied] = React.useState(false);
   return (
     <Button
@@ -102,7 +99,7 @@ function CopyButton({ text }: { text: string }) {
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
         } catch {
-          /* clipboard may be blocked — silent */
+          /* silent */
         }
       }}
       aria-label="Copy JSON to clipboard"
@@ -110,12 +107,12 @@ function CopyButton({ text }: { text: string }) {
     >
       {copied ? (
         <>
-          <Check className="size-3 text-emerald-500" aria-hidden="true" />
+          <Check className="size-3 text-emerald-500" />
           Copied
         </>
       ) : (
         <>
-          <Copy className="size-3" aria-hidden="true" />
+          <Copy className="size-3" />
           Copy
         </>
       )}
@@ -132,18 +129,13 @@ function SelectorsHeader({ selectors }: { selectors: SelectorsConfig }) {
     <div className="space-y-3">
       {isUnproven && (
         <Alert className="border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200">
-          <ShieldAlert className="size-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          <ShieldAlert className="size-4 text-amber-600 dark:text-amber-400" />
           <AlertTitle className="text-amber-800 dark:text-amber-200">
             Selectors are UNPROVEN against live Google Maps DOM
           </AlertTitle>
           <AlertDescription className="text-amber-700/90 dark:text-amber-300/90">
             <code className="font-mono">verified_by</code> is{" "}
-            <code className="font-mono font-semibold">"seed"</code> — these selectors were copied from
-            public reference implementations (~2023 vintage) and have NOT been
-            checked against the current Google Maps DOM. Live-mode scrapes will
-            likely fail with <code className="font-mono">SelectorNotFoundError</code> until a
-            <code className="font-mono">browser_agent</code> verification pass updates them. Fixtures-mode
-            scrapes are unaffected (they use static HTML).
+            <code className="font-mono font-semibold">"seed"</code>.
           </AlertDescription>
         </Alert>
       )}
@@ -156,20 +148,115 @@ function SelectorsHeader({ selectors }: { selectors: SelectorsConfig }) {
               : "gap-1 border-emerald-500/50 bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300"
           }
         >
-          <VIcon className="size-3.5" aria-hidden="true" />
+          <VIcon className="size-3.5" />
           verified_by: {meta.label}
         </Badge>
         <Badge variant="outline" className="gap-1 px-2 py-1 text-xs font-medium">
-          <CheckCircle2 className="size-3.5 text-muted-foreground" aria-hidden="true" />
+          <CheckCircle2 className="size-3.5 text-muted-foreground" />
           last_verified: {selectors.last_verified}
         </Badge>
       </div>
-      {selectors._verification_note && (
-        <p className="rounded-lg border border-border/60 bg-muted/30 p-3 text-xs italic leading-relaxed text-muted-foreground">
-          {selectors._verification_note}
-        </p>
-      )}
     </div>
+  );
+}
+
+function EditableJsonCard({
+  title,
+  description,
+  json,
+  onSave,
+}: {
+  title: string;
+  description: string;
+  json: string;
+  onSave: (value: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = React.useState(false);
+  const [value, setValue] = React.useState(json);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    setValue(json);
+  }, [json]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      JSON.parse(value);
+      await onSave(value);
+      setEditing(false);
+      toast.success("Configuration saved", { description: "Changes written to disk." });
+    } catch (e) {
+      toast.error("Invalid JSON", {
+        description: e instanceof Error ? e.message : "Parse error",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className="gbp-card-hover">
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1 min-w-0">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileJson className="size-4 text-primary" />
+              {title}
+            </CardTitle>
+            <CardDescription>{description}</CardDescription>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <CopyBtn text={value} />
+            {editing ? (
+              <>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="gap-1.5 h-7 text-xs"
+                >
+                  <Save className="size-3" />
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setEditing(false); setValue(json); }}
+                  className="h-7 text-xs"
+                  aria-label="Cancel editing"
+                >
+                  <X className="size-3" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditing(true)}
+                className="gap-1.5 h-7 text-xs"
+              >
+                <Edit3 className="size-3" />
+                Edit
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {editing ? (
+          <Textarea
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="min-h-[400px] font-mono text-xs"
+            aria-label="Edit JSON configuration"
+          />
+        ) : (
+          <JsonHighlight value={value} />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -179,36 +266,46 @@ export function ConfigSection({ refreshKey }: ConfigSectionProps) {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    let cancelled = false;
+  const fetchConfig = React.useCallback(async () => {
     setLoading(true);
     setError(null);
-    Promise.all([
-      fetch("/api/config/listings").then(async (r) => {
-        if (!r.ok) throw new Error(`listings HTTP ${r.status}`);
-        return r.json() as Promise<ListingsConfig>;
-      }),
-      fetch("/api/config/selectors").then(async (r) => {
-        if (!r.ok) throw new Error(`selectors HTTP ${r.status}`);
-        return r.json() as Promise<SelectorsConfig>;
-      }),
-    ])
-      .then(([l, s]) => {
-        if (cancelled) return;
-        setListings(l);
-        setSelectors(s);
-      })
-      .catch((e) => {
-        if (cancelled) return;
-        setError(e instanceof Error ? e.message : String(e));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
+    try {
+      const [l, s] = await Promise.all([
+        fetch("/api/config/listings").then(async (r) => {
+          if (!r.ok) throw new Error(`listings HTTP ${r.status}`);
+          return r.json() as Promise<ListingsConfig>;
+        }),
+        fetch("/api/config/selectors").then(async (r) => {
+          if (!r.ok) throw new Error(`selectors HTTP ${r.status}`);
+          return r.json() as Promise<SelectorsConfig>;
+        }),
+      ]);
+      setListings(l);
+      setSelectors(s);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig, refreshKey]);
+
+  const handleSaveListings = async (value: string) => {
+    const parsed = JSON.parse(value);
+    const res = await fetch("/api/config/listings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsed),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    setListings(parsed);
+  };
 
   if (loading) {
     return (
@@ -238,25 +335,68 @@ export function ConfigSection({ refreshKey }: ConfigSectionProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <Tabs defaultValue="selectors" className="gap-4">
+      <Tabs defaultValue="listings" className="gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <TabsList className="bg-muted/60">
-            <TabsTrigger value="selectors" className="gap-1.5">
-              <Settings2 className="size-3.5" aria-hidden="true" />
-              selectors.json
-            </TabsTrigger>
             <TabsTrigger value="listings" className="gap-1.5">
-              <FileJson className="size-3.5" aria-hidden="true" />
+              <FileJson className="size-3.5" />
               listings.json
+            </TabsTrigger>
+            <TabsTrigger value="selectors" className="gap-1.5">
+              <Settings2 className="size-3.5" />
+              selectors.json
             </TabsTrigger>
           </TabsList>
           <p className="text-xs text-muted-foreground">
-            Read-only view · source:{" "}
-            <code className="font-mono text-[11px]">
-              /home/z/my-project/gbp-monitor/config/
-            </code>
+            {listings && (
+              <span>
+                {listings.branches.length} branches ·{" "}
+                {listings.branches.reduce((a, b) => a + b.competitors.length, 0)} competitors
+              </span>
+            )}
           </p>
         </div>
+
+        <TabsContent value="listings">
+          {listings && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-4">
+              <div className="rounded-lg border border-border/60 bg-muted/30 p-3">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Branches
+                </div>
+                <div className="text-xl font-bold tabular-nums">
+                  {listings.branches.length}
+                </div>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-muted/30 p-3">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Competitors
+                </div>
+                <div className="text-xl font-bold tabular-nums">
+                  {listings.branches.reduce((acc, b) => acc + b.competitors.length, 0)}
+                </div>
+              </div>
+              <div className="col-span-2 rounded-lg border border-border/60 bg-muted/30 p-3">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Branch IDs
+                </div>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {listings.branches.map((b) => (
+                    <Badge key={b.branch_id} variant="outline" className="font-mono text-[10px]">
+                      {b.branch_id}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <EditableJsonCard
+            title="config/listings.json"
+            description="Branches, competitors, and Google Maps URLs. Edit this to configure monitoring."
+            json={listingsJson}
+            onSave={handleSaveListings}
+          />
+        </TabsContent>
 
         <TabsContent value="selectors">
           <Card className="gbp-card-hover">
@@ -264,84 +404,19 @@ export function ConfigSection({ refreshKey }: ConfigSectionProps) {
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <Settings2 className="size-4 text-primary" aria-hidden="true" />
+                    <Settings2 className="size-4 text-primary" />
                     config/selectors.json
                   </CardTitle>
                   <CardDescription>
                     CSS/XPath selectors used by the Playwright harness + parser.
-                    High-risk file — Google Maps DOM changes break these without
-                    warning (see Rule 6).
                   </CardDescription>
                 </div>
-                {selectors && <CopyButton text={selectorsJson} />}
+                {selectors && <CopyBtn text={selectorsJson} />}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {selectors && <SelectorsHeader selectors={selectors} />}
               <JsonHighlight value={selectorsJson} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="listings">
-          <Card className="gbp-card-hover">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <FileJson className="size-4 text-primary" aria-hidden="true" />
-                    config/listings.json
-                  </CardTitle>
-                  <CardDescription>
-                    6 Copenhagen Bali branches × 2 competitors each = 12 listings.
-                    Mock data for development — real competitor URLs are an M1
-                    client data-entry blocker.
-                  </CardDescription>
-                </div>
-                {listings && <CopyButton text={listingsJson} />}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {listings && (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div className="rounded-lg border border-border/60 bg-muted/30 p-3">
-                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      Branches
-                    </div>
-                    <div className="text-xl font-bold tabular-nums">
-                      {listings.branches.length}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border/60 bg-muted/30 p-3">
-                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      Competitors
-                    </div>
-                    <div className="text-xl font-bold tabular-nums">
-                      {listings.branches.reduce(
-                        (acc, b) => acc + b.competitors.length,
-                        0,
-                      )}
-                    </div>
-                  </div>
-                  <div className="col-span-2 rounded-lg border border-border/60 bg-muted/30 p-3 sm:col-span-2">
-                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      Branch IDs
-                    </div>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {listings.branches.map((b) => (
-                        <Badge
-                          key={b.branch_id}
-                          variant="outline"
-                          className="font-mono text-[10px]"
-                        >
-                          {b.branch_id}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-              <JsonHighlight value={listingsJson} />
             </CardContent>
           </Card>
         </TabsContent>

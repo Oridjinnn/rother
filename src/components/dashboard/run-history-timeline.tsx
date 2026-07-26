@@ -79,7 +79,7 @@ function HistoryExportButton({ totalRuns }: { totalRuns: number }) {
       }
       const cd = res.headers.get("Content-Disposition") || "";
       const m = cd.match(/filename="?([^";]+)"?/);
-      const filename = m?.[1] || `gbp-history.${format}`;
+      const filename = m?.[1] || `rother-history.${format}`;
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

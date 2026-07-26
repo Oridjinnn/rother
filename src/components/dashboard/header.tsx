@@ -18,6 +18,8 @@ import type { AppMode, TextMap } from "@/lib/app-mode";
 interface HeaderProps {
   onRunNow: () => void;
   isRunning: boolean;
+  /** Progress during an active run. */
+  runProgress?: { completed: number; total: number; elapsed: number } | null;
   /** Optional: callback to open the keyboard shortcuts help dialog. */
   onShowShortcuts?: () => void;
   /** Optional: callback to open the data export dashboard dialog. */
@@ -34,7 +36,14 @@ interface HeaderProps {
  * Sticky app header: logo + project title + theme toggle + manual run button.
  * Collapses to a compact layout on mobile.
  */
-export function Header({ onRunNow, isRunning, onShowShortcuts, onShowExport, lastRunAt, T, mode }: HeaderProps) {
+export function Header({ onRunNow, isRunning, runProgress, onShowShortcuts, onShowExport, lastRunAt, T, mode }: HeaderProps) {
+  const pct = runProgress
+    ? Math.round((runProgress.completed / runProgress.total) * 100)
+    : 0;
+  const elapsedStr = runProgress
+    ? `${Math.floor(runProgress.elapsed / 1000)}s`
+    : "";
+
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -154,6 +163,24 @@ export function Header({ onRunNow, isRunning, onShowShortcuts, onShowExport, las
           </TooltipProvider>
         </div>
       </div>
+
+      {/* Progress bar — visible during active run */}
+      {isRunning && runProgress && (
+        <div className="mx-auto max-w-7xl px-4 pb-2 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="shrink-0 font-medium tabular-nums">
+              {runProgress.completed}/{runProgress.total}
+            </span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500 transition-all duration-500"
+                style={{ width: `${Math.min(pct, 100)}%` }}
+              />
+            </div>
+            <span className="shrink-0 font-mono tabular-nums">{elapsedStr}</span>
+          </div>
+        </div>
+      )}
     </motion.header>
   );
 }

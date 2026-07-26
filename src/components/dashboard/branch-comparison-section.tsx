@@ -4,6 +4,8 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   Building2,
   CalendarClock,
   ExternalLink,
@@ -36,13 +38,21 @@ import { StarRating } from "./star-rating";
 import { EmptyState } from "./empty-state";
 import { CompetitorDetailDialog } from "./competitor-detail-dialog";
 import { FreshnessBadge } from "./freshness-badge";
+import { HistoryComparisonSection } from "./history-comparison-section";
 import { formatTimestamp } from "@/lib/gbp/format";
 import type { BranchesResponse, BranchWithStats, CompetitorStats } from "@/lib/gbp/types";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 interface BranchComparisonSectionProps {
   data: BranchesResponse | null;
   loading: boolean;
   error: string | null;
+  refreshKey?: number;
 }
 
 /**
@@ -59,6 +69,7 @@ export function BranchComparisonSection({
   data,
   loading,
   error,
+  refreshKey,
 }: BranchComparisonSectionProps) {
   const [selectedCompetitor, setSelectedCompetitor] =
     React.useState<CompetitorStats | null>(null);
@@ -92,6 +103,19 @@ export function BranchComparisonSection({
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="space-y-4"
     >
+      <Tabs defaultValue="branches" className="gap-4">
+        <TabsList className="bg-muted/60">
+          <TabsTrigger value="branches" className="gap-1.5">
+            <Building2 className="size-3.5" />
+            Branch Comparison
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-1.5">
+            <Building2 className="size-3.5" />
+            Historical
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="branches" className="mt-0 space-y-4">
       {/* Summary header */}
       <Card className="gbp-card-hover bg-gradient-to-br from-primary/5 to-transparent">
         <CardHeader className="pb-3">
@@ -100,8 +124,7 @@ export function BranchComparisonSection({
             Branch Comparison
           </CardTitle>
           <CardDescription>
-            Side-by-side comparison of all {data.branches.length} Copenhagen Bali
-            branches · {data.totalCompetitors} competitors ·{" "}
+            Side-by-side comparison of all {data.branches.length} branches · {data.totalCompetitors} competitors ·{" "}
             {data.totalReviews} reviews monitored. Sorted by total reviews
             (descending).
           </CardDescription>
@@ -129,6 +152,12 @@ export function BranchComparisonSection({
           if (!open) setSelectedCompetitor(null);
         }}
       />
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-0">
+          <HistoryComparisonSection refreshKey={refreshKey} />
+        </TabsContent>
+      </Tabs>
     </motion.div>
   );
 }
@@ -247,7 +276,11 @@ function BranchComparisonCard({
                 {competitorsWithReviews.length}/{branch.competitors.length} with data
               </span>
             </div>
-            {branch.competitors.map((comp) => (
+            {branch.competitors.map((comp) => {
+              const TrendIcon = comp.trend_indicator === "up" ? ArrowUp
+                : comp.trend_indicator === "down" ? ArrowDown
+                : null;
+              return (
               <button
                 type="button"
                 key={comp.competitor_id}
@@ -257,8 +290,20 @@ function BranchComparisonCard({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="truncate text-xs font-semibold text-foreground">
-                      {comp.name}
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-xs font-semibold text-foreground">
+                        {comp.name}
+                      </span>
+                      {TrendIcon && (
+                        <TrendIcon
+                          className={`size-3 shrink-0 ${
+                            comp.trend_indicator === "up"
+                              ? "text-emerald-500"
+                              : "text-red-500"
+                          }`}
+                          aria-label={`Trending ${comp.trend_indicator}`}
+                        />
+                      )}
                     </div>
                     <div className="font-mono text-[10px] text-muted-foreground">
                       {comp.competitor_id}
@@ -279,28 +324,60 @@ function BranchComparisonCard({
                   )}
                 </div>
                 {comp.total_reviews > 0 && (
-                  <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Users className="size-2.5" aria-hidden="true" />
-                      {comp.total_reviews} review{comp.total_reviews === 1 ? "" : "s"}
-                    </span>
-                    {comp.new_reviews_count > 0 && (
-                      <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-600 dark:text-emerald-400">
-                        <TrendingUp className="size-2.5" aria-hidden="true" />
-                        +{comp.new_reviews_count}
+                  <div className="mt-1.5 space-y-1">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Users className="size-2.5" />
+                        {comp.total_reviews} review{comp.total_reviews === 1 ? "" : "s"}
                       </span>
+                      {comp.new_reviews_count > 0 && (
+                        <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                          <TrendingUp className="size-2.5" />
+                          +{comp.new_reviews_count}
+                        </span>
+                      )}
+                    </div>
+                    {comp.average_review_length !== null && (
+                      <div className="text-[9px] text-muted-foreground">
+                        ~{comp.average_review_length} char avg · {comp.latest_review?.relative_date ?? "—"}
+                      </div>
                     )}
                   </div>
                 )}
               </button>
-            ))}
+              );
+            })}
           </div>
+
+          {/* Latest review preview */}
+          {branch.competitors.map((c) => c.latest_review?.text).filter(Boolean).length > 0 && (
+            <div className="space-y-1">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <MessageSquare className="size-3" />
+                Recent
+              </span>
+              {branch.competitors.slice(0, 2).map((c) =>
+                c.latest_review?.text ? (
+                  <p key={c.competitor_id} className="text-[10px] text-muted-foreground/80 line-clamp-2">
+                    <span className="font-medium text-foreground/60">{c.name}: </span>
+                    {c.latest_review.text}
+                  </p>
+                ) : null
+              )}
+            </div>
+          )}
 
           {/* Last updated footer */}
           {lastScraped && (
             <div className="flex items-center gap-1.5 border-t border-border/40 pt-2 text-[10px] text-muted-foreground">
               <CalendarClock className="size-3" aria-hidden="true" />
               <span>Last updated: {formatTimestamp(lastScraped).relative}</span>
+              {branch.review_velocity !== null && (
+                <>
+                  <span className="text-border">·</span>
+                  <span>{branch.review_velocity.toFixed(1)} reviews/day</span>
+                </>
+              )}
             </div>
           )}
         </CardContent>
