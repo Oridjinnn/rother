@@ -32,8 +32,9 @@ import {
 import { EmptyState } from "./empty-state";
 import { StarRating } from "./star-rating";
 
+import { useBranches } from "@/lib/gbp/use-branches";
+
 import type {
-  BranchesResponse,
   BranchWithStats,
   HistoricalComparisonResponse,
 } from "@/lib/gbp/types";
@@ -43,21 +44,11 @@ interface HistoryComparisonSectionProps {
 }
 
 export function HistoryComparisonSection({ refreshKey }: HistoryComparisonSectionProps) {
-  const [branches, setBranches] = React.useState<BranchesResponse | null>(null);
+  const { data: branches } = useBranches();
   const [competitorId, setCompetitorId] = React.useState<string>("");
   const [comparison, setComparison] = React.useState<HistoricalComparisonResponse | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    fetch("/api/branches")
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json() as Promise<BranchesResponse>;
-      })
-      .then(setBranches)
-      .catch(() => {});
-  }, [refreshKey]);
 
   const competitorOptions = React.useMemo(() => {
     if (!branches) return [];

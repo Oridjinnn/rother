@@ -12,6 +12,65 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+type RunStatus =
+  | "OK"
+  | "BLOCKED"
+  | "INSUFFICIENT"
+  | "NEED_SESSION"
+  | "INVALID_PLACE_ID"
+  | "FAILED";
+
+interface RunSummaryLite {
+  status?: RunStatus;
+  stoppedReason?: string;
+  reviewCount?: number;
+  targetCount?: number;
+  businessName?: string;
+  finished_at?: string | null;
+}
+
+const STATUS_STYLES: Record<RunStatus, string> = {
+  OK: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  BLOCKED: "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300",
+  INSUFFICIENT: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  NEED_SESSION: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+  INVALID_PLACE_ID: "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300",
+  FAILED: "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300",
+};
+
+/** Fetch the latest run's summary via /api/overview (which returns runSummary). */
+function useLatestRunSummary(): {
+  summary: RunSummaryLite | null;
+  loading: boolean;
+} {
+  const [summary, setSummary] = React.useState<RunSummaryLite | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/overview", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setSummary(data?.runSummary ?? null);
+      } catch {
+        // Non-fatal: the schedule card still renders the countdown.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    const id = setInterval(() => void load(), 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  return { summary, loading };
+}
+
 /**
  * Scrape Schedule — a static info card showing the GitHub Actions cron
  * schedule (daily 05:00 WITA = 22:00 UTC previous day) + a live countdown
@@ -24,6 +83,38 @@ import { Badge } from "@/components/ui/badge";
  * Per EXECUTION_RULES.md Rule 4: zero-cost, no AI/LLM — this is pure
  * date arithmetic + display.
  */
+/** A compact panel showing the real status of the most recent scrape run. */
+function LatestRunStatus() {
+  const { summary } = useLatestRunSummary();
+  if (!summary || !summary.status) return null;
+  const status = summary.status;
+  const style = STATUS_STYLES[status] ?? STATUS_STYLES.FAILED;
+  return (
+    <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Last scrape run
+        </span>
+        <Badge variant="outline" className={`ml-1 gap-1 px-1.5 py-0 text-[10px] font-medium ${style}`}>
+          {status}
+        </Badge>
+      </div>
+      {typeof summary.reviewCount === "number" && (
+        <div className="mt-1 text-[11px] text-foreground">
+          {summary.reviewCount}
+          {typeof summary.targetCount === "number" ? ` / ${summary.targetCount}` : ""} reviews
+          {summary.businessName ? ` · ${summary.businessName}` : ""}
+        </div>
+      )}
+      {summary.stoppedReason && (
+        <div className="mt-1 text-[11px] leading-snug text-muted-foreground">
+          {summary.stoppedReason}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ScrapeSchedule() {
   // Initialize as null — only set on the client to prevent hydration mismatch
   // (server time + timezone differ from client).
@@ -131,6 +222,8 @@ export function ScrapeSchedule() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        <LatestRunStatus />
+
         {/* Next run countdown — the headline */}
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-center">
           <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

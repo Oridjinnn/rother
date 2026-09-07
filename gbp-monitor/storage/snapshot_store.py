@@ -20,9 +20,12 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from storage.common import base_data_dir
+
 logger = logging.getLogger("gbp-monitor.storage")
 
-_SNAPSHOT_DIR = Path("data/snapshots")
+# P2 / RISK-024: root at the (possibly per-business) data directory.
+_SNAPSHOT_DIR = base_data_dir() / "snapshots"
 _TIMESTAMP_FMT = "%Y-%m-%dT%H-%M-%SZ"       # colon-free for Windows paths
 _LATEST_FILENAME = "latest.json"
 

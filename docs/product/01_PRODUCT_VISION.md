@@ -26,9 +26,8 @@ Define the long-term identity, target audience, and value proposition of the Rot
 Rationale: Focuses on the value (tracking competitors automatically) rather than the mechanism (GBP, scraping, monitoring). Accessible to non-technical decision-makers.
 
 ### Logo
-- Current: Coffee cup icon (Copenhagen Bali heritage)
-- Proposed: Abstract "R" monogram with a radar/dashboard motif
-- Rationale: The current logo ties the product to one client (Copenhagen Bali). A generic brand-logo makes Rother a standalone product.
+- Current: Abstract brand mark (stylized "R" with a radar/dashboard motif), rendered in the app top bar.
+- Rationale: Rother is a standalone, generic product. It is **not** tied to any single client or demo business (the legacy "Copenhagen Bali" coffee-shop demo is seed data only and is hidden from the UI once a user supplies their own business).
 
 ### Brand Colors
 - Primary: Deep indigo (`#4F46E5`) — trustworthy, analytical

@@ -1,70 +1,45 @@
-"""Orchestration: the ONLY place that loops branches × competitors.
+"""orchestration.run_all — single, reliable product path for the GBP scraper.
 
-Per GBP_MONITOR_PLAN.md Section 5.8 + EXECUTION_RULES.md Rule 7. This
-module is the conductor: it loads configs, runs pre-flight checks, drives
-the per-listing pipeline (capture → parse → delta → save), and — crucially
-— isolates each listing's failures so one broken URL/selector cannot crash
-the whole run.
+This module is now the ONLY command the product uses:
 
-Modes:
-  - LIVE (default):     Playwright captures real Google Maps HTML per
-                        `config/listings.json` URLs. Requires the
-                        Playwright Chromium binary installed. Uses
-                        ``place_id`` from each competitor when available
-                        to construct the real URL; otherwise falls back
-                        to ``gmaps_url`` (mock URLs gracefully skip).
-  - `--fixtures`:       Skip Playwright entirely. Read each competitor's
-                        HTML from `tests/fixtures/{competitor_id}.html`.
-                        Proves the parser + storage + delta pipeline
-                        end-to-end without hitting Google Maps (per
-                        Section 5.5 testing requirement). Listings
-                        without a fixture file are SKIPPED (not counted
-                        as failures) so the "failed >= success" warning
-                        signal stays meaningful.
-  - `--verify`:         Live verification mode. Captures screenshot + raw
-                        HTML from real Google Maps URLs without modifying
-                        production snapshots, deltas, or run_summary.
-                        Evidence is written to ``data/verify/{ts}/``.
-                        Exits non-zero if any capture fails.
+    python -m orchestration.run_all --business <place_id> --max-reviews 100 \
+        [--session <storage_state.json>] [--mode live]
 
-Outputs (always):
-  - `data/snapshots/{competitor_id}/{ts}.json` — full review list (versioned)
-  - `data/reviews_new/{competitor_id}_{run_ts}.json` — delta reviews
-  - `data/run.log` — append-only structured log
-  - `data/run_summary.json` — latest run summary for the dashboard
-  - `data/selector_report.json` — per-selector health report
-  - `data/selector_history.json` — historical selector health snapshots
-  - `data/.run.lock` — lock file preventing overlapping runs
+It replaces the old variant_framework matrix / experiment scaffolding as the
+happy path. The matrix experiments (variant_framework.*) remain available for
+research but are deliberately NOT on the critical path — they are what made the
+harness feel fragile.
 
-Outputs (verify mode):
-  - `data/verify/{ts}/{competitor_id}/page.png` — full-page screenshot
-  - `data/verify/{ts}/{competitor_id}/page.html` — captured raw HTML
-  - `data/verify/{ts}/report.json` — structured verification report
-  - `data/verify/{ts}/selector_report.json` — per-selector outcome report
+Given a real Google Maps ``place_id`` and a logged-in session, it:
 
-Operational hardening (M6):
-  - Lock file with stale detection prevents concurrent runs
-  - SIGINT/SIGTERM handler ensures graceful shutdown + lock cleanup
-  - Unique run_id per execution for log correlation
-  - Stage-level timing (browser, capture, parse, delta, save)
-  - Structured JSON log lines alongside human-readable text
-  - Selector drift history with confidence trends
+  1. Pre-flights the ``place_id`` (format + best-effort reachability/name check).
+  2. REFUSES to run anonymously: if no valid storage_state / cookies exist, it
+     exits with a clear ``NEED_SESSION`` error and writes NO review data.
+  3. Loads the logged-in ``storage_state`` (or seeds cookies) before navigating.
+  4. Opens the place's Reviews tab and sorts by "Newest" for deterministic order.
+  5. Scrolls the reviews container in small, human-like, randomized increments
+     (the old ``scrollTop = scrollHeight`` jump is gone — it caused scroll
+     recycling / 11x duplicate DOM nodes).
+  6. Parses every new content with ``parsel`` (review_id, author, rating, text,
+     relative date, owner response) and dedupes strictly by ``review_id``.
+  7. Stops when it has >= ``--max-reviews`` real reviews, OR when no new review
+     appears after >= 6 consecutive scrolls (genuine end / soft block), OR when
+     a block signal is detected (CAPTCHA, "unusual traffic", null ratings).
+  8. Writes the dashboard-compatible layout:
+       - ``reviews_new/{competitor_id}_{ts}.json``  (the run's new reviews)
+       - ``snapshots/{competitor_id}/{ts}.json`` + ``latest.json`` (full set)
+       - ``run_summary.json`` with status: OK | BLOCKED | INSUFFICIENT |
+         NEED_SESSION | INVALID_PLACE_ID | FAILED
+       - appends to ``run.log``
+  9. Honors ``GBP_MONITOR_MIN_DISK_BYTES`` before writing anything.
 
-Failure isolation (Rule 7):
-  - Every per-listing exception is caught in the inner ``try`` block. The
-    failure is logged with the competitor_id + error message, appended to
-    ``summary["errors"]``, and the loop continues to the next listing.
-  - ``SelectorNotFoundError`` is NOT retried (per Section 6) — retrying a
-    broken selector wastes time and looks like a bot hammering the page.
-    Network/timeout errors are retried up to 2 times with backoff.
-  - After the loop, if ``failed >= success`` we log a loud WARNING — this
-    is the cheap "selector probably broke" alert discussed in Section 5.8.
+Honest reporting is non-negotiable: a business with < 100 reviews never gets
+silently reported as success; it is reported as INSUFFICIENT with the real count.
 """
 
 from __future__ import annotations
 
 import argparse
-import atexit
 import json
 import logging
 import os
@@ -77,160 +52,88 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Configure the root logger so module-level `logging.getLogger("gbp-monitor.*")`
-# loggers inherit the file handler. We also add a StreamHandler at WARNING+
-# so the operator sees loud alerts on stdout too — the file gets everything.
+# `base_data_dir()` honors ROTHER_DATA_DIR so the Node scrape-runner can scope
+# a run to a single business's data directory (data/users/{businessId}).
+from storage.common import base_data_dir
+
+_DATA = base_data_dir()
+_DATA.mkdir(parents=True, exist_ok=True)
+
 _LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s %(message)s"
 logging.basicConfig(
     level=logging.INFO,
     format=_LOG_FORMAT,
     handlers=[
-        logging.FileHandler("data/run.log", encoding="utf-8"),
+        logging.FileHandler(_DATA / "run.log", encoding="utf-8"),
         logging.StreamHandler(sys.stderr),
     ],
 )
 logger = logging.getLogger("gbp-monitor.run_all")
 
-# Module-level paths. Centralized so a future caller can monkey-patch them
-# in tests if needed.
-_LISTINGS_PATH = Path("config/listings.json")
-_SELECTORS_PATH = Path("config/selectors.json")
-_SNAPSHOT_DIR = Path("data/snapshots")
-_REVIEWS_NEW_DIR = Path("data/reviews_new")
-_SUMMARY_PATH = Path("data/run_summary.json")
-_FIXTURES_DIR = Path("tests/fixtures")
-_LOCK_PATH = Path("data/.run.lock")
-_SELECTOR_HISTORY_PATH = Path("data/selector_history.json")
+# ── Status constants ─────────────────────────────────────────────────
+STATUS_OK = "OK"
+STATUS_BLOCKED = "BLOCKED"
+STATUS_INSUFFICIENT = "INSUFFICIENT"
+STATUS_NEED_SESSION = "NEED_SESSION"
+STATUS_INVALID_PLACE_ID = "INVALID_PLACE_ID"
+STATUS_FAILED = "FAILED"
 
-# Per Section 6: at most 2 retries on network/timeout errors, with backoff.
-_NETWORK_RETRY_MAX = 2
-_NETWORK_RETRY_BACKOFF_S = (3.0, 7.0)  # 1st retry after 3s, 2nd after 7s
+# Exit codes (non-zero lets the verification gate fail loudly).
+EXIT_OK = 0
+EXIT_FAILED = 1
+EXIT_NEED_SESSION = 2
+EXIT_INSUFFICIENT = 3
+EXIT_BLOCKED = 4
+EXIT_INVALID_PLACE_ID = 5
 
-# Per Section 5.8: be polite between listings so we don't look like a bot
-# hammering Google from a single IP. Only used in LIVE mode (fixtures mode
-# hits local disk only, no need to sleep).
-_LIVE_POLITE_DELAY_S = (5.0, 10.0)
+# ── Hardening constants ──────────────────────────────────────────────
+_MIN_FREE_DISK_BYTES = int(os.environ.get("GBP_MONITOR_MIN_DISK_BYTES", "104857600"))
+_MAX_SCROLLS = 200
+_MIN_CONSECUTIVE_NO_NEW = 6          # >=6 scrolls w/ no new id => genuine end
+_SCROLL_MIN_DELAY_MS = 800           # human-like lower bound
+_SCROLL_MAX_DELAY_MS = 2200          # human-like upper bound
+_SCROLL_INCREMENT_MIN = 0.55         # fraction of container height per scroll
+_SCROLL_INCREMENT_MAX = 0.95
+_PLACE_ID_RE = re.compile(r"^ChIJ[A-Za-z0-9_\-]{20,}$")
+_CAPTCHA_TERMS = ("recaptcha", "captcha", "unusual traffic", "automated queries",
+                  "verify you are human", "our systems have detected")
 
-# Timeout for the full capture step (per-competitor) — if a single listing
-# takes longer than this, the capture is aborted and counted as a failure.
-_CAPTURE_TOTAL_TIMEOUT_S = 90
+# ── Security helpers (path-traversal safe IDs; kept for legacy tests) ──
 
-# Lock file stale threshold: if a lock file is older than this, it's
-# considered stale (previous run crashed without cleanup).
-_LOCK_STALE_THRESHOLD_S = 1800  # 30 minutes
-
-# --- M13B Security Hardening constants ---
-# Log rotation threshold (same as CI scrape.yml:49-62)
-_LOG_ROTATION_BYTES = 5_242_880  # 5 MB
-# Minimum free disk space required before a run (100 MB)
-_MIN_FREE_DISK_BYTES = 100 * 1024 * 1024
-# Valid competitor_id pattern: alphanumeric + hyphens + underscores only.
 _VALID_COMPETITOR_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
-# Maximum length for competitor_id.
 _MAX_COMPETITOR_ID_LEN = 64
-# Path to config backup directory.
-_CONFIG_BACKUP_DIR = Path("data/config_backups")
-# Minimum seconds between requests to the same domain for rate limiting.
-_RATE_LIMIT_MIN_INTERVAL_S = 5.0
-# Maximum requests per domain per rolling window.
-_RATE_LIMIT_MAX_PER_WINDOW = 12
-# Rolling window size for rate limiting in seconds.
-_RATE_LIMIT_WINDOW_S = 60.0
-
-# Global state for lock cleanup on shutdown.
-_lock_acquired: bool = False
-_lock_file_owned: Path | None = None
-
-
-def _run_id() -> str:
-    """Return a short unique run identifier for log correlation."""
-    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-
-
-def _structured_log(run_id: str, stage: str, **kwargs) -> None:
-    """Emit a JSON-structured log line alongside the human-readable message.
-
-    The JSON object (prefixed with ``JSONLOG:``) is emitted at INFO level
-    so it is captured both in the file and on stderr. Downstream tools can
-    grep for ``JSONLOG:`` to extract machine-parseable events.
-    """
-    record = {"run_id": run_id, "stage": stage, "ts": datetime.now(timezone.utc).isoformat()}
-    record.update(kwargs)
-    logger.info("JSONLOG: %s", json.dumps(record, default=str))
-
-
-# ── M13B Security Hardening ──────────────────────────────────────────
 
 
 def _sanitize_competitor_id(competitor_id: str) -> str:
-    """Validate and sanitize a competitor_id for safe filesystem use.
+    """Validate + sanitize a competitor_id for safe filesystem use.
 
-    Rejects IDs that contain path traversal characters (``..``, ``/``,
-    ``\\``, null bytes), exceed the maximum length, or do not match the
-    allowed character pattern (alphanumeric, hyphens, underscores).
-
-    Returns the validated ID unchanged on success.
-    Raises ValueError with a descriptive message on failure.
+    Rejects path traversal (``..``, ``/``, ``\\``, null), over-length, and
+    non-``[a-zA-Z0-9_-]`` characters. Returns the cleaned id.
     """
     if not competitor_id or not isinstance(competitor_id, str):
-        raise ValueError(
-            f"Invalid competitor_id: must be a non-empty string, got {type(competitor_id).__name__}"
-        )
+        raise ValueError("competitor_id must be a non-empty string")
     if "\x00" in competitor_id:
-        raise ValueError(
-            f"Invalid competitor_id {competitor_id!r}: contains null byte"
-        )
+        raise ValueError("competitor_id contains null byte")
     if competitor_id.startswith("-") or competitor_id.endswith("-"):
-        raise ValueError(
-            f"Invalid competitor_id {competitor_id!r}: cannot start or end with hyphen"
-        )
+        raise ValueError("competitor_id cannot start/end with hyphen")
     if ".." in competitor_id:
-        raise ValueError(
-            f"Invalid competitor_id {competitor_id!r}: contains '..' (path traversal)"
-        )
+        raise ValueError("competitor_id contains '..' (path traversal)")
     if "/" in competitor_id or "\\" in competitor_id:
-        raise ValueError(
-            f"Invalid competitor_id {competitor_id!r}: contains path separator"
-        )
+        raise ValueError("competitor_id contains path separator")
     if len(competitor_id) > _MAX_COMPETITOR_ID_LEN:
-        raise ValueError(
-            f"Invalid competitor_id {competitor_id!r}: "
-            f"length {len(competitor_id)} exceeds maximum {_MAX_COMPETITOR_ID_LEN}"
-        )
+        raise ValueError(f"competitor_id exceeds {_MAX_COMPETITOR_ID_LEN} chars")
     if not _VALID_COMPETITOR_ID_RE.match(competitor_id):
-        raise ValueError(
-            f"Invalid competitor_id {competitor_id!r}: must match "
-            f"{_VALID_COMPETITOR_ID_RE.pattern} "
-            f"(alphanumeric, hyphens, underscores only)"
-        )
+        raise ValueError("competitor_id has invalid characters")
     return competitor_id
 
 
-def _safe_path_within(base_dir: Path, sub_path: str) -> Path:
-    """Resolve *sub_path* relative to *base_dir* and verify it stays inside.
-
-    Raises ValueError if the resolved path escapes *base_dir*.
-    """
-    resolved = (base_dir / sub_path).resolve()
-    base_resolved = base_dir.resolve()
-    try:
-        resolved.relative_to(base_resolved)
-    except ValueError:
-        raise ValueError(
-            f"Path traversal detected: {sub_path!r} resolves to {resolved} "
-            f"which is outside {base_resolved}"
-        )
-    return resolved
+# Log rotation threshold (kept for scripts/_test_rotation_direct.py).
+_LOG_ROTATION_BYTES = 5_242_880
 
 
 def _rotate_run_log_if_needed() -> None:
-    """Rotate ``data/run.log`` if it exceeds ``_LOG_ROTATION_BYTES``.
-
-    Renames the current log to ``data/run.log.YYYYMMDD`` so the new run
-    starts with a fresh file. Mirrors the CI rotation in
-    ``scrape.yml:49-62`` for local runs.
-    """
-    log_path = Path("data/run.log")
+    """Rotate ``data/run.log`` if it exceeds ``_LOG_ROTATION_BYTES``."""
+    log_path = _DATA / "run.log"
     if not log_path.exists():
         return
     try:
@@ -248,61 +151,8 @@ def _rotate_run_log_if_needed() -> None:
         logger.warning("Failed to rotate run.log: %s", e)
 
 
-def _check_disk_space() -> list[str]:
-    """Check available disk space on the data directory.
-
-    Returns a list of warning strings (empty if sufficient space).
-    """
-    data_dir = Path("data")
-    data_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        usage = shutil.disk_usage(data_dir.resolve())
-        free_mb = usage.free / (1024 * 1024)
-        if usage.free < _MIN_FREE_DISK_BYTES:
-            return [
-                f"Low disk space: {free_mb:.0f} MB free on {data_dir.resolve()} "
-                f"(minimum {_MIN_FREE_DISK_BYTES // (1024*1024)} MB required). "
-                "Snapshots and deltas may fail to write."
-            ]
-    except OSError as e:
-        return [f"Could not check disk space: {e}"]
-    return []
-
-
-def _backup_config() -> None:
-    """Backup config files before modification.
-
-    Copies ``config/listings.json`` and ``config/selectors.json`` to
-    ``data/config_backups/{YYYYMMDDTHHMMSSZ}/`` preserving originals.
-    Silent if config files do not exist (fresh install).
-    """
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    backup_dir = _CONFIG_BACKUP_DIR / ts
-    for config_path in [_LISTINGS_PATH, _SELECTORS_PATH]:
-        if not config_path.exists():
-            continue
-        try:
-            backup_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(str(config_path), str(backup_dir / config_path.name))
-            logger.debug("Backed up %s to %s", config_path, backup_dir / config_path.name)
-        except OSError as e:
-            logger.warning("Failed to back up %s: %s", config_path, e)
-
-
 def _validate_listings_config(listings: dict) -> list[str]:
-    """Validate the structure of *listings.json*.
-
-    Checks performed:
-    1. Top-level ``branches`` is a non-empty list.
-    2. Each branch has ``branch_id`` and ``branch_name``.
-    3. No duplicate ``branch_id`` values.
-    4. Each competitor has ``competitor_id`` and ``name``.
-    5. No duplicate ``competitor_id`` values across branches.
-    6. ``place_id`` is either null or a valid Google Maps ID (``ChIJ...``).
-
-    Returns a list of error strings (empty = valid).
-    Errors are fatal — the run should not proceed.
-    """
+    """Validate listings.json structure. Returns a list of error strings."""
     errors: list[str] = []
     branches = listings.get("branches", [])
     if not isinstance(branches, list):
@@ -311,10 +161,8 @@ def _validate_listings_config(listings: dict) -> list[str]:
     if not branches:
         errors.append("listings.json: 'branches' list is empty")
         return errors
-
-    seen_branch_ids: set[str] = set()
-    seen_comp_ids: set[str] = set()
-
+    seen_branch: set[str] = set()
+    seen_comp: set[str] = set()
     for bi, branch in enumerate(branches):
         if not isinstance(branch, dict):
             errors.append(f"listings.json: branch[{bi}] is not an object")
@@ -323,1165 +171,644 @@ def _validate_listings_config(listings: dict) -> list[str]:
         if not bid or not isinstance(bid, str):
             errors.append(f"listings.json: branch[{bi}] missing 'branch_id'")
         else:
-            if bid in seen_branch_ids:
+            if bid in seen_branch:
                 errors.append(f"listings.json: duplicate branch_id {bid!r}")
-            seen_branch_ids.add(bid)
-
+            seen_branch.add(bid)
         competitors = branch.get("competitors", [])
         if not isinstance(competitors, list):
             errors.append(f"listings.json: branch[{bid}] 'competitors' must be a list")
             continue
         for ci, comp in enumerate(competitors):
             if not isinstance(comp, dict):
-                errors.append(f"listings.json: branch[{bid}] competitor[{ci}] is not an object")
+                errors.append(f"listings.json: branch[{bid}] competitor[{ci}] not object")
                 continue
             cid = comp.get("competitor_id")
             if not cid or not isinstance(cid, str):
-                errors.append(f"listings.json: branch[{bid}] competitor[{ci}] missing 'competitor_id'")
+                errors.append(f"listings.json: branch[{bid}] competitor[{ci}] missing id")
             else:
-                if cid in seen_comp_ids:
+                if cid in seen_comp:
                     errors.append(f"listings.json: duplicate competitor_id {cid!r}")
-                seen_comp_ids.add(cid)
-
+                seen_comp.add(cid)
             pid = comp.get("place_id")
             if pid is not None:
                 if not isinstance(pid, str) or not pid.strip():
-                    errors.append(
-                        f"listings.json: {cid} 'place_id' must be a non-empty string or null"
-                    )
+                    errors.append(f"listings.json: {cid} 'place_id' must be non-empty or null")
                 elif not pid.startswith("ChIJ") or len(pid) < 25:
-                    errors.append(
-                        f"listings.json: {cid} 'place_id' {pid!r} does not look like "
-                        f"a valid Google Maps place ID (should start with 'ChIJ', ≥25 chars)"
-                    )
-
+                    errors.append(f"listings.json: {cid} 'place_id' {pid!r} looks invalid")
     return errors
 
 
-class RateLimiter:
-    """Simple in-memory rate limiter per domain.
+def _run_id() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
-    Tracks request timestamps per domain and rejects requests that exceed
-    the configured window limits.
+
+def _structured_log(run_id: str, stage: str, **kwargs) -> None:
+    record = {"run_id": run_id, "stage": stage, "ts": datetime.now(timezone.utc).isoformat()}
+    record.update(kwargs)
+    logger.info("JSONLOG: %s", json.dumps(record, default=str))
+
+
+# ── Pre-flight ──────────────────────────────────────────────────────
+
+def _validate_place_id_format(place_id: str) -> str | None:
+    """Return an error string if *place_id* is not a plausible Google place id.
+
+    Mirrors the rules used in validate_listing.py / _validate_listings_config:
+    starts with ``ChIJ`` and is >= 25 chars.
     """
-
-    def __init__(
-        self,
-        min_interval_s: float = _RATE_LIMIT_MIN_INTERVAL_S,
-        max_per_window: int = _RATE_LIMIT_MAX_PER_WINDOW,
-        window_s: float = _RATE_LIMIT_WINDOW_S,
-    ):
-        self._min_interval_s = min_interval_s
-        self._max_per_window = max_per_window
-        self._window_s = window_s
-        self._history: dict[str, list[float]] = {}
-
-    def _extract_domain(self, url: str) -> str:
-        from urllib.parse import urlparse
-        parsed = urlparse(url)
-        return parsed.netloc or url
-
-    def check(self, url: str) -> None:
-        """Check if a request to *url* is allowed.
-
-        Raises ``RateLimitError`` if the request would exceed limits.
-        Records the request timestamp on success (call only before sending).
-        """
-        domain = self._extract_domain(url)
-        now = time.time()
-        timestamps = self._history.setdefault(domain, [])
-        # Prune timestamps outside the rolling window.
-        cutoff = now - self._window_s
-        timestamps[:] = [t for t in timestamps if t >= cutoff]
-
-        # Check minimum interval since last request.
-        if timestamps and (now - timestamps[-1]) < self._min_interval_s:
-            raise RateLimitError(
-                f"Rate limit: minimum interval {self._min_interval_s}s not elapsed "
-                f"for domain {domain!r} "
-                f"(last request {now - timestamps[-1]:.1f}s ago)"
-            )
-        # Check max requests in the window.
-        if len(timestamps) >= self._max_per_window:
-            raise RateLimitError(
-                f"Rate limit: {self._max_per_window} requests in {self._window_s}s "
-                f"exceeded for domain {domain!r}"
-            )
-        timestamps.append(now)
+    if not place_id or not isinstance(place_id, str):
+        return "place_id is required"
+    pid = place_id.strip()
+    if len(pid) < 25:
+        return f"place_id too short ({len(pid)} chars); expected >=25 (got {pid!r})"
+    if not pid.startswith("ChIJ"):
+        return f"place_id must start with 'ChIJ' (got {pid!r})"
+    if not _PLACE_ID_RE.match(pid):
+        return f"place_id has unexpected characters (got {pid!r})"
+    return None
 
 
-class RateLimitError(Exception):
-    """Raised when a request exceeds the rate limit configuration."""
+def _preflight_reachability(place_id: str) -> str | None:
+    """Best-effort reachability + name cross-check. Returns a warning or None.
 
-
-def _acquire_lock(run_id: str) -> None:
-    """Acquire a file-based lock to prevent overlapping runs.
-
-    Writes a lock file containing the run_id and PID. If the lock file
-    already exists and is not stale, raises RuntimeError. Stale locks
-    (older than ``_LOCK_STALE_THRESHOLD_S``) are overwritten with a
-    warning.
+    Uses discovery.validate_listing for a cheap URL check and
+    discovery.validate_place_id (needs GOOGLE_PLACES_API_KEY) for a name
+    cross-check. Network failures are downgraded to WARNINGs, never hard
+    aborts, because the real capture might still succeed.
     """
-    global _lock_acquired, _lock_file_owned
-    _LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-    if _LOCK_PATH.exists():
-        try:
-            lock_data = json.loads(_LOCK_PATH.read_text(encoding="utf-8"))
-            lock_time_str = lock_data.get("acquired_at", "")
-            lock_pid = lock_data.get("pid", 0)
-            if lock_time_str:
-                lock_time = datetime.fromisoformat(lock_time_str)
-                age = (datetime.now(timezone.utc) - lock_time).total_seconds()
-                if age < _LOCK_STALE_THRESHOLD_S:
-                    raise RuntimeError(
-                        f"Lock file exists (run_id={lock_data.get('run_id', '?')}, "
-                        f"pid={lock_pid}, age={age:.0f}s). Another run is in progress."
-                    )
-                logger.warning(
-                    "Stale lock file detected (age=%ds, pid=%d, run_id=%s) — overwriting",
-                    age, lock_pid, lock_data.get("run_id", "?"),
-                )
-            else:
-                logger.warning("Lock file has no timestamp — treating as stale, overwriting")
-        except (json.JSONDecodeError, KeyError):
-            logger.warning("Lock file corrupt — overwriting")
-
-    lock_content = {
-        "run_id": run_id,
-        "pid": os.getpid(),
-        "acquired_at": datetime.now(timezone.utc).isoformat(),
-    }
-    _LOCK_PATH.write_text(json.dumps(lock_content, indent=2), encoding="utf-8")
-    _lock_acquired = True
-    _lock_file_owned = _LOCK_PATH
-    logger.info("Lock acquired (run_id=%s, pid=%d)", run_id, os.getpid())
+    url = f"https://www.google.com/maps/place/?q=place_id:{place_id}"
+    warning: str | None = None
+    try:
+        from discovery.validate_listing import validate_listing, validate_place_id
+        if not validate_listing(url):
+            warning = "pre-flight: listing URL not reachable (will still attempt live capture)"
+            logger.warning(warning)
+        api_key = os.environ.get("GOOGLE_PLACES_API_KEY")
+        if api_key:
+            ok, note = validate_place_id(place_id, None, api_key)
+            if not ok:
+                logger.warning("pre-flight: place_id name cross-check: %s", note)
+    except Exception as e:  # never let pre-flight crash the run
+        logger.debug("pre-flight reachability skipped: %s", e)
+    return warning
 
 
-def _release_lock() -> None:
-    """Release the lock file if we own it."""
-    global _lock_acquired, _lock_file_owned
-    if _lock_acquired and _lock_file_owned and _lock_file_owned.exists():
-        try:
-            _lock_file_owned.unlink()
-            logger.info("Lock released")
-        except Exception as e:
-            logger.warning("Failed to release lock: %s", e)
-    _lock_acquired = False
-    _lock_file_owned = None
+# ── Session / auth ──────────────────────────────────────────────────
 
+def _resolve_session(session_arg: str | None) -> tuple[str | None, str | None]:
+    """Resolve the logged-in session source.
 
-def _shutdown_handler(signum, frame) -> None:
-    """Handle SIGINT/SIGTERM by releasing the lock and exiting."""
-    sig_name = signal.Signals(signum).name
-    logger.warning("Received %s — shutting down gracefully", sig_name)
-    _release_lock()
-    sys.exit(1)
-
-
-# Register handlers for graceful shutdown.
-signal.signal(signal.SIGINT, _shutdown_handler)
-signal.signal(signal.SIGTERM, _shutdown_handler)
-atexit.register(_release_lock)
-
-
-def _preflight_checks(fixtures_mode: bool) -> list[str]:
-    """Run pre-flight checks before starting the main loop.
-
-    Returns a list of warning strings (empty = all clear). Warnings are
-    non-fatal — the run proceeds — but they're displayed prominently so
-    the operator sees them before the per-listing output begins.
-
-    Checks performed:
-      1. Config file existence (listings.json, selectors.json)
-      2. Data directory creation (snapshots, reviews_new)
-      3. Python dependency availability (playwright, parsel, requests)
-      4. Playwright Chromium binary (live mode only)
-      5. Mock URL detection with clear warning (live mode only)
-      6. Fixture file coverage (fixtures mode only)
+    Priority: ``--session`` CLI arg, then ``GBP_MONITOR_STORAGE_STATE`` env,
+    then ``GBP_MONITOR_COOKIES_FILE`` env. Returns
+    ``(storage_state_path, cookies_path)``; either may be None.
     """
-    warnings: list[str] = []
-
-    # --- 1. Config files ---
-    if not _LISTINGS_PATH.exists():
-        warnings.append(f"listings.json not found at {_LISTINGS_PATH.resolve()}")
-    if not _SELECTORS_PATH.exists():
-        warnings.append(f"selectors.json not found at {_SELECTORS_PATH.resolve()}")
-
-    # --- 2. Data directories ---
-    _SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
-    _REVIEWS_NEW_DIR.mkdir(parents=True, exist_ok=True)
-
-    # --- 3. Python dependencies ---
-    for mod_name, import_name in [
-        ("playwright", "playwright"),
-        ("parsel", "parsel"),
-        ("requests", "requests"),
-    ]:
-        try:
-            __import__(import_name)
-        except ImportError:
-            warnings.append(
-                f"Python package '{mod_name}' is not installed. "
-                f"Run: pip install -r requirements.txt"
-            )
-
-    # --- 4. Playwright Chromium binary (live mode) ---
-    if not fixtures_mode:
-        try:
-            import subprocess
-
-            result = subprocess.run(
-                [sys.executable, "-m", "playwright", "install", "--check", "chromium"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            if result.returncode != 0:
-                stderr_lower = result.stderr.lower()
-                stdout_lower = result.stdout.lower()
-                if "chromium" not in stdout_lower and "chromium" not in stderr_lower:
-                    warnings.append(
-                        "Playwright Chromium binary not installed. "
-                        "Run: playwright install chromium"
-                    )
-        except Exception as e:
-            warnings.append(f"Could not verify Playwright installation: {e}")
-
-    # --- 5. Mock URL detection (live mode) ---
-    if not fixtures_mode:
-        try:
-            listings = json.loads(_LISTINGS_PATH.read_text(encoding="utf-8"))
-            mock_ids: list[str] = []
-            real_ids: list[str] = []
-            total_count = 0
-            for branch in listings.get("branches", []):
-                for comp in branch.get("competitors", []):
-                    total_count += 1
-                    pid = comp.get("place_id")
-                    if pid and isinstance(pid, str) and pid.strip().startswith("ChIJ") and len(pid.strip()) >= 25:
-                        real_ids.append(comp["competitor_id"])
-                    else:
-                        mock_ids.append(comp["competitor_id"])
-            if total_count > 0 and len(real_ids) == 0:
-                warnings.append(
-                    "ALL competitors lack valid place_ids. Live mode will "
-                    "skip every listing. Add real place_id values to "
-                    "config/listings.json for production scraping."
-                )
-            elif len(real_ids) > 0 and len(mock_ids) > 0:
-                warnings.append(
-                    f"Mixed configuration: {len(real_ids)} real ({', '.join(real_ids)}), "
-                    f"{len(mock_ids)} mock ({', '.join(mock_ids)}). "
-                    "Only competitors with real place_ids will be scraped."
-                )
-            elif len(real_ids) == total_count:
-                warnings.append(f"All {total_count} competitors have real place_ids — ready for live scrape.")
-        except Exception:
-            pass
-
-    # --- 6. Fixture coverage ---
-    if fixtures_mode:
-        try:
-            listings = json.loads(_LISTINGS_PATH.read_text(encoding="utf-8"))
-            all_competitors: list[str] = []
-            for branch in listings.get("branches", []):
-                for comp in branch.get("competitors", []):
-                    all_competitors.append(comp["competitor_id"])
-            fixture_files = {f.stem for f in _FIXTURES_DIR.glob("*.html")}
-            missing = [c for c in all_competitors if c not in fixture_files]
-            if not missing:
-                warnings.append(
-                    f"All {len(all_competitors)} competitors have fixture files — full coverage"
-                )
-            elif len(fixture_files) == 0:
-                warnings.append(
-                    f"No fixture files found in {_FIXTURES_DIR.resolve()}/ — "
-                    f"all {len(all_competitors)} competitor(s) will be skipped"
-                )
-            else:
-                warnings.append(
-                    f"Only {len(fixture_files)}/{len(all_competitors)} competitor(s) "
-                    f"have fixture files — missing: {', '.join(missing)}"
-                )
-        except Exception:
-            pass
-
-    return warnings
-
-
-def _resolve_url(comp: dict) -> str:
-    """Return the best Google Maps URL for this competitor.
-
-    If ``place_id`` is set to a valid Google Maps place ID (starts with
-    ``ChIJ`` and has reasonable length), construct a real URL.
-    Otherwise fall back to ``gmaps_url`` (may be a mock URL that will
-    gracefully fail reachability checks in live mode).
-
-    A place_id that does not look like a valid Google Maps place ID is
-    logged as a warning and treated as absent (falls back to gmaps_url).
-    """
-    place_id = comp.get("place_id")
-    if place_id and isinstance(place_id, str) and place_id.strip():
-        pid = place_id.strip()
-        # Basic validation: real Google place_ids start with ChIJ
-        # and are typically 25-30 characters of base64-ish text.
-        if pid.startswith("ChIJ") and len(pid) >= 25:
-            return f"https://www.google.com/maps/place/?q=place_id:{pid}"
-        logger.warning(
-            "place_id[%s] does not look like a valid Google Maps place ID "
-            "(expected 'ChIJ...' ≥25 chars, got %r). Falling back to gmaps_url.",
-            comp.get("competitor_id", "?"), pid,
-        )
-    return comp.get("gmaps_url", "")
-
-
-def run(fixtures_mode: bool = False) -> dict:
-    """Run one full pass over the configured branches × competitors.
-
-    Acquires a file lock to prevent overlapping runs. Sets up structured
-    logging with a unique run_id. Every listing failure is isolated per
-    Rule 7 — one broken URL cannot crash the whole run.
-
-    Args:
-        fixtures_mode: If True, read HTML from `tests/fixtures/*.html`
-            instead of doing live Playwright captures.
-
-    Returns:
-        The summary dict (also written to `data/run_summary.json`).
-    """
-    started_at = datetime.now(timezone.utc).isoformat()
-    run_start_wall = time.time()
-    rid = _run_id()
-    mode = "fixtures" if fixtures_mode else "live"
-    _structured_log(rid, "run_start", mode=mode)
-
-    _acquire_lock(rid)
-
-    # M13B: Rotate log before this run starts writing to it.
-    _rotate_run_log_if_needed()
-
-    # M13B: Check disk space before starting.
-    disk_warnings = _check_disk_space()
-    for w in disk_warnings:
-        logger.warning("DISK: %s", w)
-
-    # M13B: Backup config files before any reads/modifications.
-    _backup_config()
-
-    warnings = _preflight_checks(fixtures_mode)
-    for w in warnings:
-        logger.warning("PREFLIGHT: %s", w)
-    if warnings and not fixtures_mode:
-        all_mock = any("ALL competitors lack" in w for w in warnings)
-        if all_mock:
-            logger.warning(
-                "Live mode will process 0 listings (all mock URLs or no place_ids). "
-                "This is expected if real place IDs have not been configured yet."
-            )
-
-    listings = json.loads(_LISTINGS_PATH.read_text(encoding="utf-8"))
-    selectors = json.loads(_SELECTORS_PATH.read_text(encoding="utf-8"))
-
-    # M13B: Validate listings config before proceeding.
-    config_errors = _validate_listings_config(listings)
-    for ce in config_errors:
-        logger.error("CONFIG: %s", ce)
-    if config_errors:
-        _finish_and_write_summary(
-            {
-                "started_at": started_at,
-                "finished_at": None,
-                "mode": mode,
-                "run_id": rid,
-                "success": 0,
-                "failed": 0,
-                "skipped": 0,
-                "new_reviews": 0,
-                "total_reviews": 0,
-                "total_competitors": 0,
-                "preflight_warnings": len(warnings),
-                "duration_seconds": 0,
-                "browser_launch_s": 0,
-                "errors": [
-                    {
-                        "competitor_id": "__config__",
-                        "error": f"Config validation failed ({len(config_errors)} error(s))",
-                    }
-                ],
-            },
-            run_id=rid,
-        )
-        _release_lock()
-        return {
-            "success": 0,
-            "failed": 0,
-            "skipped": 0,
-            "new_reviews": 0,
-            "total_reviews": 0,
-            "errors": [{"competitor_id": "__config__", "error": f"{len(config_errors)} config errors"}],
-        }
-
-    total_competitors = sum(
-        len(branch.get("competitors", []))
-        for branch in listings.get("branches", [])
+    storage_state = session_arg or os.environ.get("GBP_MONITOR_STORAGE_STATE")
+    cookies = os.environ.get("GBP_MONITOR_COOKIES_FILE")
+    ss = Path(storage_state).expanduser() if storage_state else None
+    cf = Path(cookies).expanduser() if cookies else None
+    return (
+        str(ss) if ss and ss.exists() else None,
+        str(cf) if cf and cf.exists() else None,
     )
 
-    summary = {
-        "started_at": started_at,
-        "finished_at": None,
-        "mode": mode,
-        "run_id": rid,
-        "success": 0,
-        "failed": 0,
-        "skipped": 0,
-        "new_reviews": 0,
-        "total_reviews": 0,
-        "total_competitors": total_competitors,
-        "preflight_warnings": len(warnings),
-        "duration_seconds": 0,
-        "browser_launch_s": 0,
-        "errors": [],
-    }
 
-    _structured_log(rid, "config_loaded",
-                    branches=len(listings.get("branches", [])),
-                    competitors=total_competitors)
+# ── Browser ─────────────────────────────────────────────────────────
 
-    selector_tracker = None
-    if not fixtures_mode:
-        from harness.selector_tracker import SelectorTracker
-        selector_tracker = SelectorTracker()
+def _launch_browser(storage_state: str | None, cookies: str | None):
+    """Launch headless Chromium with anti-bot hardening + the logged-in session.
 
-    context = None
-    browser_handles = None
-    browser_launch_duration = 0.0
-
-    if not fixtures_mode:
-        from harness.browser import get_browser_context
-        try:
-            t0 = time.time()
-            browser_handles = get_browser_context()
-            context = browser_handles[2]
-            browser_launch_duration = round(time.time() - t0, 2)
-            _structured_log(rid, "browser_launch", duration_s=browser_launch_duration)
-        except Exception as e:
-            logger.error(
-                "FATAL: could not start browser in live mode: %s. "
-                "Use --fixtures for a no-browser run.", e
-            )
-            summary["failed"] = 1
-            summary["errors"].append(
-                {"competitor_id": "__bootstrap__", "error": f"browser launch: {e}"}
-            )
-            _finish_and_write_summary(summary, run_id=rid)
-            _release_lock()
-            return summary
-
-    try:
-        processed = 0
-        for branch in listings.get("branches", []):
-            branch_id = branch.get("branch_id", "unknown-branch")
-            branch_name = branch.get("branch_name", branch_id)
-            competitors = branch.get("competitors", [])
-            if not competitors:
-                continue
-            for comp in competitors:
-                processed += 1
-                comp_id = comp.get("competitor_id", "unknown-competitor")
-                url = _resolve_url(comp)
-                listing_start = time.time()
-                _process_one_listing(
-                    comp_id=comp_id,
-                    branch_id=branch_id,
-                    comp_name=comp.get("name", ""),
-                    gmaps_url=url,
-                    selectors=selectors,
-                    context=context,
-                    fixtures_mode=fixtures_mode,
-                    summary=summary,
-                    tracker=selector_tracker,
-                    run_id=rid,
-                )
-                duration = round(time.time() - listing_start, 2)
-                _structured_log(rid, "listing_result",
-                                competitor=comp_id,
-                                branch=branch_id,
-                                duration_s=duration,
-                                progress=f"{processed}/{total_competitors}")
-                if not fixtures_mode and _LIVE_POLITE_DELAY_S:
-                    time.sleep(random.uniform(*_LIVE_POLITE_DELAY_S))
-    finally:
-        if browser_handles is not None:
-            p, browser, ctx = browser_handles
-            t0 = time.time()
-            try:
-                ctx.close()
-            except Exception as e:
-                logger.warning("context.close() failed: %s", e)
-            try:
-                browser.close()
-            except Exception as e:
-                logger.warning("browser.close() failed: %s", e)
-            try:
-                p.stop()
-            except Exception as e:
-                logger.warning("playwright.stop() failed: %s", e)
-            _structured_log(rid, "browser_teardown", duration_s=round(time.time() - t0, 2))
-
-    if selector_tracker is not None:
-        previous = _load_previous_selector_report()
-        sel_report = selector_tracker.get_report(
-            configured_selectors=selectors,
-            previous_report=previous,
-        )
-        sel_report["run_id"] = rid
-        sel_report["run_timestamp"] = started_at
-        sel_report_path = _SNAPSHOT_DIR.parent / "selector_report.json"
-        sel_report_path.write_text(
-            json.dumps(sel_report, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-        _append_selector_history(sel_report, rid)
-        _structured_log(rid, "selector_report",
-                        healthy=sel_report.get("healthy", 0),
-                        degraded=sel_report.get("degraded", 0),
-                        broken=sel_report.get("broken", 0))
-
-    summary["duration_seconds"] = round(time.time() - run_start_wall, 1)
-    summary["browser_launch_s"] = browser_launch_duration
-    _finish_and_write_summary(summary, run_id=rid)
-    _release_lock()
-    return summary
-
-
-def _process_one_listing(
-    *,
-    comp_id: str,
-    branch_id: str,
-    comp_name: str,
-    gmaps_url: str,
-    selectors: dict,
-    context,
-    fixtures_mode: bool,
-    summary: dict,
-    tracker=None,
-    run_id: str = "",
-) -> None:
-    """Capture → parse → delta → save for one listing.
-
-    Records per-stage timing (capture, parse, delta, save) and emits
-    structured JSON logs for each stage. All exceptions are caught here
-    (Rule 7) and isolated to this listing. Failure diagnostics include
-    competitor_id, stage, URL, probable cause, and elapsed time.
+    Reuses the proven hardening from ``harness.browser`` (consistent UA +
+    Client Hints across three layers) but injects the logged-in
+    ``storage_state`` (or seeds ``cookies``) — anonymous runs are NOT allowed.
+    Returns ``(playwright, browser, context)``; the caller owns teardown.
     """
-    # M13B: Validate competitor_id is safe for filesystem use before any I/O.
+    from playwright.sync_api import sync_playwright
+    from harness.browser import (
+        _REALISTIC_USER_AGENT,
+        _EXTRA_HTTP_HEADERS,
+        _USER_AGENT_DATA_INIT_SCRIPT,
+        _apply_cdp_user_agent_override,
+    )
+
+    launch_args = ["--disable-gpu"]
+    if os.environ.get("GBP_MONITOR_NO_SANDBOX", "").lower() in ("true", "1", "yes"):
+        launch_args.append("--no-sandbox")
+
+    p = sync_playwright().start()
+    browser = p.chromium.launch(headless=True, args=launch_args)
+
+    ctx_kwargs: dict = {
+        "user_agent": _REALISTIC_USER_AGENT,
+        "viewport": {"width": 1366, "height": 768},
+        # id-ID locale + accept-language keeps rating text parseable ("X bintang").
+        "locale": "id-ID",
+        "extra_http_headers": {
+            **_EXTRA_HTTP_HEADERS,
+            "accept-language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+        },
+    }
+    if storage_state:
+        ctx_kwargs["storage_state"] = storage_state
+
+    context = browser.new_context(**ctx_kwargs)
+
+    if cookies and not storage_state:
+        try:
+            cookie_data = json.loads(Path(cookies).read_text(encoding="utf-8"))
+            if isinstance(cookie_data, dict) and "cookies" in cookie_data:
+                cookie_data = cookie_data["cookies"]
+            context.add_cookies(cookie_data)
+        except Exception as e:
+            logger.warning("Failed to seed cookies from %s: %s", cookies, e)
+
+    _apply_cdp_user_agent_override(context)
+    context.add_init_script(_USER_AGENT_DATA_INIT_SCRIPT)
+    context.on("dialog", lambda dialog: dialog.accept())
+    return p, browser, context
+
+
+# ── Navigation + sorting ────────────────────────────────────────────
+
+def _goto_reviews(page, url: str) -> None:
+    page.set_default_navigation_timeout(45000)
+    page.set_default_timeout(15000)
+    page.goto(url, timeout=45000)
+    # Give the SPA a moment to hydrate the place panel.
+    page.wait_for_timeout(2500)
+
+
+def _click_by_text(page, text: str, timeout_ms: int = 6000) -> bool:
+    """Click the first element whose visible text equals/contains *text*."""
     try:
-        _sanitize_competitor_id(comp_id)
-    except ValueError as ve:
-        summary["failed"] += 1
-        summary["errors"].append({
-            "competitor_id": comp_id,
-            "branch_id": branch_id,
-            "error": f"Invalid competitor_id: {ve}",
-        })
-        logger.error("FAILURE[%s] Invalid competitor_id: %s", comp_id, ve)
-        _structured_log(run_id, "listing_skip", competitor=comp_id, reason=f"invalid_id: {ve}")
-        return
+        loc = page.get_by_text(text, exact=False).first
+        loc.wait_for(state="visible", timeout=timeout_ms)
+        loc.click(timeout=timeout_ms)
+        return True
+    except Exception:
+        return False
 
-    _structured_log(run_id, "listing_start", competitor=comp_id, branch=branch_id)
-    stages: dict[str, float] = {}
-    failed_stage: str | None = None
-    start_wall = time.time()
 
-    if fixtures_mode:
-        fixture_path = _FIXTURES_DIR / f"{comp_id}.html"
-        if not fixture_path.exists():
-            summary["skipped"] += 1
-            _structured_log(run_id, "listing_skip", competitor=comp_id,
-                            reason="no_fixture", fixture=str(fixture_path))
+def _open_reviews_and_sort_newest(page) -> None:
+    """Open the Reviews tab and sort by Newest (deterministic collection)."""
+    # Reviews are sometimes embedded in the initial HTML; clicking the tab is
+    # best-effort and non-fatal if it isn't found.
+    for label in ("Reviews", "Ulasan"):
+        if _click_by_text(page, label):
+            logger.info("Clicked Reviews tab (%s)", label)
+            page.wait_for_timeout(1500)
+            break
+
+    # Sort: open the "Most relevant" menu, then click "Newest".
+    for sort_label in ("Most relevant", "Terbaru", "Paling relevan"):
+        if _click_by_text(page, sort_label, timeout_ms=4000):
+            logger.info("Opened sort menu (%s)", sort_label)
+            page.wait_for_timeout(600)
+            for newest in ("Newest", "Terbaru"):
+                if _click_by_text(page, newest, timeout_ms=4000):
+                    logger.info("Selected sort => %s", newest)
+                    page.wait_for_timeout(800)
+                    return
             return
 
+
+# ── Block detection ─────────────────────────────────────────────────
+
+def _detect_block(page) -> str | None:
+    """Return a block reason string if a bot-wall / CAPTCHA is detected."""
     try:
-        if not fixtures_mode:
-            from discovery.validate_listing import validate_listing
-            if not validate_listing(gmaps_url):
-                summary["skipped"] += 1
-                _structured_log(run_id, "listing_skip", competitor=comp_id,
-                                reason="unreachable_url", url=gmaps_url)
-                return
-
-        # Step 1 — capture.
-        failed_stage = "capture"
-        t0 = time.time()
-        if fixtures_mode:
-            html = fixtures_path(comp_id).read_text(encoding="utf-8")
-        else:
-            html = _capture_with_retries(context, gmaps_url, selectors, comp_id, tracker=tracker)
-        stages["capture_s"] = round(time.time() - t0, 2)
-        failed_stage = None
-
-        # Step 2 — parse.
-        failed_stage = "parse"
-        t0 = time.time()
-        from parser.review_parser import parse_reviews
-        from parser.schema import review_to_dict
-        from storage.snapshot_store import load_snapshot, save_snapshot
-        from storage.delta import compute_new_reviews
-
-        parsed = parse_reviews(html, comp_id, branch_id, selectors)
-        parsed_dicts = [review_to_dict(r) for r in parsed]
-        stages["parse_s"] = round(time.time() - t0, 2)
-        failed_stage = None
-
-        html_size = len(html)
-        if not parsed_dicts:
-            if html_size < 1024:
-                logger.error("EMPTY_CAPTURE[%s]: HTML is %d bytes", comp_id, html_size)
-            elif html_size < 10240:
-                logger.warning("LOW_CONTENT[%s]: HTML is %d bytes", comp_id, html_size)
-            else:
-                logger.info("NO_REVIEWS[%s]: HTML is %d bytes", comp_id, html_size)
-
-        # Step 3 — delta.
-        failed_stage = "delta"
-        t0 = time.time()
-        old = load_snapshot(comp_id)
-        delta = compute_new_reviews(old, parsed_dicts)
-        stages["delta_s"] = round(time.time() - t0, 2)
-        failed_stage = None
-
-        # Step 4 — persist.
-        failed_stage = "save"
-        t0 = time.time()
-        if delta:
-            _append_new_reviews(comp_id, delta, run_id=run_id)
-            summary["new_reviews"] += len(delta)
-            _structured_log(run_id, "delta", competitor=comp_id, new_reviews=len(delta))
-
-        save_snapshot(comp_id, parsed_dicts)
-        stages["save_s"] = round(time.time() - t0, 2)
-        failed_stage = None
-
-        summary["success"] += 1
-        summary["total_reviews"] += len(parsed_dicts)
-
-        _structured_log(run_id, "listing_done", competitor=comp_id,
-                        reviews=len(parsed_dicts), delta=len(delta), **stages)
-
-    except Exception as e:
-        elapsed = round(time.time() - start_wall, 1)
-        summary["failed"] += 1
-
-        cause = _diagnose_failure(e, failed_stage)
-        err = {
-            "competitor_id": comp_id,
-            "branch_id": branch_id,
-            "url": gmaps_url,
-            "stage": failed_stage or "unknown",
-            "error": f"{type(e).__name__}: {e}",
-            "probable_cause": cause,
-            "elapsed_s": elapsed,
-        }
-        summary["errors"].append(err)
-        logger.error("FAILURE[%s] stage=%s url=%s elapsed=%.1fs: %s — %s",
-                     comp_id, failed_stage or "unknown", gmaps_url, elapsed, e, cause)
-        _structured_log(run_id, "listing_fail", competitor=comp_id,
-                        branch=branch_id, url=gmaps_url,
-                        stage=failed_stage or "unknown",
-                        error=str(e), error_type=type(e).__name__,
-                        probable_cause=cause, elapsed_s=elapsed)
+        html = page.content()
+    except Exception:
+        return None
+    low = html.lower()
+    if "recaptcha" in low or "google.com/recaptcha" in low or "recaptcha/api" in low:
+        return "CAPTCHA interstitial detected"
+    for term in _CAPTCHA_TERMS:
+        if term in low:
+            return f"block signal detected: '{term}'"
+    # CAPTCHA iframes are a strong, structural signal.
+    try:
+        iframes = page.query_selector_all("iframe")
+        for f in iframes:
+            src = (f.get_attribute("src") or "").lower()
+            title = (f.get_attribute("title") or "").lower()
+            if "recaptcha" in src or "captcha" in src or "captcha" in title:
+                return "CAPTCHA iframe detected"
+    except Exception:
+        pass
+    return None
 
 
-_FAILURE_DIAGNOSES: dict[str, dict[str, str]] = {
-    "capture": {
-        "NavigationError": "Page navigation failed — check place_id validity and network connectivity",
-        "CaptureTimeoutError": "Capture exceeded total timeout — page may be slow or blocked by bot detection",
-        "PageCrashError": "Browser page crashed (OOM / renderer crash) — check system resources",
-        "SelectorNotFoundError": "Review container selector not found — DOM structure may have changed",
-        "*": "Capture pipeline failed — check browser console and network logs",
-    },
-    "parse": {
-        "*": "Parser threw an unexpected exception — review HTML structure or parser code",
-    },
-    "delta": {
-        "*": "Delta computation failed — snapshot data may be corrupt",
-    },
-    "save": {
-        "*": "Snapshot write failed — check disk space and permissions",
-    },
-}
+def _null_rating_ratio(reviews: list[dict]) -> float:
+    if not reviews:
+        return 0.0
+    nulls = sum(1 for r in reviews if r.get("rating") is None)
+    return nulls / len(reviews)
 
 
-def _diagnose_failure(e: Exception, stage: str | None) -> str:
-    """Return a human-readable probable cause for a listing failure.
+# ── Incremental scroll + collect ────────────────────────────────────
 
-    Matches on (stage, exception type) to produce specific diagnostics
-    for each point in the pipeline. Falls back to generic messages.
-    """
-    stage_diag = _FAILURE_DIAGNOSES.get(stage or "unknown", {})
-    type_name = type(e).__name__
-    cause = stage_diag.get(type_name) or stage_diag.get("*")
-    if cause:
-        return cause
-    return f"Unexpected {type_name} during {stage or 'unknown'} stage"
-
-
-def _capture_with_retries(
-    context,
-    url: str,
+def _scroll_and_collect(
+    page,
     selectors: dict,
-    comp_id: str,
-    screenshot_dir: str | None = None,
-    tracker=None,
-) -> str:
-    """Call `capture_listing_html` with up to 2 retries on transient errors.
+    competitor_id: str,
+    branch_id: str,
+    max_reviews: int,
+    run_id: str,
+) -> tuple[list[dict], str, str]:
+    """Incremental, human-like scroll that dedupes by review_id.
 
-    Per Section 6: do NOT retry `SelectorNotFoundError` (broken selector —
-    retrying just hammers the page). Also do NOT retry `CaptureTimeoutError`
-    (the total timeout is a hard pipeline cap — retrying will exhaust it
-    again). Other exceptions (network, DNS) are retried up to
-    `_NETWORK_RETRY_MAX` times with backoff.
-
-    Each call to ``capture_listing_html`` enforces its own total timeout via
-    Playwright-native mechanisms (``page.set_default_timeout`` + wall-clock
-    deadline checks) — no threading. See ``docs/engineering/KILLCRITIC.md``
-    for the root-cause analysis of why threading was removed.
-
-    When ``screenshot_dir`` is provided (verify mode), evidence is saved
-    before the page closes. Existing callers omit this parameter and get
-    identical behavior to the original signature.
-
-    When ``tracker`` is provided, per-selector outcomes are recorded for
-    the selector verification report.
+    Returns ``(reviews, status, stopped_reason)`` where *reviews* is the
+    deduplicated list of collected review dicts.
     """
-    from harness.capture import capture_listing_html, CaptureTimeoutError
-    from harness.scroll import SelectorNotFoundError
+    from parsel import Selector
+    from parser.review_parser import parse_reviews
+    from parser.schema import review_to_dict
+    from harness.selectors import resolve_selectors
 
-    last_exc: Exception | None = None
-    for attempt in range(_NETWORK_RETRY_MAX + 1):
+    container_candidates = resolve_selectors(selectors, "review_container") or [
+        "div.m6QErb[role='region']"
+    ]
+
+    seen: set[str] = set()
+    reviews: list[dict] = []
+    consecutive_no_new = 0
+    status = STATUS_OK
+    stopped_reason = ""
+
+    for i in range(_MAX_SCROLLS):
+        # Parse current DOM (cheap; parsel only).
         try:
-            return capture_listing_html(
-                context, url, selectors, screenshot_dir,
-                tracker=tracker, comp_id=comp_id,
-                total_timeout_s=_CAPTURE_TOTAL_TIMEOUT_S,
-            )
-        except SelectorNotFoundError:
-            raise
-        except CaptureTimeoutError:
-            raise
+            html = page.content()
         except Exception as e:
-            last_exc = e
-            if attempt < _NETWORK_RETRY_MAX:
-                delay = _NETWORK_RETRY_BACKOFF_S[attempt]
-                logger.warning(
-                    "capture[%s] attempt %d failed (%s) — retrying in %.1fs",
-                    comp_id, attempt + 1, e, delay,
-                )
-                time.sleep(delay)
+            logger.warning("page.content() failed at scroll %d: %s", i, e)
+            html = ""
+
+        parsed = parse_reviews(html, competitor_id, branch_id, selectors)
+        new_in_this_pass = 0
+        for rev in parsed:
+            d = review_to_dict(rev)
+            rid = d.get("review_id")
+            if not rid or rid in seen:
+                continue
+            seen.add(rid)
+            reviews.append(d)
+            new_in_this_pass += 1
+
+        # Progress (both for logs and the Node runner's JSONLOG parser).
+        _structured_log(
+            run_id,
+            "collection_progress",
+            collected=len(reviews),
+            target=max_reviews,
+            new_in_pass=new_in_this_pass,
+            progress=f"{len(reviews)}/{max_reviews}",
+        )
+
+        # Block signals mid-collection.
+        block = _detect_block(page)
+        if block:
+            return reviews, STATUS_BLOCKED, block
+        if len(reviews) >= 5 and _null_rating_ratio(reviews) >= 0.9:
+            return reviews, STATUS_BLOCKED, (
+                "anonymous/null ratings detected on >=90% of parsed reviews "
+                "(RISK-023 auth-gated response)"
+            )
+
+        if len(reviews) >= max_reviews:
+            status = STATUS_OK
+            stopped_reason = f"reached target {max_reviews} reviews"
+            return reviews, status, stopped_reason
+
+        if new_in_this_pass == 0:
+            consecutive_no_new += 1
+        else:
+            consecutive_no_new = 0
+
+        if consecutive_no_new >= _MIN_CONSECUTIVE_NO_NEW:
+            if len(reviews) >= max_reviews:
+                status = STATUS_OK
+                stopped_reason = f"reached target {max_reviews} reviews"
             else:
-                logger.error("capture[%s] exhausted %d retries: %s", comp_id, _NETWORK_RETRY_MAX, e)
-    raise last_exc if last_exc else RuntimeError("capture failed without exception")
+                status = STATUS_INSUFFICIENT
+                stopped_reason = (
+                    f"no new reviews after {consecutive_no_new} consecutive scrolls "
+                    f"(genuine end or soft block); collected {len(reviews)}/"
+                    f"{max_reviews}"
+                )
+            return reviews, status, stopped_reason
 
-
-
-def _append_new_reviews(competitor_id: str, new_reviews: list[dict], run_id: str = "") -> None:
-    """Write the delta (new reviews) to a timestamped file in reviews_new/.
-
-    Uses the run_id as the timestamp suffix so multiple runs are always
-    unique and sortable. The run_id format (YYYYMMDDTHHMMSSZ) is compatible
-    with the existing filename convention.
-    """
-    _REVIEWS_NEW_DIR.mkdir(parents=True, exist_ok=True)
-    path = _REVIEWS_NEW_DIR / f"{competitor_id}_{run_id}.json"
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(
-        json.dumps(new_reviews, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-    tmp.replace(path)
-    _structured_log(run_id or _run_id(), "delta_write",
-                    competitor=competitor_id, count=len(new_reviews), path=str(path))
-
-
-def _load_previous_selector_report() -> dict | None:
-    """Load the previous run's selector report from the history file.
-
-    Returns the second-to-last entry (the most recent COMPLETE previous"
-    run), or None if there are fewer than 2 entries.
-    """
-    hist_path = _SELECTOR_HISTORY_PATH
-    if not hist_path.exists():
-        return None
-    try:
-        history = json.loads(hist_path.read_text(encoding="utf-8"))
-        if not isinstance(history, list) or len(history) < 2:
-            return None
-        return history[-2]
-    except (json.JSONDecodeError, OSError, IndexError):
-        return None
-
-
-def _append_selector_history(report: dict, run_id: str) -> None:
-    """Append the current selector report to the selector history file.
-
-    Maintains a rolling window of the last 50 reports for drift analysis.
-    Each entry includes the run_id, timestamp, and per-selector health stats.
-    If a previous report exists, computes the confidence delta (trend).
-    """
-    history_path = _SELECTOR_HISTORY_PATH
-    history: list[dict] = []
-    if history_path.exists():
-        try:
-            history = json.loads(history_path.read_text(encoding="utf-8"))
-            if not isinstance(history, list):
-                history = []
-        except (json.JSONDecodeError, OSError):
-            history = []
-
-    entry = {
-        "run_id": run_id,
-        "timestamp": report.get("run_timestamp", datetime.now(timezone.utc).isoformat()),
-        "healthy": report.get("healthy", 0),
-        "degraded": report.get("degraded", 0),
-        "broken": report.get("broken", 0),
-        "not_evaluated": report.get("not_evaluated", 0),
-        "avg_confidence": report.get("avg_confidence", 0.0),
-        "selectors": {},
-    }
-
-    per_selector = report.get("selectors", {})
-    for key, data in per_selector.items():
-        entry["selectors"][key] = {
-            "status": data.get("status", "not_evaluated"),
-            "confidence": data.get("confidence", 0.0),
-            "match_count": data.get("match_count", 0),
-        }
-
-    # Compute trend vs previous entry.
-    if history:
-        prev = history[-1]
-        entry["trend"] = {
-            "healthy_delta": entry["healthy"] - prev.get("healthy", 0),
-            "confidence_delta": round(entry["avg_confidence"] - prev.get("avg_confidence", 0.0), 3),
-        }
-    else:
-        entry["trend"] = {"healthy_delta": 0, "confidence_delta": 0.0}
-
-    history.append(entry)
-    # Keep last 50 entries.
-    if len(history) > 50:
-        history = history[-50:]
-
-    history_path.parent.mkdir(parents=True, exist_ok=True)
-    history_path.write_text(
-        json.dumps(history, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-
-
-def _finish_and_write_summary(summary: dict, run_id: str = "") -> None:
-    """Stamp `finished_at`, log the summary, and write `data/run_summary.json`.
-
-    Also emits the loud "failed >= success" warning per Section 5.8 —
-    that's the cheap zero-cost selector-breakage alert.
-    """
-    rid = run_id or _run_id()
-    summary["finished_at"] = datetime.now(timezone.utc).isoformat()
-
-    log_summary = {k: v for k, v in summary.items() if k != "errors"}
-    log_summary["error_count"] = len(summary["errors"])
-    _structured_log(rid, "run_summary",
-                    mode=log_summary.get("mode"),
-                    success=log_summary.get("success", 0),
-                    failed=log_summary.get("failed", 0),
-                    skipped=log_summary.get("skipped", 0),
-                    new_reviews=log_summary.get("new_reviews", 0),
-                    total_reviews=log_summary.get("total_reviews", 0),
-                    total_competitors=log_summary.get("total_competitors", 0),
-                    duration_s=log_summary.get("duration_seconds", 0),
-                    error_count=log_summary.get("error_count", 0))
-
-    if summary["failed"] > 0 and summary["failed"] >= summary["success"]:
-        logger.warning(
-            "ALERT: %d of %d listing(s) failed (failed >= success). "
-            "Likely selector breakage in config/selectors.json — investigate.",
-            summary["failed"],
-            summary["failed"] + summary["success"] + summary["skipped"],
-        )
-
-    _SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = _SUMMARY_PATH.with_suffix(".tmp")
-    tmp.write_text(
-        json.dumps(summary, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-    tmp.replace(_SUMMARY_PATH)
-    _structured_log(rid, "summary_written", path=str(_SUMMARY_PATH))
-
-
-def run_verify(url_override: str | None = None) -> dict:
-    """Run a verification pass — capture evidence without modifying production data.
-
-    Uses structured logging with a unique run_id. Records per-listing
-    capture timing. Does NOT modify production snapshots or deltas.
-    """
-    started_at = datetime.now(timezone.utc).isoformat()
-    rid = _run_id()
-    _structured_log(rid, "verify_start", url_override=url_override)
-
-    listings = json.loads(_LISTINGS_PATH.read_text(encoding="utf-8"))
-    selectors = json.loads(_SELECTORS_PATH.read_text(encoding="utf-8"))
-
-    verify_ts = rid
-    verify_root = Path("data/verify") / verify_ts
-    report = {
-        "started_at": started_at,
-        "finished_at": None,
-        "mode": "verify",
-        "run_id": rid,
-        "url_override": url_override,
-        "total": 0,
-        "passed": 0,
-        "failed": 0,
-        "browser_launch_s": 0,
-        "results": [],
-    }
-
-    total_listings = sum(
-        len(branch.get("competitors", []))
-        for branch in listings.get("branches", [])
-    )
-    report["total"] = total_listings
-
-    from harness.selector_tracker import SelectorTracker
-    from harness.browser import get_browser_context
-
-    tracker = SelectorTracker()
-    context = None
-    browser_handles = None
-    browser_launch_duration = 0.0
-
-    try:
-        t0 = time.time()
-        browser_handles = get_browser_context()
-        context = browser_handles[2]
-        browser_launch_duration = round(time.time() - t0, 2)
-        report["browser_launch_s"] = browser_launch_duration
-        _structured_log(rid, "browser_launch", duration_s=browser_launch_duration)
-    except Exception as e:
-        logger.error("FATAL: could not start browser in verify mode: %s", e)
-        report["failed"] = total_listings
-        report["finished_at"] = datetime.now(timezone.utc).isoformat()
-        verify_root.mkdir(parents=True, exist_ok=True)
-        (verify_root / "report.json").write_text(
-            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
-        )
-        sel_report = tracker.get_report(configured_selectors=selectors)
-        (verify_root / "selector_report.json").write_text(
-            json.dumps(sel_report, indent=2, ensure_ascii=False), encoding="utf-8"
-        )
-        return report
-
-    try:
-        processed = 0
-        for branch in listings.get("branches", []):
-            branch_id = branch.get("branch_id", "unknown-branch")
-            for comp in branch.get("competitors", []):
-                processed += 1
-                comp_id = comp.get("competitor_id", "unknown-competitor")
-                comp_name = comp.get("name", "")
-                url = url_override or _resolve_url(comp)
-
-                # M13B: Sanitize competitor_id before using in filesystem paths.
-                try:
-                    safe_id = _sanitize_competitor_id(comp_id)
-                except ValueError as ve:
-                    logger.error("VERIFY_FAIL[%s] Invalid competitor_id: %s", comp_id, ve)
-                    result = {
-                        "competitor_id": comp_id,
-                        "branch_id": branch_id,
-                        "name": comp_name,
-                        "url": url,
-                        "status": "FAIL",
-                        "capture_s": 0,
-                        "error": f"invalid competitor_id: {ve}",
-                    }
-                    report["results"].append(result)
-                    report["failed"] += 1
-                    continue
-
-                comp_dir = str(verify_root / safe_id)
-                result = {
-                    "competitor_id": comp_id,
-                    "branch_id": branch_id,
-                    "name": comp_name,
-                    "url": url,
-                    "status": "FAIL",
-                    "capture_s": 0,
-                }
-
-                t0 = time.time()
-                try:
-                    _capture_with_retries(
-                        context, url, selectors, comp_id,
-                        screenshot_dir=comp_dir, tracker=tracker,
+        # Human-like incremental scroll: a fraction of the container height,
+        # NEVER scrollTop = scrollHeight (that triggers scroll recycling).
+        scrolled = False
+        for cand in container_candidates:
+            try:
+                if page.query_selector(cand):
+                    page.eval_on_selector(
+                        cand,
+                        """(el, lo, hi) => {
+                            const inc = el.clientHeight * (lo + Math.random() * (hi - lo));
+                            el.scrollTop += inc;
+                        }""",
+                        _SCROLL_INCREMENT_MIN,
+                        _SCROLL_INCREMENT_MAX,
                     )
-                    result["status"] = "PASS"
-                    result["capture_s"] = round(time.time() - t0, 2)
-                    report["passed"] += 1
-                    _structured_log(rid, "verify_pass", competitor=comp_id,
-                                    duration_s=result["capture_s"],
-                                    progress=f"{processed}/{total_listings}")
-                except Exception as e:
-                    result["capture_s"] = round(time.time() - t0, 2)
-                    result["error"] = f"{type(e).__name__}: {e}"
-                    report["failed"] += 1
-                    _structured_log(rid, "verify_fail", competitor=comp_id,
-                                    error=str(e), duration_s=result["capture_s"])
+                    scrolled = True
+                    break
+            except Exception:
+                continue
+        if not scrolled:
+            # Fallback: scroll the window a bit.
+            try:
+                page.mouse.wheel(0, random.randint(400, 900))
+            except Exception:
+                pass
 
-                report["results"].append(result)
+        page.wait_for_timeout(random.randint(_SCROLL_MIN_DELAY_MS, _SCROLL_MAX_DELAY_MS))
+
+    # Hit the hard ceiling without a clean stop — report honestly.
+    if len(reviews) >= max_reviews:
+        return reviews, STATUS_OK, f"reached target {max_reviews} reviews"
+    return (
+        reviews,
+        STATUS_INSUFFICIENT,
+        f"hit MAX_SCROLLS={_MAX_SCROLLS} with {len(reviews)}/{max_reviews} reviews",
+    )
+
+
+# ── Output writers ──────────────────────────────────────────────────
+
+def _check_disk() -> str | None:
+    try:
+        usage = shutil.disk_usage(str(_DATA))
+        if usage.free < _MIN_FREE_DISK_BYTES:
+            return (
+                f"low disk space: {usage.free // (1024 * 1024)} MB free "
+                f"(minimum {_MIN_FREE_DISK_BYTES // (1024 * 1024)} MB)"
+            )
+    except OSError as e:
+        return f"could not check disk space: {e}"
+    return None
+
+
+def _business_id_for(competitor_id: str) -> str:
+    return competitor_id
+
+
+def _write_reviews(
+    reviews: list[dict],
+    competitor_id: str,
+    run_ts: str,
+) -> None:
+    """Write reviews to both the delta (reviews_new) and snapshot layout."""
+    # Delta (new reviews for this run).
+    reviews_new_dir = _DATA / "reviews_new"
+    reviews_new_dir.mkdir(parents=True, exist_ok=True)
+    delta_path = reviews_new_dir / f"{competitor_id}_{run_ts}.json"
+    _atomic_write(delta_path, reviews)
+
+    # Snapshot (full set) so /api/reviews + /api/overview read it.
+    snap_dir = _DATA / "snapshots" / competitor_id
+    snap_dir.mkdir(parents=True, exist_ok=True)
+    snap_path = snap_dir / f"{run_ts}.json"
+    _atomic_write(snap_path, reviews)
+    _atomic_write(snap_dir / "latest.json", snap_path.name)
+
+
+def _atomic_write(path: Path, data) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(path)
+
+
+def _write_summary(summary: dict) -> None:
+    _atomic_write(_DATA / "run_summary.json", summary)
+    _structured_log(
+        summary.get("run_id", ""),
+        "run_finish",
+        status=summary.get("status"),
+        review_count=summary.get("reviewCount"),
+        target=summary.get("targetCount"),
+        stopped_reason=summary.get("stoppedReason"),
+    )
+
+
+def _build_summary(
+    *,
+    run_id: str,
+    started_at: str,
+    business_id: str,
+    place_id: str,
+    business_name: str,
+    reviews: list[dict],
+    target: int,
+    status: str,
+    stopped_reason: str,
+    mode: str,
+) -> dict:
+    return {
+        # Dashboard contract (paths.ts / server-data.ts).
+        "started_at": started_at,
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+        "mode": mode,
+        "success": 1 if status == STATUS_OK else 0,
+        "failed": 0 if status in (STATUS_OK, STATUS_INSUFFICIENT) else 1,
+        "skipped": 0,
+        "new_reviews": len(reviews),
+        "total_reviews": len(reviews),
+        "errors": [] if status == STATUS_OK else [
+            {"competitor_id": business_id, "error": stopped_reason}
+        ],
+        # Product-path status fields (surfaced by the UI).
+        "status": status,
+        "businessId": business_id,
+        "businessName": business_name,
+        "placeId": place_id,
+        "scrapedAt": datetime.now(timezone.utc).isoformat(),
+        "reviewCount": len(reviews),
+        "targetCount": target,
+        "stoppedReason": stopped_reason,
+    }
+
+
+# ── Main product flow ───────────────────────────────────────────────
+
+def _read_active_business_id() -> tuple[str | None, str | None]:
+    """Read the active business id/name from config/user-business.json (if any)."""
+    path = Path("config/user-business.json")
+    if not path.exists():
+        return None, None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data.get("id"), data.get("name")
+    except (json.JSONDecodeError, OSError):
+        return None, None
+
+
+def _sanitize_competitor_id(value: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_\-]", "_", value.strip())
+    return cleaned or "business"
+
+
+def run_product(
+    place_id: str,
+    max_reviews: int,
+    session: str | None,
+    mode: str,
+) -> int:
+    started_at = datetime.now(timezone.utc).isoformat()
+    run_id = _run_id()
+    place_id = place_id.strip()
+
+    # Pre-flight: place_id format.
+    fmt_err = _validate_place_id_format(place_id)
+    if fmt_err:
+        summary = _build_summary(
+            run_id=run_id, started_at=started_at, business_id="",
+            place_id=place_id, business_name="", reviews=[], target=max_reviews,
+            status=STATUS_INVALID_PLACE_ID, stopped_reason=fmt_err, mode=mode,
+        )
+        _write_summary(summary)
+        logger.error("INVALID_PLACE_ID: %s", fmt_err)
+        return EXIT_INVALID_PLACE_ID
+
+    _preflight_reachability(place_id)
+
+    # Disk health BEFORE doing any work.
+    disk_err = _check_disk()
+    if disk_err:
+        logger.warning("DISK: %s", disk_err)
+
+    # Session requirement — refuse to run anonymously.
+    storage_state, cookies = _resolve_session(session)
+    if not storage_state and not cookies:
+        reason = (
+            "no logged-in session found. Set --session <storage_state.json> or the "
+            "GBP_MONITOR_STORAGE_STATE / GBP_MONITOR_COOKIES_FILE env vars to a valid "
+            "logged-in Playwright session. Anonymous scraping returns null ratings "
+            "(RISK-023) and is not allowed."
+        )
+        summary = _build_summary(
+            run_id=run_id, started_at=started_at, business_id="",
+            place_id=place_id, business_name="", reviews=[], target=max_reviews,
+            status=STATUS_NEED_SESSION, stopped_reason=reason, mode=mode,
+        )
+        _write_summary(summary)
+        logger.error("NEED_SESSION: %s", reason)
+        return EXIT_NEED_SESSION
+
+    # Determine competitor_id / business_id.
+    active_id, active_name = _read_active_business_id()
+    if active_id:
+        business_id = active_id
+        business_name = active_name or ""
+    else:
+        business_id = _sanitize_competitor_id(place_id)
+        business_name = ""
+    competitor_id = _business_id_for(business_id)
+    branch_id = competitor_id
+
+    logger.info(
+        "Starting product run: place_id=%s business_id=%s target=%d",
+        place_id, business_id, max_reviews,
+    )
+    _structured_log(run_id, "run_start", mode=mode, place_id=place_id,
+                    business_id=business_id, target=max_reviews)
+
+    p = browser = context = None
+    reviews: list[dict] = []
+    try:
+        p, browser, context = _launch_browser(storage_state, cookies)
+        from harness.browser import setup_page_handlers
+        page = context.new_page()
+        setup_page_handlers(page, comp_id=competitor_id)
+
+        url = f"https://www.google.com/maps/place/?q=place_id:{place_id}"
+        _goto_reviews(page, url)
+        # Hard block right after navigation.
+        block = _detect_block(page)
+        if block:
+            status, reason = STATUS_BLOCKED, block
+        else:
+            _open_reviews_and_sort_newest(page)
+            reviews, status, reason = _scroll_and_collect(
+                page, _load_selectors(), competitor_id, branch_id, max_reviews, run_id
+            )
+    except Exception as e:
+        logger.exception("Scrape run failed: %s", e)
+        status, reason = STATUS_FAILED, f"{type(e).__name__}: {e}"
     finally:
-        if browser_handles is not None:
-            p, browser, ctx = browser_handles
-            t0 = time.time()
-            try:
-                ctx.close()
-            except Exception as e:
-                logger.warning("context.close() failed: %s", e)
-            try:
+        try:
+            if context is not None:
+                context.close()
+            if browser is not None:
                 browser.close()
-            except Exception as e:
-                logger.warning("browser.close() failed: %s", e)
-            try:
+            if p is not None:
                 p.stop()
-            except Exception as e:
-                logger.warning("playwright.stop() failed: %s", e)
-            _structured_log(rid, "browser_teardown", duration_s=round(time.time() - t0, 2))
+        except Exception as e:
+            logger.warning("Teardown error: %s", e)
 
-    report["finished_at"] = datetime.now(timezone.utc).isoformat()
-    verify_root.mkdir(parents=True, exist_ok=True)
-    (verify_root / "report.json").write_text(
-        json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
+    # Write outputs only when we actually collected something (never empty
+    # success). Even INSUFFICIENT/BLOCKED writes whatever we got so the UI can
+    # render it honestly; NEED_SESSION/INVALID already returned earlier.
+    if reviews:
+        _write_reviews(reviews, competitor_id, run_id)
+
+    summary = _build_summary(
+        run_id=run_id, started_at=started_at, business_id=business_id,
+        place_id=place_id, business_name=business_name, reviews=reviews,
+        target=max_reviews, status=status, stopped_reason=reason, mode=mode,
     )
-    sel_report = tracker.get_report(configured_selectors=selectors)
-    (verify_root / "selector_report.json").write_text(
-        json.dumps(sel_report, indent=2, ensure_ascii=False), encoding="utf-8"
+    _write_summary(summary)
+
+    exit_code = {
+        STATUS_OK: EXIT_OK,
+        STATUS_INSUFFICIENT: EXIT_INSUFFICIENT,
+        STATUS_BLOCKED: EXIT_BLOCKED,
+        STATUS_FAILED: EXIT_FAILED,
+    }.get(status, EXIT_FAILED)
+    logger.info(
+        "Run finished: status=%s reviewCount=%d/%d reason=%s",
+        status, len(reviews), max_reviews, reason,
     )
-    _structured_log(rid, "verify_done",
-                    passed=report["passed"], failed=report["failed"],
-                    total=report["total"])
-    return report
+    return exit_code
 
 
-def fixtures_path(competitor_id: str) -> Path:
-    """Return the fixture file path for `competitor_id`.
+def _load_selectors() -> dict:
+    path = Path("config/selectors.json")
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning("Could not load selectors.json: %s", e)
+    return {}
 
-    Thin wrapper around `_FIXTURES_DIR / f"{competitor_id}.html"` so tests
-    can monkey-patch if needed. Kept as a function rather than inlined so
-    the fixture filename pattern lives in exactly one place.
-    """
-    return _FIXTURES_DIR / f"{competitor_id}.html"
 
-
-def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="python -m orchestration.run_all",
-        description=(
-            "GBP Competitor Review Monitor — one full scrape pass. "
-            "Use --fixtures to run against tests/fixtures/*.html instead "
-            "of live Google Maps (no Playwright required)."
-        ),
+        description="GBP monitor — single-path review scraper (product).",
     )
     parser.add_argument(
-        "--fixtures",
-        action="store_true",
-        help=(
-            "Read HTML from tests/fixtures/{competitor_id}.html instead "
-            "of doing a live Playwright scrape. Listings without a "
-            "fixture file are skipped (not failures)."
-        ),
+        "--business", required=True,
+        help="Google Maps place_id to scrape (e.g. ChIJ...).",
     )
+    parser.add_argument("--max-reviews", type=int, default=100)
     parser.add_argument(
-        "--verify",
-        action="store_true",
-        help=(
-            "Live verification mode: capture screenshots + HTML evidence "
-            "from real Google Maps URLs without modifying production "
-            "snapshots, deltas, or run_summary.json. Evidence is written "
-            "to data/verify/{timestamp}/. Requires Playwright browser "
-            "binary. Use --url to override competitor URLs for testing "
-            "a single listing."
-        ),
+        "--session", default=None,
+        help="Path to a Playwright storage_state.json from a logged-in session.",
     )
-    parser.add_argument(
-        "--url",
-        type=str,
-        default=None,
-        help=(
-            "Override all competitor URLs with this single URL. Only "
-            "meaningful with --verify. Useful for testing capture against "
-            "one real Google Maps listing without editing listings.json. "
-            "Must start with https://."
-        ),
-    )
-    parser.add_argument(
-        "--validate-config",
-        action="store_true",
-        help=(
-            "Validate config/listings.json structure and exit. "
-            "Checks for duplicate IDs, missing fields, and invalid place_id "
-            "format. Exits 0 if valid, 1 if errors found."
-        ),
-    )
-    return parser.parse_args(argv)
+    parser.add_argument("--mode", default="live", choices=["live", "fixtures"])
+    args = parser.parse_args(argv)
+
+    # Signal-safe teardown flag is unnecessary here; run_product closes its own.
+    def _shutdown(signum, _frame):
+        logger.warning("Received %s — aborting.", signal.Signals(signum).name)
+        sys.exit(EXIT_FAILED)
+
+    signal.signal(signal.SIGINT, _shutdown)
+    signal.signal(signal.SIGTERM, _shutdown)
+
+    return run_product(args.business, args.max_reviews, args.session, args.mode)
 
 
 if __name__ == "__main__":
-    args = _parse_args()
-
-    # M13B: Config validation mode — validate and exit.
-    if args.validate_config:
-        try:
-            listings = json.loads(_LISTINGS_PATH.read_text(encoding="utf-8"))
-        except FileNotFoundError:
-            print(f"ERROR: {_LISTINGS_PATH} not found")
-            sys.exit(1)
-        except json.JSONDecodeError as e:
-            print(f"ERROR: {_LISTINGS_PATH} is not valid JSON: {e}")
-            sys.exit(1)
-        errors = _validate_listings_config(listings)
-        if errors:
-            print(f"Config validation FAILED ({len(errors)} error(s)):")
-            for e in errors:
-                print(f"  - {e}")
-            sys.exit(1)
-        else:
-            print(f"Config validation PASSED — {_LISTINGS_PATH} is valid")
-            sys.exit(0)
-
-    # M13B: Validate --url if provided.
-    if args.url is not None:
-        if not isinstance(args.url, str) or not args.url.strip():
-            print("ERROR: --url must be a non-empty string")
-            sys.exit(1)
-        if not args.url.strip().startswith("https://"):
-            print(f"ERROR: --url must start with https:// (got {args.url[:20]}...)")
-            sys.exit(1)
-        if "google.com/maps" not in args.url and "maps.googleapis.com" not in args.url:
-            logger.warning("URL does not appear to be a Google Maps URL: %s", args.url[:60])
-
-    if args.verify:
-        report = run_verify(url_override=args.url)
-        # Exit non-zero when any verification fails so CI / the
-        # operator can detect it without parsing the report JSON.
-        sys.exit(1 if report["failed"] > 0 else 0)
-    else:
-        summary = run(fixtures_mode=args.fixtures)
-        # Exit 0 even if some listings failed — Rule 7 mandates the run
-        # completes; the dashboard reads the summary to see the failure
-        # count. A non-zero exit would make GitHub Actions treat the whole
-        # run as failed, which would block the "commit results" step.
-        # (If we ever want CI to fail on mass failures, gate on
-        # summary["failed"] >= summary["success"] here.)
-        sys.exit(0)
+    sys.exit(main())

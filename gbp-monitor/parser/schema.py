@@ -21,6 +21,7 @@ class Review:
     text: str | None
     relative_date: str | None
     scraped_at: str  # ISO 8601, UTC preferred
+    owner_response: str | None = None  # Business owner's public reply, if any.
 
 
 def review_to_dict(review: Review) -> dict:

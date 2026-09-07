@@ -85,6 +85,16 @@ function CompetitorRow({
             <h4 className="truncate text-sm font-semibold text-foreground">
               {comp.name}
             </h4>
+            {comp.verified === false && (
+              <Badge
+                variant="outline"
+                className="shrink-0 gap-1 border-red-500/50 bg-red-500/15 px-1.5 py-0 text-[10px] font-semibold text-red-700 dark:text-red-300"
+                title="place_id has not been cross-checked against the resolved business name"
+              >
+                <AlertTriangle className="size-2.5" aria-hidden="true" />
+                Unverified
+              </Badge>
+            )}
             {comp.new_reviews_count > 0 && (
               <Badge
                 variant="outline"
@@ -220,6 +230,16 @@ function CompetitorReviewList({
             <SheetTitle className="flex items-center gap-2 text-base">
               <Store className="size-4 text-primary" aria-hidden="true" />
               {comp.name}
+              {comp.verified === false && (
+                <Badge
+                  variant="outline"
+                  className="ml-1 gap-1 border-red-500/50 bg-red-500/15 px-1.5 py-0 text-[10px] font-semibold text-red-700 dark:text-red-300"
+                  title="place_id has not been cross-checked against the resolved business name"
+                >
+                  <AlertTriangle className="size-2.5" aria-hidden="true" />
+                  Unverified
+                </Badge>
+              )}
             </SheetTitle>
             {comp.new_reviews_count > 0 && (
               <Badge

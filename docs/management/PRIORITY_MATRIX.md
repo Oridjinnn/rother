@@ -3,7 +3,7 @@
 **Date:** 2026-07-22
 **Source:** Architecture Audits AUDIT-01 through AUDIT-07
 
----
+> **Note:** Throughout this matrix, the "12 competitors" / "~30 reviews" figures describe the **bundled seed demo** ("Copenhagen Bali"), not the shipped product. The current product scopes to a single **user-provided business** entered at onboarding and its competitors; scale figures should be read as demo-scale references.
 
 ## Priority Distribution
 

@@ -5,6 +5,8 @@
 **Goal:** Evaluate Rother as a replacement for manual competitor review monitoring  
 **Benchmark:** GMB Everywhere
 
+> **Historical snapshot:** This journey documents the **seed-demo era** UI (the bundled "Copenhagen Bali" demo). The current product uses Login → Onboarding (your business + category) → Run → Hubs; see `docs/product/03_USER_FLOWS.md`.
+
 ---
 
 ## Stage 1: Discovery & Installation

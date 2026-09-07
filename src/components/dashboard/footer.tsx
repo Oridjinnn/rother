@@ -97,7 +97,7 @@ function computeHealth(h: FooterProps["health"]): {
   };
 }
 
-/** Sticky footer per UI/UX rule. Pushed to bottom by min-h-screen flex flex-col. */
+/** Sticky footer per UI/UX rule. Pushed to bottom by min-h-dvh flex flex-col. */
 export function Footer({ verifiedBy, lastVerified, health, T, mode }: FooterProps) {
   const meta = verifiedBy ? verificationMeta[verifiedBy] : null;
   const VIcon = meta?.icon ?? ShieldAlert;

@@ -20,9 +20,20 @@ export const revalidate = 0;
  *     maxCompetitors: number
  *   }
  *
- * Only includes competitors with >0 reviews. Capped at 12 competitors
- * (the top 12 by total reviews) so the matrix stays readable.
+ * Only includes competitors with >0 reviews. Capped at a config-driven
+ * number of competitors (default 12, the top N by total reviews) so the
+ * matrix stays readable. The old hardcoded 12 — see RISK-030 — is replaced
+ * by MAX_COMPETITORS below.
  */
+
+/** Config-driven competitor cap. Override via MAX_COMPETITORS env (0 = no cap). */
+const MAX_COMPETITORS = (() => {
+  const raw = process.env.MAX_COMPETITORS;
+  if (raw === undefined || raw.trim() === "") return 12;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n >= 0 ? n : 12;
+})();
+
 function cosineSimilarity(a: number[], b: number[]): number {
   let dot = 0;
   let magA = 0;
@@ -80,9 +91,10 @@ export async function GET() {
       });
     }
 
-    // Sort by total reviews desc, cap at 12
+    // Sort by total reviews desc, cap at MAX_COMPETITORS (0 = no cap)
     competitors.sort((a, b) => b.total - a.total);
-    const capped = competitors.slice(0, 12);
+    const capped =
+      MAX_COMPETITORS > 0 ? competitors.slice(0, MAX_COMPETITORS) : competitors;
 
     // Build the N×N correlation matrix
     const n = capped.length;
@@ -110,7 +122,7 @@ export async function GET() {
           distribution: c.distribution,
         })),
         matrix,
-        maxCompetitors: 12,
+        maxCompetitors: MAX_COMPETITORS,
       },
       { headers: { "Cache-Control": "no-store" } },
     );

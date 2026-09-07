@@ -53,7 +53,7 @@ Define the component hierarchy, naming conventions, and design patterns for the 
   │   ├── <BranchesTab>
   │   │   ├── <BranchAccordion>
   │   │   │   ├── <BranchHeader>
-  │   │   │   └── <CompetitorCard> × 2 per branch
+   │   │   │   └── <CompetitorCard> × N per branch (data-driven; "2" was the demo seed count, not a limit)
   │   │   └── <CompetitorDetailSheet>
   │   ├── <CompareTab>
   │   │   ├── <SubTabBar>

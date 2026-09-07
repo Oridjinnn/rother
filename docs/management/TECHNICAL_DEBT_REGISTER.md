@@ -1,8 +1,8 @@
 # Technical Debt Register — Rother
 
-**Date:** 2026-07-22
-**Source:** Architecture Audits AUDIT-01 through AUDIT-07
-**Total Items:** 51
+**Date:** 2026-07-22 (last full re-count 2026-08-14)
+**Source:** Architecture Audits AUDIT-01 through AUDIT-07 (+ ROTHER-AUDIT re-scans 2026-08-13, 2026-08-14)
+**Total Items:** 56
 
 ---
 
@@ -150,6 +150,7 @@
 | **Location** | `src/components/dashboard/` (AUDIT-07) |
 | **Impact** | Medium — 15KB+ of dead bundle weight, no caching |
 | **Suggested work** | Replace all self-fetching boilerplate with `useQuery` hooks. Remove QueryProvider if not used. |
+| **Status** | **Resolved (2026-08-14)** — unified `useApiQuery` (`useQuery`, 15s staleTime) introduced; `use-overview.ts` + `use-branches.ts` migrated. Remaining self-fetching components should adopt `useApiQuery` (tracked incremental). |
 | **Dependencies** | None |
 
 ### TD-H09: `charts.tsx` 839-Line Monolith
@@ -265,3 +266,107 @@
 | TD-L12 | Delta file JSON indented (waste of space) | `run_all.py:351-352` | Low — larger file sizes | Omit indent for production |
 | TD-L13 | Duplicated branch name shortening regex | 3 components | Low — copy-paste code | Extract to shared utility |
 | TD-L14 | `scrape-schedule.tsx` 1h timezone discrepancy in comments | `scrape-schedule.tsx:58-66` | Low — documentation vs code mismatch | Fix cron time or comment |
+
+---
+
+## ROTHER-AUDIT Resolution / Status Notes — 2026-08-13
+
+> Appended by the ROTHER-AUDIT follow-up. Statuses HYPOTHESIS-grade pending live verification.
+
+| ID | Prior status | Current status | Evidence / Note |
+|---|---|---|---|
+| TD-C01 | Open — empty parse overwrites snapshot | **Guard added (this session)** | `run_all.py` Step 4 skips `save_snapshot` when parse empty AND prior snapshot non-empty. `py_compile` passes. |
+| TD-C02 | Open — hardcoded `GBP_ROOT` | **Resolved** | `src/lib/gbp/paths.ts:15-20` env-configurable. |
+| TD-C03 | Open — no schema validation | Open | Zod validation still not at `server-data.ts` boundary. |
+| TD-C04 | Open — non-atomic delta/summary | **Resolved** | `.tmp`+rename confirmed. |
+| TD-H06 | Open — errors swallowed in `server-data.ts` | **Resolved (2026-08-14)** | `readJsonFile` logs; `dataStatus` envelope added (D4). |
+| TD-H08 | Open — no TanStack Query usage | **Resolved (2026-08-14)** | unified `useApiQuery` + 2 hooks migrated (C4). |
+| TD-H09 | Open — `charts.tsx` monolith | Open | Still 29 KB monolith; split spec in ROADMAP §4. |
+| TD-M03 | Open — Prisma/SQLite unused | Open | Dead code; also see RISK-026 (Tauri data story). |
+| TD-M05 | Open — API root "Hello world" | **Resolved (this session)** | `src/app/api/route.ts` repurposed to health endpoint `{ status: "ok" }`. |
+| TD-M06 | Open — `formatRating` dead | **Resolved** | No `formatRating` consumer remains in `src/`. |
+| TD-M15/TD-L01 | Open — TS build errors ignored | Open | `next.config.ts` still `ignoreBuildErrors: true`. |
+
+### New debt surfaced by ROTHER-AUDIT
+- **TD-N01 (High):** No honest CI viability signal — `verify_baseline.py` accepts `0`/`1`, `golden-datasets/` empty, `run_all.py:1646` `sys.exit(0)` in live mode. (see RISK-025 / RISK-027)
+- **TD-N02 (High):** Multi-category feature has no schema or discovery backend — 3 independent blockers. (see RISK-024)
+- **TD-N03 (Medium):** Tauri plan over-provisions a SQLite engine that the app does not use. (see RISK-026; corrected in plan doc)
+
+---
+
+## Execution Prompt B Resolution Notes — 2026-08-13
+
+> Documents the "user business + category + Run gate" increment.
+
+| ID | Prior status | Current status | Evidence / Note |
+|---|---|---|---|
+| Single-business assumption (Copenhagen Bali as the only/primary business) | Open — UI assumed the seed demo | **CLOSED** | Onboarding captures the user's own business (name + location + category); `readListings()` returns `[]` once `user-business.json` exists, so the seeded demo is hidden from the UI. The product is single-business by design now. |
+| TD-N02 | Open — 3 backend blockers | **Partial — frontend resolved** | Category picker + `ActiveBusiness` schema added; live arbitrary-business scraping still deferred (see TD-N04 / RISK-028). |
+
+### New debt surfaced by Execution Prompt B
+- **TD-N04 (High):** Live scrape of an arbitrary user business (by category + location) is **not yet supported** — deferred backend follow-up. `POST /api/scrape/trigger` persists the user's business to `user-business.json` and starts a run, but the Python orchestrator is not yet scoped to scrape an arbitrary real business; acquisition remains auth-gated (RISK-023). The user lands on empty states after the Run gate. (see RISK-028)
+
+---
+
+## ROTHER-AUDIT Resolution / Status Notes — 2026-08-14
+
+> Appended by the ROTHER-AUDIT follow-up (second pass). Statuses HYPOTHESIS-grade
+> pending live verification.
+
+| ID | Prior status | Current status | Evidence / Note |
+|---|---|---|---|
+| TD-H12 | Open — inconsistent `.get()` vs bracket access | **Close (not present)** | `parser/review_parser.py:153-208` uses consistent `.get()` + try/except; no raw bracket access. Recommend closing. |
+| TD-M03 / RISK-026 | Open — Prisma/SQLite dead | **Confirmed dead at read; inert in Tauri** | `server-data.ts` reads JSON only; `src-tauri/src/main.rs:46,57` still injects an unused `DATABASE_URL` (SQLite dev.db) into the sidecar. Clean up the injection. |
+
+### New debt surfaced by ROTHER-AUDIT (2026-08-14)
+- **TD-N05 (Medium):** Dead COARSE adapters on disk — `src/components/dashboard/overview-section.tsx` (~600 LOC, unreferenced) and `src/components/dashboard/config-section.tsx` (unreferenced; live Config is `src/features/t-config.tsx`). Maintenance/confusion risk; no runtime impact. (see C3)
+- **TD-N06 (Medium):** Mixed data-acquisition styles + uncached `useOverview()` — some features pass data down, others self-fetch; `use-overview.ts:6-31` is plain `useState`+`fetch` with no memoization → redundant `/api/overview` calls. Concrete instance of TD-H08. (see C4)
+- **TD-N07 (Medium):** Doc drift presents demo scale as current spec — `docs/product/04_SCREEN_MAP.md` (no disclaimer; "6 branches / 2 per branch / #1–6") and `docs/product/02_INFORMATION_ARCHITECTURE.md:162` (restates retired "Competitors (2)" rule). Both are source-of-truth docs. (see X1/X2)
+- **TD-N08 (Medium):** Additional doc drift — `docs/product/05_COMPONENT_SYSTEM.md:56` (`<CompetitorCard> × 2 per branch`), `docs/product/03_USER_FLOWS.md:25,90` (Flow 3 "6 branches ranked" as live), `docs/engineering/API_REFERENCE.md:153` (hardcoded `12`). (see X3/X4/X5)
+- **TD-N09 (Low/Med):** `RELEASE_NOTES.md` omits the single-business pivot (onboarding, category picker, Run gate); project directory still named `Rother - 0.0.1` (3 versions behind `package.json` 0.2.0). Owner-facing "what is this" doc is stale. (see X6)
+
+---
+
+## ROTHER-AUDIT Execution Notes — 2026-08-14
+
+> All 2026-08-14 findings executed or partially executed this session under a
+> **minimal-backend** constraint. Per-item detail in `docs/management/ROADMAP_2026-08-14.md`.
+
+| ID | Prior status | Current status | Evidence |
+|---|---|---|---|
+| TD-H06 (D4) | Open — errors swallowed | **Resolved** | `readJsonFile` logs on failure; `snapshot-glance` banner; `dataStatus` envelope on `/api/overview`+`/api/branches` (`assessDataStatus`) |
+| TD-N05 (C3) | Open — dead adapters | **Resolved** | `overview-section.tsx`, `config-section.tsx` deleted |
+| TD-N06 (C4) | Open — uncached `useOverview` | **Resolved** | unified `useApiQuery` (`useQuery`, 15s staleTime) + `use-overview.ts`/`use-branches.ts` migrated; TD-H08 closed |
+| TD-N07 (X1/X2) | Open — doc drift | **Resolved** | `04_SCREEN_MAP.md` disclaimer; `02_IA.md:162` `(N)` |
+| TD-N08 (X3/X4/X5) | Open — doc drift | **Resolved** | `05_COMPONENT_SYSTEM.md:56`, `03_USER_FLOWS.md`, `API_REFERENCE.md:153` |
+| TD-N09 (X6) | Open — RELEASE_NOTES stale | **Resolved** | single-business pivot added to `RELEASE_NOTES.md` |
+| TD-H12 → n/a | — | **Resolved** | TD-N10 closed — sanctioned `useMounted` + `useOnlineStatus`(`useSyncExternalStore`) + `useApiQuery` cover remaining directives |
+
+### New tracking item
+- **TD-N10 (Low):** Remaining `react-hooks/set-state-in-effect` directives. `app-state.tsx`
+  migrated to `src/lib/use-external-store.ts` (`useSyncExternalStore`); `useMounted`
+  (`src/lib/use-mounted.ts`) replaces the `useState(false)+useEffect(setMounted(true))`
+  mount-guard in `theme-toggle.tsx` + `freshness-badge.tsx`; `OnlineStatusProvider` reads
+  `navigator.onLine` via `useSyncExternalStore`. The remaining data-fetch-in-effect directives
+  are covered by the unified `useApiQuery` hook (C4). **Closed 2026-08-14.** |
+
+---
+
+## 2026-08-14 (run 2) — NEW debt items
+
+- **TD-N11 (Med):** Dual `fetch("/api/branches")` in `reviews-section.tsx:127` and
+  `history-comparison-section.tsx:53` bypass the unified `useBranches()` cache (TD-N06 resolved
+  for other callers but missed these two). Redundant network + divergent loading UX.
+  Maps to plan §[test] #22. *Confidence: CONVERGED.*
+- **TD-N12 (Med):** `golden-datasets/run_summary.golden.json` asserts `skipped:0, success:3`
+  while `verify_baseline.py:116-119` asserts `skipped==9` — self-contradictory golden baseline;
+  `compare_golden()` will fail whenever run. (RISK-025 populated datasets but the summary
+  baseline was not reconciled.) Maps to plan §[test] #21. *Confidence: CONVERGED.*
+- **TD-N13 (Low):** Feature-registry inventory drift — `UX_RESTRUCTURE_PLAN.md` lists 28
+  features; shipped `FEATURES` has 30 (`c-discover`, `c-geo-grid` added by limitation work).
+  Document or gate. Maps to U2/P6. *Confidence: CONVERGED.*
+
+### 2026-08-14 (run 2) — EXECUTION STATUS
+- **TD-N11 (dual fetch):** `reviews-section.tsx` + `history-comparison-section.tsx` now use `useBranches()` instead of raw `fetch("/api/branches")`. **Executed + tsc-clean.**
+- **TD-N12 (golden contradiction):** `golden-datasets/run_summary.golden.json` `skipped` corrected to `9` to match `verify_baseline.py` fixtures assertion. **Executed.**
+- **TD-N13 (registry drift):** `UX_RESTRUCTURE_PLAN.md` inventory updated to canonical 27 (28 baseline + c-discover + c-geo-grid, then 3 merged). **Executed.**

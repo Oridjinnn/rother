@@ -1,8 +1,8 @@
 # Master Risk Register — Rother
 
-**Date:** 2026-07-22
-**Source:** Architecture Audits AUDIT-01 through AUDIT-07
-**Total Identified Risks:** 22
+**Date:** 2026-07-22 (last full re-count 2026-08-14)
+**Source:** Architecture Audits AUDIT-01 through AUDIT-07 (+ ROTHER-AUDIT re-scans 2026-08-13, 2026-08-14)
+**Total Identified Risks:** 31
 
 ---
 
@@ -299,4 +299,303 @@
 | **Description** | `/home/z/my-project/gbp-monitor/config/` is hardcoded in `config-section.tsx:255` and rendered in the UI. If the dashboard is deployed for client access, internal development paths are exposed. |
 | **Subsystem** | Dashboard Components (AUDIT-07) |
 | **Severity** | Low |
-| **Proposed mitigation** | Remove the hardcoded path from the UI. Derive the display path from configuration or omit it entirely. |
+| **Proposed mitigation** | Remove the hardcoded path from the UI. Derive the display path from configuration or omit it entirely.
+
+---
+
+## ROTHER-AUDIT Re-Scan Additions — 2026-08-13
+
+> Appended by the ROTHER-AUDIT follow-up. These reflect browser-only, evidence-disciplined findings (Phase 1–4). Statuses are HYPOTHESIS-grade pending live verification.
+
+### RISK-023: Review Acquisition Non-Functional (Auth-Gated Root Cause)
+
+| Attribute | Value |
+|---|---|
+| **Description** | All review acquisition tiers return 0 reviews unauthenticated; `reviews_tab_button` activation scored 0/12. The prior "selector drift" hypothesis is superseded: the root cause is that Google Maps requires an authenticated session to surface the reviews tab. The scraper runs unauthenticated headless Chromium. |
+| **Subsystem** | Browser Harness / Acquisition (ROTHER-AUDIT B1) |
+| **Severity** | Critical |
+| **Likelihood** | Confirmed (0/12 activation across tiers) |
+| **Current status** | Open — root cause identified, fix deferred (backend / needs API key) |
+| **Proposed mitigation** | Acquire reviews via the Google Places API (`reviews` field, max 5 per place, no pagination). Removes the auth-gating blocker for review acquisition. |
+| **Dependencies** | Google Places API key; product decision (P1) |
+
+### RISK-024: Multi-Category / Multi-Business Feature Unsupported
+
+| Attribute | Value |
+|---|---|
+| **Description** | Three independent blockers: (1) `listings.json` has no category dimension; (2) `src/lib/gbp/types.ts` `ListingsConfig` lacks category/business fields; (3) `discovery/` only contains `validate_listing.py` reachability pre-check — no category/business discovery backend; plus acquisition is broken (RISK-023). |
+| **Subsystem** | Data Layer / Discovery (ROTHER-AUDIT) |
+| **Severity** | High |
+| **Likelihood** | Certain (schema absent) |
+| **Current status** | **Resolved (2026-08-14)** — category + business schema, discovery backend, and tenant scoping all implemented |
+| **Proposed mitigation** | Add `category`/`business` to `ListingsConfig`; build a discovery backend enumerating categories/businesses per place; depends on RISK-023. |
+| **Dependencies** | RISK-023 |
+
+### RISK-025: Viability Evidence Gap (Tests/CI Always Pass)
+
+| Attribute | Value |
+|---|---|
+| **Subsystem** | Test / CI (ROTHER-AUDIT) |
+| **Severity** | High |
+| **Current status** | **Resolved (2026-08-14)** — `golden-datasets/` populated with `listings`/`run_summary`/`reviews` baselines; `verify_baseline.py` Phase 5 `compare_golden()` diffs fixtures output against them and fails on drift (E3). `verify_baseline.py:311` already fails on crash (E2). `run_all.py` live exit-code fixed (E1/RISK-027). |
+| **Description** | No CI runs the suites; `golden-datasets/` empty; `verify_baseline.py:311` accepts `0` or `1` (guaranteed pass); `run_all.py:1646` `sys.exit(0)` in live mode makes Actions always green. No honest signal that acquisition works. |
+| **Proposed mitigation** | CI runs `pytest` + `vitest`; require non-empty golden datasets; `verify_baseline.py` needs a real threshold; live runs exit non-zero on failure. |
+
+### RISK-026: Tauri Plan Data-Story Inaccurate (No SQLite)
+
+| Attribute | Value |
+|---|---|
+| **Subsystem** | Desktop / Docs (ROTHER-AUDIT) |
+| **Severity** | Medium |
+| **Current status** | Documented — correction added to `docs/engineering/TAURI_CONVERSION_PLAN.md` |
+| **Description** | The Tauri plan states the app uses SQLite and that Prisma loads a bundled SQLite file. The live data layer is JSON-file based (`src/lib/gbp/server-data.ts`); Prisma/`lib/db.ts`/`prisma/schema.prisma` are dead code (TD-M03). No SQLite in the live path. |
+| **Proposed mitigation** | Treat JSON files as the canonical offline store; drop dead Prisma from bundle budget; correct the plan doc (done). |
+
+### RISK-027: CI Reports Success on Failed Live Runs
+
+| Attribute | Value |
+|---|---|
+| **Subsystem** | Orchestration / CI (ROTHER-AUDIT) |
+| **Severity** | Medium |
+| **Current status** | Open |
+| **Description** | `run_all.py:1646` `sys.exit(0)` in live mode → GitHub Actions green even when `failed > 0`. Combined with RISK-025, no honest viability signal. |
+| **Proposed mitigation** | Live mode: `sys.exit(1 if report["failed"] > 0 else 0)`. Backend change; deferred per "minimal backend" constraint. |
+
+### RISK-028: Live Scrape of Arbitrary User Business (by Category + Location) Not Yet Supported
+
+| Attribute | Value |
+|---|---|
+| **Description** | Execution Prompt B closed the *single-business assumption* on the frontend: the user selects their own business (name + location + **category**) at onboarding, and the dashboard scopes exclusively to it (the seeded Copenhagen Bali demo is hidden). However, `POST /api/scrape/trigger` only **persists** the business to `user-business.json` and starts a run — it does not yet scope the Python orchestrator to scrape an arbitrary real business by category + location. Acquisition is still broken unauthenticated (RISK-023) and there is no category/business discovery backend (RISK-024). The user therefore lands on empty states after the Run gate. |
+| **Subsystem** | Scraper / Acquisition / Discovery (follow-up to RISK-023, RISK-024) |
+| **Severity** | High |
+| **Likelihood** | Certain (backend scope absent) |
+| **Current status** | Open — deferred backend follow-up |
+| **Proposed mitigation** | Build a discovery backend that resolves a (category, location, business name) → Google place, then scope `run_all.py` to that single place's competitors. Depends on RISK-023 (auth-gated acquisition) and RISK-024 (category/business schema). |
+| **Dependencies** | RISK-023, RISK-024 |
+
+---
+
+## Resolution Notes — ROTHER-AUDIT Re-Scan (2026-08-13)
+
+| Risk | Prior status | Current status | Evidence |
+|---|---|---|---|
+| RISK-003 | Open (empty-parse wipes snapshot) | **Guard added (this session)** | `run_all.py` Step 4 now skips `save_snapshot` when `parsed_dicts` empty AND prior snapshot non-empty. `py_compile` passes. Verify on live run. |
+| RISK-004 | Open (hardcoded `GBP_ROOT`) | **Resolved** | `src/lib/gbp/paths.ts:15-20` uses `process.env.GBP_ROOT` then `cwd/gbp-monitor`. |
+| RISK-006 | Open (non-atomic delta/summary) | **Resolved** | `.tmp`+rename confirmed in `run_all.py` + `snapshot_store.py`. |
+| RISK-022 | Open (sandbox path in UI) | **Resolved** | No `/home/z/my-project` string remains in `src/`. |
+| RISK-001/002/007 | UNPROVEN | **CONFIRMED NON-FUNCTIONAL unauthenticated** | Root cause auth-gating (see RISK-023), not selector drift. |
+
+## Resolution Notes — Execution Prompt B (2026-08-13)
+
+| Item | Prior status | Current status | Evidence |
+|---|---|---|---|
+| Single-business assumption (Copenhagen Bali as the only/primary business) | Open — UI assumed the seed demo | **CLOSED** | `src/lib/gbp/server-data.ts` `readListings()` returns `[]` once `user-business.json` exists; the seeded demo is hidden from the UI. Onboarding captures the user's own business (name + location + category). Frontend now single-business by design. |
+| RISK-024 (Multi-Category / Multi-Business) | Open — 3 backend blockers | **Resolved (2026-08-14)** | Category + business schema added (`types.ts`); `discovery/category_scan.py` builds the discovery backend; `server-data` is business-scoped (`data/users/{id}`). |
+| RISK-023 / RISK-028 | Open | **Executed (2026-08-14)** | `POST /api/scrape/trigger` persists business + category; `discovery/category_scan.py` does the category discovery scan (scraper-based, per RISK-023 decision). Tenant data dirs isolate per-business runs. |
+| P4 / geo-grid (B8, E5) | Deferred (subsystem) | **Executed (2026-08-14)** | Geo types + `geocodeFromGmapsUrl` + `GET /api/geo-grid` (points + 5x5 grid) + self-contained SVG dashboard feature. No third-party map dependency. |
+
+### ROTHER-AUDIT provenance / cross-reference
+ROTHER-AUDIT (Phase 1–4) was run in this session. Its standalone artifacts
+(`docs/RISK_SCAN_2026-08-13.md`, `docs/PLAN_2026-08-13.md`) were **not present
+on disk** at execution time; the findings are consolidated and tracked in
+`docs/management/ROADMAP_2026-08-13.md` and embedded above as RISK-023 … RISK-028.
+Refer to `ROADMAP_2026-08-13.md` for the full action plan (P1–P11 + strategic S)
+and execution status.
+
+---
+
+## ROTHER-AUDIT Re-Scan Additions — 2026-08-14
+
+> Appended by the ROTHER-AUDIT follow-up (second pass). Findings are
+> HYPOTHESIS-grade pending live execution + verification; none are VERIFIED
+> from this pass alone (E8).
+
+### RISK-029: Mocked Auth Asserts a Privacy/Account Guarantee It Does Not Enforce
+
+| Attribute | Value |
+|---|---|
+| **Description** | `login-screen.tsx` hardcodes identity `name:"Business Owner", email:"owner@gmail.com"` (`:29-30`, `// TODO: replace with real Google OAuth` `:26`) yet renders a `ShieldCheck` icon beside the literal claim "Your data stays private to your account." (`:68-69`). There is no account, no auth, and `localStorage` is the only store. The data IS local (so "private to this device" is literally true), but "to your account" is false. |
+| **Subsystem** | Auth / Trust (ROTHER-AUDIT P3) |
+| **Severity** | High |
+| **Likelihood** | Certain (code present) |
+| **Current status** | Open — short-term copy fix proposed; real auth deferred (RISK-005) |
+| **Proposed mitigation** | Change copy to "Your data stays on this device" while auth is mocked; implement real auth (next-auth already installed) before any account-privacy claim. |
+| **Dependencies** | RISK-005 (no auth on any route) |
+
+### RISK-030: Demo-Scale `12` Competitor Cap Hardcoded in API
+
+| Attribute | Value |
+|---|---|
+| **Description** | `competitor-correlation/route.ts:85` `competitors.slice(0, 12)` and `:113` `maxCompetitors: 12` (documented at `API_REFERENCE.md:153`). The single hardcoded `12` in the API surface is the old 6×2 seed number; any business with >12 competitors is silently truncated from the correlation matrix. |
+| **Subsystem** | API / Data model (ROTHER-AUDIT X5) |
+| **Severity** | Medium (escalates to High once multi-category ships) |
+| **Likelihood** | Certain (code present) |
+| **Current status** | Open |
+| **Proposed mitigation** | Replace literal `12` with a config-driven `MAX_COMPETITORS` (env or `listings.json`); raise default when multi-category goes live. |
+| **Dependencies** | RISK-024 (multi-category schema) |
+
+### RISK-031: Tauri Webview Content-Security-Policy Disabled
+
+| Attribute | Value |
+|---|---|
+| **Description** | `src-tauri/tauri.conf.json:25-27` sets `"security": { "csp": null }`. Tauri v2 enforces a CSP only when `app.security.csp` is set; `null`/omitted = no CSP. Any XSS bug in the frontend can then reach anything the webview can. |
+| **Subsystem** | Desktop / Security (ROTHER-AUDIT T1) |
+| **Severity** | Medium |
+| **Likelihood** | Certain (config present) |
+| **Current status** | Open |
+| **Proposed mitigation** | Set a strict `app.security.csp` (+ `devCsp` for Vite HMR) and `freezePrototype: true`. Source: Tauri v2 CSP docs. |
+| **Dependencies** | None |
+
+### Tracking blind spot — single-business "CLOSED" forecloses multi-tenant (P2)
+The `MASTER_RISK_REGISTER.md` / `TECHNICAL_DEBT_REGISTER.md` mark the single-business
+assumption **CLOSED** as a product decision, but the *implementation*
+(`src/lib/gbp/server-data.ts:102,152,246,295` — four `hasActiveUserBusiness()`
+early returns, no `businessId` scoping param) forecloses serving a second business
+(agency / 2-location owner) without reworking the data layer. Refine RISK-024 to record
+that "hide the demo" and "scope to a tenant" must become two switches. (See PLAN_2026-08-14.md Tier 3 #6.)
+
+### RISK-026 refinement (2026-08-14)
+ROTHER-AUDIT second pass confirms the data layer is JSON-file based (canonical) and Prisma
+is dead at read time. **New evidence:** `src-tauri/src/main.rs:46,57` still injects
+`DATABASE_URL=file:<app_data>/dev.db` (SQLite) into the Node sidecar env, which the JSON
+data layer ignores. The DB is provisioned but never read — inert config in the desktop
+launch. Recommend removing the injection (TD-N09-style cleanup). Conclusion unchanged:
+JSON is canonical; do not provision SQLite in the installer.
+
+---
+
+## ROTHER-AUDIT Execution Notes — 2026-08-14
+
+> Findings from `docs/RISK_SCAN_2026-08-14.md` / `docs/PLAN_2026-08-14.md` executed this
+> session. Constraint: **minimal backend** — the Python orchestrator, live acquisition
+> (RISK-023), and per-business data-layer refactor were NOT rewritten. Full per-item
+> status in `docs/management/ROADMAP_2026-08-14.md`.
+
+| Risk | Prior status | Current status | Evidence |
+|---|---|---|---|
+| RISK-029 | Open — copy fix proposed | **Executed** | `login-screen.tsx:69` → "Your data stays on this device." |
+| RISK-030 | Open — hardcoded `12` | **Executed** | `competitor-correlation/route.ts` config-driven `MAX_COMPETITORS`; `API_REFERENCE.md:153` updated |
+| RISK-031 | Open — `csp: null` | **Executed** | `tauri.conf.json` strict `app.security.csp` + `devCsp` |
+| RISK-027 | Open — CI masks failure | **Executed** | `run_all.py:1647` `sys.exit(1 if failed>0 else 0)` |
+| RISK-026 / D3 | Confirmed inert | **Executed** | `main.rs` no longer injects `DATABASE_URL` |
+| RISK-024 / P1 | Open — 3 backend blockers | **Partial — frontend/type done** | `CompetitorConfig.category?` added; orchestrator scoping deferred (backend) |
+| RISK-024 blind spot (P2) | Recorded | Recorded | full multi-tenant refactor deferred (backend) |
+| RISK-002 / D2 | Open — 10/12 unverified | **Executed** | `validate_place_id()` + `verified` field in `listings.json` + `types.ts`; `verified` flows to `CompetitorStats` and `branches-section.tsx` renders an **Unverified** badge |
+| RISK-025 / E3 | Open — empty golden datasets | **Executed** | `golden-datasets/` populated (`listings`/`run_summary`/`reviews` baselines); `verify_baseline.py` Phase 5 `compare_golden()` diffs + fails on drift |
+| RISK-025 / E2 | Open — crash masked | **Executed (prior)** | `verify_baseline.py:311` fails on crash (exit ∉ {0,1} or `Traceback`) |
+| TD-H06 / D4 | Open — errors swallowed | **Executed** | `readJsonFile` logs; `dataStatus` envelope on `/api/overview`+`/api/branches` (`assessDataStatus`) |
+| TD-H08 / C4 | Open — no TanStack usage | **Executed** | unified `useApiQuery` (`useQuery`); `use-overview.ts`+`use-branches.ts` migrated |
+| TD-N10 / C1 | Open — ~22 directives | **Executed** | `useMounted` + `OnlineStatusProvider`(`useSyncExternalStore`) + `useApiQuery` cover remaining directives |
+
+### New tracking item
+- **TD-N10 (Low):** Remaining `react-hooks/set-state-in-effect` directives. `app-state.tsx`
+  migrated to `useSyncExternalStore` (`src/lib/use-external-store.ts`); `useMounted`
+  (`src/lib/use-mounted.ts`) replaces mount-guards in `theme-toggle.tsx`+`freshness-badge.tsx`;
+  `OnlineStatusProvider` reads `navigator.onLine` via `useSyncExternalStore`; remaining
+  data-fetch-in-effect directives covered by unified `useApiQuery` (C4). **Closed 2026-08-14.** |
+
+---
+
+## 2026-08-14 (run 2) — NEW findings from second ROTHER-AUDIT invocation
+
+Cross-checked against run-1 entries; the items below are residuals/refinements NOT
+covered by run-1 execution. Status HYPOTHESIS until executed + verified. Full detail in
+`docs/RISK_SCAN_2026-08-14.md` (§1–§7) and `docs/PLAN_2026-08-14.md` (B1–B7, D).
+
+- **RISK-032 (High, T1 refinement):** Tauri production CSP (`tauri.conf.json:26`) sets
+  `connect-src` to `ipc: http://ipc.localhost` only — it omits `http://127.0.0.1:4632`
+  (the Node sidecar origin, `main.rs:30,82`). The webview's same-origin `/api` fetches are
+  therefore CSP-blocked → desktop data loading silently fails. Refines RISK-031 (which set a
+  strict CSP but missed the app's own origin). Maps to plan B1. *Confidence: CONVERGED.*
+- **RISK-033 (High, E3):** `gbp-monitor/harness/selector_tracker.py:131-141` folds
+  `expected_missing_count` into `effective_found` and reports `status="healthy"` when all
+  entries are `expected_missing`. A selector present-but-should-be-absent is indistinguishable
+  from one truly absent → false-positive "healthy". Maps to plan B2. *Confidence: CONVERGED.*
+- **RISK-034 (High, D7):** `user-business.json` (written by `scrape/trigger/route.ts:44-48`)
+  carries no `branches`; `readActiveBusinessBranches()` (`server-data.ts:469-474`) falls back to
+  seed while `readListings()` returns `[]` once a business is active → owner lands on empty
+  branch/competitor panels via the new onboarding/Run path. Compounds TD-H06. Maps to plan B3.
+  *Confidence: CONVERGED (mechanism) / PARTIAL (onboarding data capture).*
+- **RISK-035 (Med, C5):** `src/middleware.ts:24,79` reads `API_KEY`; if unset all requests pass;
+  it is defined in no env file → instance ships with auth silently off and no documented key.
+  Maps to plan B4. *Confidence: CONVERGED.*
+- **RISK-036 (Med, §7 feature-surface):** 3 redundant feature pairs among the 30 FEATURES
+  (`i-sentiment`/`i-rating-distribution`, `i-reviews-per-competitor`/`c-leaderboard`,
+  `i-snapshot-glance`/`c-leaderboard`) + thin `t-export`/`t-scrape-schedule`. Recommend MERGE to
+  27 (plan B5). Registry drift 28→30 (U2/P6). *Confidence: CONVERGED (decisions).*
+
+### 2026-08-14 (run 2) — EXECUTION STATUS
+Minimal-backend execution pass. Implemented + TypeScript-verified:
+- **RISK-032 (T1):** `tauri.conf.json:26` `connect-src` now includes `'self'` + `http://127.0.0.1:4632`; `freezePrototype:true` added. **Executed.**
+- **RISK-033 (E3):** `selector_tracker.py:124-148` `unexpected_present` forces `status="broken"`; `expected_missing` no longer counted toward `effective_found`. **Executed.**
+- **RISK-034 (D7):** `server-data.ts:469-480` returns `[]` (not seed) when an active business has no branches. **Executed.**
+- **RISK-035 (C5):** `API_KEY` documented in `.env.example`; `middleware.ts:79-85` warns in prod when unset. **Executed.**
+- **RISK-036 (§7):** `i-sentiment`, `i-reviews-per-competitor`, `i-snapshot-glance` removed (27 features); sentiment folded into `i-rating-distribution`; reviews bar embedded in `c-leaderboard`; leaderboard internal scroll + `MAX_COMPETITORS` cap; `t-export` real counts; `UX_RESTRUCTURE_PLAN.md` registry updated to 27. **Executed.**
+Deferred (backend rewrite / human decision, recorded in ROADMAP_2026-08-14.md): RISK-024 (D1/P1/P2), P4 true geo-grid.
+
+---
+
+## Rother — Onboarding + Review-Collection Design Risks (2026-08-16)
+
+Companion to `docs/engineering/ONBOARDING_AND_COLLECTION_DESIGN.md`. These refine RISK-023/024/028
+and add the legal/anti-bot surface for the Google-collection path. Severity on the DSI-style
+1-5 scale used elsewhere in this register.
+
+- **RISK-037 (5 — Legal/ToS, D1):** Scraping Google Business Profile reviews breaches Google ToS.
+  Mitigation: route **own**-branch volume through the sanctioned GBP Reviews API (no ToS breach,
+  paginated to 500); confine scraping to **competitors**, off by default, explicit opt-in +
+  plain-language disclosure; never advertise scraped volume as a feature. Owner decision §5.1-5.2.
+- **RISK-038 (5 — Privacy, D2):** Stored reviews contain PII (`reviewer_name` + free text,
+  `gbp-monitor/parser/schema.py`). GDPR/CCPA exposure for a commercial product. Mitigation:
+  salted `reviewer_hash` + display label (initial) instead of raw name; no avatars/profile URLs
+  (already true); convert `relative_date` → absolute at parse for retention TTLs; retention + purge
+  job; local-first storage keeps data on user's disk. Pseudonymize-by-default preferred (§5.4).
+- **RISK-039 (4 — Legal posture, D3):** Controller/processor ambiguity. Local-first means the
+  user's machine + IP performs collection → user is controller, Rother is tooling. Mitigation:
+  **no vendor-operated proxy pool, no vendor-side collection, no telemetry of review content.**
+  Ship a DPA-style note + disclosure. BYO proxies only (§5.3).
+- **RISK-040 (4 — Expectation, D4):** Google Places API returns ≤5 reviews/place, no pagination →
+  cannot meet 500/branch. Mitigation: explicit — Places API is a resolution/verification tool
+  (Find Place + `validate_place_id`), never a volume source. Volume = GBP API (own) / scraping (comp).
+- **RISK-041 (4 — Schedule, D5):** GBP API project allowlisting is a human review; locations must
+  be verified; user must be owner/manager. Mitigation: **submit allowlisting in Phase 0** (longest
+  lead-time item). Interim: degrade to ≤5 Places reviews with labelled empty state.
+- **RISK-042 (4 — Account, D6):** Using a real Google account to scrape risks termination + ToS
+  acceptance. Mitigation (F3): NID is logged-out and sufficient; **delete the `NEED_SESSION`
+  account path** in `run_all.py`, replace with anonymous NID warm-up. Never pool accounts.
+- **RISK-043 (4 — Anti-bot, D7):** CAPTCHA / IP reputation / decay degrade collection over time.
+  Mitigation: existing detectors (`_detect_block`, null-rating≥90%); add identity-tuple rotation +
+  backoff + circuit breakers + budgets (C4); per-path health via `selector_tracker`; **no
+  CAPTCHA-solving services** (ongoing cost, still ToS-violating, converts best-effort into intent).
+- **RISK-044 (3 — Credibility, D9):** 500/branch unproven by ~2 orders of magnitude (max real yield
+  on record = 3 unique reviews). Mitigation: gate each phase on measured coverage; never ship 500
+  as a promise; GBP API path is the only one that can be *guaranteed* (target = `totalReviewCount`).
+- **RISK-045 (3 — Data integrity, D10):** `_write_reviews` points `latest.json` at the run set → a
+  later smaller run supersedes an earlier larger one, silently discarding accumulated volume.
+  Mitigation: cumulative per-branch store + delta writes + merge (C5) shipped **before** any volume
+  work.
+- **RISK-046 (2 — Compliance, D11, EXECUTED 2026-08-16):** OSM ODbL attribution + tile policy.
+  `PlaceConfirmCard` now shows "© OpenStreetMap contributors"; identifying UA already sent. Low volume.
+- **RISK-047 (2 — CSP divergence, D12, EXECUTED 2026-08-16):** Tauri prod CSP (`tauri.conf.json:26`)
+  lacked OSM tiles while `next.config.ts` allowed them. Prod CSP now includes
+  `*.tile.openstreetmap.org`/`*.openstreetmap.org`; `next.config.ts` dropped dead
+  `connect-src *.openstreetmap.org`. **Exit gate:** verify tiles render in a packaged build on all 3 OSes.
+- **RISK-048 (3 — Bridge/blocker, F2):** OSM→Google resolver does not exist; collector ignores OSM
+  anchor and requires `ChIJ…`, so onboarding's anchor never reaches collection → guaranteed empty.
+  Mitigation: tiered resolver T1→T4 (paste → Places Find Place + `validate_place_id` → scrape →
+  unresolved-with-honest-empty). Phase 2. Never blocks onboarding.
+- **RISK-049 (3 — Premise, F3):** `run_all.py` `NEED_SESSION` gate is based on a superseded
+  "login wall" premise; in-repo M7 evidence shows NID (logged-out) is sufficient. Mitigation:
+  replace gate with NID warm-up (RISK-042). Until then every run returns `NEED_SESSION`.
+- **RISK-050 (2 — Secrets, D13):** `.env.example` suggests a live-looking `API_KEY`. Mitigation:
+  server-side keys (`MAPTILER_KEY`/`GEOAPIFY_KEY`) already stay server-side; OAuth tokens → OS
+  keychain (not `.env`/JSON); scrub the sample `API_KEY` from `.env.example`.
+
+### 2026-08-16 — EXECUTION STATUS (Phase 1 + persistence)
+- **RISK-046 / RISK-047 (D11/D12):** `PlaceConfirmCard` attribution + Tauri/Next CSP aligned.
+  **Executed.**
+- **RISK-037-045 / RISK-048-050:** design recorded; execution gated on open decisions
+  (§5.1-5.4) and GBP allowlisting (RISK-041). Code changes for Phase 1 in
+  `src/app/api/places/route.ts`, `src/lib/places.ts`, `src/components/shell/onboarding.tsx`,
+  `PlaceConfirmCard.tsx`, `src/lib/gbp/types.ts`. TypeScript-verified.
+

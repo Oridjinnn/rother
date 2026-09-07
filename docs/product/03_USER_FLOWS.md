@@ -21,8 +21,8 @@ Define the primary workflows a user performs in Rother. Every flow documents the
 
 ```
 1. Open Rother tab                    → Already open or pinned
-2. Scan Overview KPIs                 → "6 branches, 12 competitors, 210 reviews"
-3. Check Update Health               → Green bar: "Healthy · 12 ok"
+ 2. Scan Overview KPIs                 → "Your business · N competitors · N reviews"
+ 3. Check Update Health               → Green bar: "Healthy · N ok"
 4. Check New Reviews count           → "+3 new reviews"
 5. Scan Alerts badge                 → "2 alerts"
 6. (Optional) Click Alerts tab       → Review alert details
@@ -87,7 +87,7 @@ Define the primary workflows a user performs in Rother. Every flow documents the
 1. Open Rother                     → Overview tab
 2. Scan rating distribution        → "60% 5★, 20% 4★, 10% 3★, 10% 1-2★"
 3. Check sentiment chart           → "75% positive"
-4. Switch to Compare tab           → See all 6 branches ranked
+ 4. Switch to Compare tab           → See all N branches ranked (demo seed shows 6)
 5. Click top competitor            → Open detail sheet
 6. Read recent reviews             → Check latest customer feedback
 7. Export competitor data (CSV)    → For weekly report
@@ -153,9 +153,9 @@ Define the primary workflows a user performs in Rother. Every flow documents the
 
 ```
 1. Click "Update Now"             → Header button
-2. See progress                   → "Updating: 3/12 competitors…"
-3. Wait for completion           → Progress updates every N seconds
-4. See result                     → "+3 new reviews · 12 ok · 0 failed"
+ 2. See progress                   → "Updating: 3/N competitors…"
+ 3. Wait for completion           → Progress updates every N seconds
+ 4. See result                     → "+3 new reviews · N ok · 0 failed"
 5. (If failures)                  → "2 competitors failed. Tap to see details."
 ```
 
@@ -205,13 +205,19 @@ Define the primary workflows a user performs in Rother. Every flow documents the
 
 ---
 
-## Flow 7: Onboarding (First-Time User)
+## Flow 7: Onboarding (First-Time User) — *Superseded*
+
+> **Superseded by Flow 8.** The model below (add competitors → run update → view
+> dashboard, built around the seeded Copenhagen Bali demo) is no longer the
+> first-run experience. As of Execution Prompt B, the product scopes to **a
+> single, user-owned business** selected at onboarding. The old multi-competitor
+> "add competitor" setup is no longer part of first-run.
 
 **Frequency:** Once per user  
 **Primary persona:** All users  
 **Time budget:** 5 minutes
 
-### Flow Steps (Proposed)
+### Flow Steps (Proposed — historical)
 
 ```
 1. First visit                    → No data exists
@@ -237,6 +243,61 @@ Define the primary workflows a user performs in Rother. Every flow documents the
 
 ---
 
+## Flow 8: First-Run Setup — Login → Onboarding → Run → Hubs
+
+**Frequency:** Once per user (re-runs only if the user signs out and back in)  
+**Primary persona:** All users (the business owner)  
+**Time budget:** <2 minutes  
+**Introduced:** Execution Prompt B (single-business model)
+
+### Flow Steps
+
+```
+1. Login                         → Mock "Sign in with Gmail" (no real auth yet)
+   → Stores a local user; no business yet
+2. Onboarding                    → "Let's set up your business"
+   a. Business name              → free text (e.g. "Warung Ibu Yati")
+   b. Business location          → full address/locality (e.g. "Ubud, Bali")
+   c. Category                   → searchable picker (src/lib/categories.ts)
+                                    e.g. Restaurant, Café, Hotel, Spa…
+   → Continue (requires name + full location)
+3. Run screen (Run gate)         → "Start monitoring <business>"
+   → Press "Run" → POST /api/scrape/trigger with
+     { name, location, category, categoryId }
+   → Attempts a LIVE scrape of THE USER'S OWN business
+   → Hubs reveal whether or not the scrape succeeded
+4. Hubs                          → 4 hub icons: Insights, Reputation,
+                                    Competitors, Tools
+   → Each hub opens its feature grid
+```
+
+### Scoping Invariant (must hold)
+- **The user ONLY ever sees their own business.** The seeded Copenhagen Bali
+  demo (in `gbp-monitor/config/listings.json`, `isSeeded: true`) is hidden from
+  the UI once a user business is active (`readListings()` returns `[]` in that
+  state — see `src/lib/gbp/server-data.ts`). It exists only for legacy/non-UI
+  callers and must never surface in the dashboard.
+- Selecting (or re-selecting) a business **resets the Run gate** — the hubs stay
+  hidden until the user runs again for the new business
+  (`setBusiness` clears `runStarted` in `src/lib/app-state.tsx`).
+
+### Current Friction
+- Login is mocked (no real Google OAuth) — acceptable for local preview only.
+- A live scrape of an *arbitrary* user business is **not yet supported**
+  backend-side (selectors/unauthenticated acquisition are broken, see
+  RISK-023). The Run gate therefore often lands the user on empty states;
+  this is expected and does not block navigation.
+- Category is captured and persisted but not yet used to drive competitor
+  discovery (deferred backend follow-up).
+
+### Proposed Improvements
+- Wire real Google OAuth (NextAuth/Google) to replace the mock login.
+- Use the selected category + location to seed competitor discovery once the
+  backend scrape path supports arbitrary businesses.
+- Surface a clearer "scanning your business…" progress state during the Run.
+
+---
+
 ## Flow Summary
 
 | Flow | Frequency | Current Score | Target Score |
@@ -247,6 +308,12 @@ Define the primary workflows a user performs in Rother. Every flow documents the
 | Add Competitor | Monthly | 1/10 | 9/10 |
 | Run Manual Update | Weekly | 3/10 | 8/10 |
 | Export Report | Weekly | 5/10 | 8/10 |
-| Onboarding | Once | 1/10 | 9/10 |
+| Onboarding (Flow 7, superseded) | Once | 1/10 | 9/10 |
+| First-Run Setup (Flow 8) | Once | 7/10 | 9/10 |
 
 **Total Current: 3.6/10 → Target: 8.6/10**
+
+> **Note:** Flow 8 (single-business onboarding) replaces Flow 7 as the real
+> first-run experience. The single-business scoping invariant (user only sees
+> their own business; Copenhagen Bali demo hidden) is documented in
+> `02_INFORMATION_ARCHITECTURE.md` and `docs/engineering/ENGINEERING_BASELINE.md`.

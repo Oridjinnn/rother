@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useMounted } from "@/lib/use-mounted";
 
 interface FreshnessBadgeProps {
   /** ISO timestamp of the last scrape, or null if never scraped. */
@@ -113,9 +114,7 @@ export function FreshnessBadge({
   // calls Date.now() which differs between server and client.
   // During SSR + first paint, render a neutral placeholder; after mount,
   // compute the actual freshness.
-  const [mounted, setMounted] = React.useState(false);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  React.useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   const info = mounted ? computeFreshness(lastScrapedAt) : {
     level: "unknown" as const,

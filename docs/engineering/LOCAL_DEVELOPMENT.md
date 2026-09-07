@@ -1,7 +1,7 @@
 # Local Development Guide — Rother
 
-**Date:** 2026-07-22
-**Version:** 0.0.1
+**Date:** 2026-07-29
+**Version:** 0.2.0
 
 ---
 
@@ -12,7 +12,7 @@
 | Python | 3.12+ | `python --version` | Scraper (`gbp-monitor/`) |
 | pip | (any) | `pip --version` | Scraper dependencies |
 | Node.js | 20+ | `node --version` | Next.js dashboard |
-| Bun | 1.x | `bun --version` | JS package manager + runtime |
+| npm | 10+ | `npm --version` | JS package manager |
 | Playwright Chromium | (bundled) | `playwright install --dry-run chromium` | Scraper live mode only |
 
 **Optional:**
@@ -46,17 +46,17 @@ Expected output:
 ### 3. JavaScript Dashboard Dependencies
 
 ```bash
-bun install
+npm install
 ```
 
 Expected output:
-- `bun install` installs all 90 npm packages from `package.json`
+- `npm install` installs all ~90 npm packages from `package.json`
 - `node_modules/` created at project root
 
 ### 4. Database (Optional — Not Used by Dashboard)
 
 ```bash
-bun run db:push
+npm run db:push
 ```
 
 This creates `db/custom.db` (SQLite). The dashboard reads JSON files, not the database. This step is only needed if you plan to work with Prisma.
@@ -66,16 +66,13 @@ This creates `db/custom.db` (SQLite). The dashboard reads JSON files, not the da
 Create a `.env` file (or edit the existing one):
 
 ```env
-# Required for Prisma (not used by dashboard data reads)
-DATABASE_URL=file:/home/z/my-project/db/custom.db
-
-# Future: scraper data root (not yet implemented — see AUDIT-05 W1)
-# GBP_ROOT=/path/to/gbp-monitor
+# Optional: override scraper data root (defaults to <project>/gbp-monitor)
+# GBP_ROOT=C:\path\to\gbp-monitor
 ```
 
-**Note:** The dashboard currently hardcodes `GBP_ROOT = "/home/z/my-project/gbp-monitor"` in `src/lib/gbp/paths.ts`. Until T-002 is implemented, you must either:
-- Place your scraper data at `/home/z/my-project/gbp-monitor/`, OR
-- Edit `paths.ts` to point to your actual scraper directory
+**Note:** `GBP_ROOT` resolves via:
+1. `GBP_ROOT` environment variable, or
+2. `process.cwd() + "/gbp-monitor"` (project root in development)
 
 ---
 
@@ -90,13 +87,15 @@ cd gbp-monitor
 python -m orchestration.run_all --fixtures
 ```
 
-Expected output:
+Expected output (JSONLOG format):
 ```
-INFO:gbp-monitor.run_all:=== run_all START mode=fixtures ===
-INFO:gbp-monitor.run_all:listing: comp-canggu-01 (...)
-INFO:gbp-monitor.run_all:read fixture comp-canggu-01 (3271 bytes)
-INFO:gbp-monitor.run_all:Run summary: ...
-INFO:gbp-monitor.run_all:wrote run summary to data/run_summary.json
+INFO:gbp-monitor.run_all JSONLOG: {"run_id":"...","stage":"run_start","mode":"fixtures"}
+INFO:gbp-monitor.run_all JSONLOG: {"run_id":"...","stage":"listing_start","competitor":"comp-canggu-01"}
+INFO:gbp-monitor.run_all NO_REVIEWS[comp-canggu-01]: HTML is N bytes
+INFO:gbp-monitor.run_all JSONLOG: {"run_id":"...","stage":"listing_done","competitor":"comp-canggu-01",...}
+INFO:gbp-monitor.run_all JSONLOG: {"run_id":"...","stage":"listing_result","progress":"1/12",...}
+INFO:gbp-monitor.run_all JSONLOG: {"run_id":"...","stage":"run_summary","success":3,...}
+INFO:gbp-monitor.run_all JSONLOG: {"run_id":"...","stage":"summary_written","path":"data/run_summary.json"}
 ```
 
 Exit code: `0` (always — even on per-listing failures, per Rule 7).
@@ -114,7 +113,7 @@ Generated artifacts:
 ### Run the Dashboard (Development Mode)
 
 ```bash
-bun run dev
+npm run dev
 ```
 
 Expected output:
@@ -125,15 +124,15 @@ Expected output:
 
 Open `http://localhost:3000` in a browser. The dashboard loads with the Overview tab active.
 
-**If the dashboard shows all empty states:** The Python scraper data directory does not exist at the expected path (`/home/z/my-project/gbp-monitor/`). Either:
-1. Symlink your scraper directory: `ln -s /actual/path/to/gbp-monitor /home/z/my-project/gbp-monitor`
-2. Edit `src/lib/gbp/paths.ts:11` to set `GBP_ROOT` to your actual path
+**If the dashboard shows all empty states:** The Python scraper data directory does not exist at the expected path. Either:
+1. Set `GBP_ROOT` in `.env` to point to your `gbp-monitor` directory
+2. Ensure a scraper run has completed to generate data files
 
 ### Run Both (End-to-End)
 
 ```bash
 # Terminal 1: Start dashboard
-bun run dev
+npm run dev
 
 # Terminal 2: Run scraper
 cd gbp-monitor && python -m orchestration.run_all --fixtures
@@ -160,11 +159,11 @@ This spawns `python -m orchestration.run_all --fixtures` (blocking, up to 60s).
 |---|---|---|
 | `python -m orchestration.run_all` | `gbp-monitor/` | Run scraper in live mode |
 | `python -m orchestration.run_all --fixtures` | `gbp-monitor/` | Run scraper against fixture files |
-| `bun run dev` | Project root | Start Next.js dev server (port 3000) |
-| `bun run build` | Project root | Production build (standalone) |
-| `bun run start` | Project root | Start production server |
-| `bun run lint` | Project root | Run ESLint |
-| `bun run db:push` | Project root | Push Prisma schema to SQLite |
+| `npm run dev` | Project root | Start Next.js dev server (port 3000) |
+| `npm run build` | Project root | Production build (standalone) |
+| `npm run start` | Project root | Start production server |
+| `npm run lint` | Project root | Run ESLint |
+| `npm run db:push` | Project root | Push Prisma schema to SQLite |
 
 ---
 
@@ -194,7 +193,7 @@ This spawns `python -m orchestration.run_all --fixtures` (blocking, up to 60s).
 
 | Problem | Likely cause | Solution |
 |---|---|---|
-| `bun: command not found` | Bun not installed | Install Bun: `curl -fsSL https://bun.sh/install \| bash` |
+| `command not found: npm` | Node.js/npm not installed | Install Node.js from https://nodejs.org |
 | `ModuleNotFoundError: playwright` | Python deps not installed | `cd gbp-monitor && pip install -r requirements.txt` |
 | `SelectorNotFoundError` in fixtures mode | Fixture file missing for competitor | Check `gbp-monitor/tests/fixtures/{comp_id}.html` exists |
 | Dashboard shows empty/zero states | `GBP_ROOT` path mismatch | Edit `src/lib/gbp/paths.ts` or symlink directory |

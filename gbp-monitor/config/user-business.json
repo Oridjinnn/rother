@@ -1,0 +1,28 @@
+{
+  "id": "copenhagen-cofee",
+  "name": "-8.6460703, 115.1338004",
+  "location": "-8.6460703, 115.1338004",
+  "category": "Coffee Shop",
+  "categoryId": "coffee_shop",
+  "osm_place_id": "coord/-8.6460703,115.1338004",
+  "gmaps_place_id": null,
+  "lat": -8.6460703,
+  "lng": 115.1338004,
+  "unverified": true,
+  "branches": [
+    {
+      "branch_id": "copenhagen-cofee",
+      "branch_name": "copenhagen cofee",
+      "competitors": [
+        {
+          "competitor_id": "copenhagen-cofee",
+          "name": "copenhagen cofee",
+          "gmaps_url": "",
+          "place_id": null,
+          "verified": false
+        }
+      ]
+    }
+  ],
+  "scrapedAt": "2026-08-16T11:05:39.399Z"
+}

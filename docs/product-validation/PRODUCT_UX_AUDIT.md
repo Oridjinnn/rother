@@ -5,6 +5,8 @@
 **Benchmark:** GMB Everywhere (Windows desktop product)  
 **Mode:** Client mode (`/`), some Dev mode (`/?mode=dev`) checks  
 
+> **Historical snapshot:** This audit documents the **seed-demo era** UI (the bundled "Copenhagen Bali" demo). The current product scopes to a single **user-provided business** entered at onboarding; see `docs/product/03_USER_FLOWS.md`.
+
 ---
 
 ## 1. Branding Consistency

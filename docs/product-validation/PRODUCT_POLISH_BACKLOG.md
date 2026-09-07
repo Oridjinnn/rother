@@ -3,6 +3,8 @@
 > Grouped by priority. Ordered by impact within each tier.
 > Estimated effort: Low (<1 day) · Medium (1-3 days) · High (1 week)
 
+> **Historical snapshot:** This backlog documents the **seed-demo era** UI (the bundled "Copenhagen Bali" demo). The current product scopes to a single **user-provided business** entered at onboarding; see `docs/product/03_USER_FLOWS.md`.
+
 ---
 
 ## P0 — Critical Blockers (Before Client Testing)

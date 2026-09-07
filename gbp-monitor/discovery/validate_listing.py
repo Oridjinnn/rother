@@ -20,6 +20,7 @@ to save a Playwright launch.
 from __future__ import annotations
 
 import logging
+import os
 
 import requests
 
@@ -108,3 +109,50 @@ def validate_listing(url: str) -> bool:
             e,
         )
         return False
+
+
+def validate_place_id(
+    place_id: str | None,
+    expected_name: str | None,
+    api_key: str | None = None,
+) -> tuple[bool, str]:
+    """Cross-check a stored `place_id` against the business Google resolves.
+
+    D2 / RISK-002: 10 of 12 seed competitors have `place_id: null`, and a prior
+    wrong-attribution (M11-CORRECTION) shows name<->place_id mapping can drift.
+    This calls the Places API (New) `Place Details` endpoint for `displayName`
+    and returns whether it matches `expected_name`.
+
+    Returns `(verified, note)`. This function MUST NOT raise — it is a
+    best-effort verification used to set a `verified` badge. On mismatch it
+    returns `(False, "name mismatch: ...")`; the caller must NEVER auto-overwrite
+    the stored place_id. Requires `GOOGLE_PLACES_API_KEY` (or `api_key`); without
+    it (or without a place_id) it returns `(False, "<reason>")` so the dashboard
+    can show an "unverified" state rather than a false positive.
+
+    Note: live acquisition is currently auth-gated (RISK-023), so this is wired
+    for the config-validation path, not the live scrape path yet.
+    """
+    if not place_id:
+        return False, "no place_id stored"
+    if not api_key:
+        api_key = os.environ.get("GOOGLE_PLACES_API_KEY")
+    if not api_key:
+        return False, "no GOOGLE_PLACES_API_KEY configured"
+
+    url = "https://places.googleapis.com/v1/places/" + place_id
+    params = {"fields": "displayName,formattedAddress", "key": api_key}
+    try:
+        resp = requests.get(url, params=params, timeout=_TIMEOUT_SECONDS)
+        if resp.status_code != 200:
+            return False, f"places api {resp.status_code}"
+        data = resp.json()
+        resolved = (data.get("displayName") or {}).get("text") or ""
+        if not resolved:
+            return False, "places api returned no displayName"
+        if expected_name and expected_name.strip().lower() not in resolved.strip().lower():
+            return False, f"name mismatch: expected ~{expected_name!r}, got {resolved!r}"
+        return True, "verified"
+    except requests.RequestException as e:
+        logger.warning("validate_place_id[%s]: request failed — %s", place_id, e)
+        return False, f"request failed: {e}"

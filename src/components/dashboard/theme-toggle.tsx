@@ -5,14 +5,11 @@ import { Moon, Sun, Coffee } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
+import { useMounted } from "@/lib/use-mounted";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-
-  // Avoid hydration mismatch — next-themes only knows the theme after mount.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  React.useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   const isDark = mounted && theme === "dark";
 

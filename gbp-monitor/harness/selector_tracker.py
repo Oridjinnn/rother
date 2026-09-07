@@ -123,15 +123,23 @@ class SelectorTracker:
 
             found_count = sum(1 for e in entries if e["found"])
             expected_missing_count = sum(1 for e in entries if e.get("expected_missing"))
+            # Entries that are PRESENT but were expected to be ABSENT → wrong.
+            unexpected_present = sum(
+                1 for e in entries if e["found"] and e.get("expected_missing")
+            )
             durations = [e["duration_ms"] for e in entries if e["duration_ms"] > 0]
             avg_dur = round(sum(durations) / len(durations), 1) if durations else None
             all_errors = [e["error"] for e in entries if e["error"]]
 
             total_attempts = len(entries)
-            effective_found = found_count + expected_missing_count
+            # Do NOT count expected-missing (absence) toward effective_found —
+            # a selector that should be absent is not "found".
+            effective_found = found_count
             confidence = round(effective_found / total_attempts, 3) if total_attempts > 0 else 0.0
 
-            if found_count == len(entries):
+            if unexpected_present > 0:
+                status = "broken"
+            elif found_count == len(entries):
                 status = "healthy"
             elif found_count > 0:
                 status = "degraded"

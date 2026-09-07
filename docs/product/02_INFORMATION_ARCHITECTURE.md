@@ -34,7 +34,42 @@ From the PV0 and UX audits, the current architecture has several problems:
 
 ---
 
-## Navigation Hierarchy
+## Core Scoping Principle (single-business, category-scoped)
+
+**Introduced in Execution Prompt B.** Rother is now a **single-business** product:
+
+- **The active business scopes everything.** The dashboard reads exactly one
+  business — the one the user selected at onboarding (name + location +
+  **category**). Every feature, chart, and list is scoped to that business via
+  `src/lib/gbp/server-data.ts` (`readListings()` returns `[]` once a user
+  business is active, so the seeded **Copenhagen Bali** demo can never surface
+  in the UI).
+- **The category dimension is first-class.** A business carries a `category` /
+  `categoryId` (from `src/lib/categories.ts`). It is captured at onboarding,
+  persisted to `gbp-monitor/config/user-business.json`, and forwarded to the
+  scrape trigger. Using it to drive competitor discovery is a **deferred
+  backend follow-up** (see `MASTER_RISK_REGISTER.md` RISK-028).
+- **Run gate.** The 4 hubs are hidden until the user triggers a live scrape of
+  their own business (`runStarted` in `src/lib/app-state.tsx`). Re-selecting a
+  business resets the gate.
+- **Invariant — the user ONLY sees their own business.** The Copenhagen Bali
+  seed in `listings.json` (`isSeeded: true`) is legacy-only and must not appear
+  in the dashboard.
+
+> **Doc inconsistency to retire:** earlier IA rules such as *"A branch has
+> exactly 2 competitors (by design — Copenhagen Bali model)"* described the
+> seed demo. Under the single-business model the user's business has **no**
+> seeded competitors until a real scrape populates data; the Copenhagen Bali
+> model is no longer the reference.
+
+### Level 0 — Pre-Dashboard Gate (new)
+
+```
+[Login] → [Onboarding: name + location + CATEGORY] → [Run screen: live scrape attempt] → [Hub picker]
+```
+
+The hub picker and all downstream tabs only render after login + onboarding +
+Run. See `04_SCREEN_MAP.md` S00.
 
 ### Level 1 — Tab Bar (Primary Navigation)
 
@@ -124,7 +159,7 @@ Each tab contains:
 ## Data Relationships
 
 ```
-Branch (1) ──has many──> Competitors (2)
+Branch (1) ──has many──> Competitors (N — data-driven; the retired "2 per branch" Copenhagen-Bali seed rule no longer applies)
                              │
                              ├── Snapshots (1 per run, versioned)
                              │       └── Reviews (N per snapshot)
@@ -136,7 +171,11 @@ Branch (1) ──has many──> Competitors (2)
 ```
 
 ### Key Rules
-- **A branch** has exactly 2 competitors (by design — Copenhagen Bali model)
+- **The active business scopes everything.** Every screen reads the user's own
+  business only (`readListings()` returns `[]` once a user business is active);
+  the seeded Copenhagen Bali demo is never shown in the UI.
+- **A business carries a category dimension** (`category` / `categoryId`) chosen
+  at onboarding; competitor discovery by category is a deferred backend follow-up.
 - **A competitor** has 1 latest snapshot, N historical snapshots
 - **A review** belongs to exactly 1 competitor
 - **A run** produces 1 snapshot per competitor + 1 summary + N delta files
@@ -168,6 +207,8 @@ Branch (1) ──has many──> Competitors (2)
 | Reviews | 1 table | 25/50/100 rows | Server-side (50 default) |
 | Alerts | Scrollable list | Unlimited | Client-side "Dismiss" |
 | Config | 3 collapsible sections | N/A | None |
+
+> **Note:** The competitor/branch counts above are **seed-demo scale** (the bundled "Copenhagen Bali" demo: 6 branches, 12 competitors, 2 per branch). The live product scopes to a single **user-provided business** and its competitors, so these counts vary per business.
 
 ---
 

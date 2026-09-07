@@ -38,13 +38,13 @@ pip install -r requirements.txt
 
 ### 1.4 JavaScript Environment
 
-- [ ] `bun --version` outputs `1.x`
 - [ ] `node --version` outputs `20.x` or later
+- [ ] `npm --version` outputs `10.x` or later
 
 ### 1.5 JavaScript Dependencies
 
 ```bash
-bun install
+npm install
 ```
 
 - [ ] Command completes without error
@@ -74,7 +74,7 @@ python -m orchestration.run_all --fixtures
 - [ ] Log output shows: `=== run_all START mode=fixtures ===`
 - [ ] Log output shows 3 listings processed (comp-canggu-01, comp-seminyak-01, comp-ubud-01)
 - [ ] Log output shows 9 listings skipped
-- [ ] Log output shows: `Run summary: {"mode": "fixtures", "success": 3, "failed": 0, "skipped": 9, ...}`
+- [ ] Log output shows: `JSONLOG: {"stage":"run_summary", "mode": "fixtures", "success": 3, "failed": 0, "skipped": 9, ...}`
 - [ ] No ERROR or WARNING in log output (ALERT is NOT triggered: `failed=0, success=3, skipped=9`)
 
 ### 2.3 Verify Output Artifacts
@@ -180,7 +180,7 @@ else:
 ### 4.1 Start Dev Server
 
 ```bash
-bun run dev
+npm run dev
 ```
 
 Wait for: `▲ Next.js 16.x` and `- Local: http://localhost:3000`
@@ -214,7 +214,7 @@ curl -s http://localhost:3000/api/overview | python -m json.tool
 **Expected (if scraper data is accessible):**
 ```json
 {
-  "branch_count": 6,
+  "totalBranches": 6,
   "total_reviews": 20,
   "reviews_today": 0,
   ...
@@ -224,7 +224,7 @@ curl -s http://localhost:3000/api/overview | python -m json.tool
 **Expected (if scraper data is NOT accessible — paths mismatch):**
 ```json
 {
-  "branch_count": 0,
+  "totalBranches": 0,
   "total_reviews": 0,
   ...
 }
@@ -289,7 +289,7 @@ kill $(lsof -ti:3000) 2>/dev/null || echo "Server not running"
 ### 5.1 Start Dev Server (if not running)
 
 ```bash
-bun run dev &
+npm run dev &
 sleep 10
 ```
 
@@ -369,16 +369,19 @@ Open `http://localhost:3000` in browser:
 | End-to-End | 4 | _ | _ | _ |
 | **Total** | **29** | **_** | **_** | **_** |
 
-### 7.2 Known Verification Blockers
+### 7.2 Known Verification Limitations
 
-| Step | Blocker | Reference |
+| Area | Limitation | Reference |
 |---|---|---|
-| All dashboard API steps | Dashboard cannot find scraper data without modifying `paths.ts` | AUDIT-05 W1 |
-| Live scraper steps | All competitor URLs are mock values | AUDIT-01 §Risks |
-| Selector verification | CSS selectors are UNPROVEN (2023 vintage) | AUDIT-02 §Critical |
+| Live scraper steps | All competitor URLs are mock values — real place_ids not configured | AUDIT-01 §Risks |
+| Selector verification | CSS selectors are UNPROVEN (2023 vintage) against real Google Maps DOM | AUDIT-02 §Critical |
 | Anti-bot verification | 3-layer hardening never tested against real Google Maps | AUDIT-02 §Critical |
-| Production build | `build.sh` references `/home/z/my-project/` | AUDIT-01 |
-| ESLint | All rules disabled — linter passes on any code | AUDIT-01 |
+
+**Resolved blockers (previously documented, now fixed):**
+- Hardcoded `GBP_ROOT` path → replaced with environment variable + cwd fallback (Architecture Refactor 02)
+- ESLint disabled → re-enabled with 0 errors, 0 warnings (H-04)
+- No test suite → 68 tests across 4 test files (H-04 + Production Hardening Pass 03)
+- `build.sh` references → replaced with cross-platform `build.mjs`
 
 ---
 

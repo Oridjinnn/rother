@@ -6,6 +6,8 @@
 
 ---
 
+> **Historical snapshot:** This report documents the **seed-demo era** branding (the bundled "Copenhagen Bali" demo). The current product is a generic, single-business tool; the seed demo is hidden from the UI once a user supplies their own business.
+
 ## Summary
 
 | Metric | Before | After |

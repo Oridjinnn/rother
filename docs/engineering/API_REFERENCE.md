@@ -150,7 +150,7 @@ Distribution of review text lengths (empty, short, medium, long, very long).
 
 ### `GET /api/competitor-correlation`
 
-Rating distribution similarity matrix (cosine similarity, capped at 12 competitors).
+Rating distribution similarity matrix (cosine similarity, capped at MAX_COMPETITORS competitors; default 12, override via the MAX_COMPETITORS env var — see RISK-030).
 
 ```json
 {
@@ -191,11 +191,43 @@ Start a scrape run. Requires auth when `API_KEY` is set.
 
 | Query param | Type | Default | Description |
 |-------------|------|---------|-------------|
-| `mode` | string | `fixtures` | `fixtures` or `live` |
+| `mode` | string | `live` | `live` or `fixtures` (override for local testing) |
+
+**Request body (JSON, optional but expected on first run):** As of the
+"user business + category + Run gate" increment, the body carries the user's
+own business so the run targets **their** business, not the seeded Copenhagen
+Bali demo. The body is persisted to `gbp-monitor/config/user-business.json`
+**before** the run starts (so the dashboard scopes to it even if the live run
+fails).
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | no | Business name (becomes the active business id via slugify) |
+| `location` | string | no | Business location / locality |
+| `category` | string | no | Human category label (e.g. `"Coffee Shop"`) |
+| `categoryId` | string | no | Stable category id (e.g. `"coffee_shop"`) from `src/lib/categories.ts` |
 
 ```json
-{ "ok": true, "runId": "run_20260725T103000Z" }
+{
+  "name": "Warung Ibu Yati",
+  "location": "Ubud, Bali",
+  "category": "Café",
+  "categoryId": "cafe"
+}
 ```
+
+**Response (success):** `runId` plus the persisted `business` when a body was
+supplied.
+
+```json
+{ "ok": true, "runId": "run_20260813T103000Z", "business": { "id": "warung-ibu-yati", "name": "Warung Ibu Yati", "location": "Ubud, Bali", "category": "Café", "categoryId": "cafe", "scrapedAt": "2026-08-13T10:30:00.000Z" } }
+```
+
+> **Note:** Scoping to an arbitrary user business by category + location is a
+> **frontend-complete / backend-deferred** capability (see `MASTER_RISK_REGISTER.md`
+> RISK-028). The endpoint persists the business and starts a run, but live
+> acquisition of an arbitrary business is not yet supported; the user may land
+> on empty states after the Run gate.
 
 Error response:
 ```json

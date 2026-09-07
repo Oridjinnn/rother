@@ -1,16 +1,21 @@
 {
-  "started_at": "2026-07-26T08:18:39.855197+00:00",
-  "finished_at": "2026-07-26T08:18:40.641742+00:00",
-  "mode": "fixtures",
-  "run_id": "20260726T081839Z",
-  "success": 3,
+  "started_at": "2026-08-13T16:18:03.635021+00:00",
+  "finished_at": "2026-08-13T16:18:04.055591+00:00",
+  "mode": "live",
+  "run_id": "20260813T161803Z",
+  "success": 0,
   "failed": 0,
-  "skipped": 9,
+  "skipped": 0,
   "new_reviews": 0,
-  "total_reviews": 10,
-  "total_competitors": 12,
-  "preflight_warnings": 1,
-  "duration_seconds": 0.8,
-  "browser_launch_s": 0.0,
-  "errors": []
+  "total_reviews": 0,
+  "total_competitors": 0,
+  "preflight_warnings": 4,
+  "duration_seconds": 0,
+  "browser_launch_s": 0,
+  "errors": [
+    {
+      "competitor_id": "__config__",
+      "error": "Config validation failed (1 error(s))"
+    }
+  ]
 }

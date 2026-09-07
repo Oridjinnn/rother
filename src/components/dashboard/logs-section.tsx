@@ -357,7 +357,7 @@ export function LogsSection() {
         <CardContent className="p-0">
           <div
             ref={scrollRef}
-            className="gbp-scrollbar max-h-[60vh] overflow-y-auto rounded-b-xl bg-zinc-950 p-3 font-mono text-xs leading-relaxed dark:bg-zinc-950/80"
+            className="gbp-scrollbar max-h-[60dvh] overflow-y-auto rounded-b-xl bg-zinc-950 p-3 font-mono text-xs leading-relaxed dark:bg-zinc-950/80"
             role="log"
             aria-live="polite"
             aria-label="Scraper run log"

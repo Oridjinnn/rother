@@ -13,7 +13,7 @@ export default function GlobalError({
 }) {
   return (
     <html lang="en">
-      <body className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-8 text-center">
+      <body className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background p-8 text-center">
         <div className="rounded-full bg-destructive/10 p-4">
           <AlertTriangle className="size-10 text-destructive" aria-hidden="true" />
         </div>

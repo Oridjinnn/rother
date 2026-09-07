@@ -10,6 +10,8 @@
 
 Rother is a **zero-cost competitor review monitoring system** built for Copenhagen Bali, a coffee shop chain with 6 branches in Bali. It consists of two independent subsystems that share data via JSON files:
 
+> **Context:** This audit was performed against the bundled **seed demo** ("Copenhagen Bali", 6 branches × 2 competitors = 12 competitors) used for local development. The shipped product now scopes to a **single user-provided business** entered at onboarding (name, location, category) and revealed after a Run — the seed demo is hidden from the UI once a user business is active. The "Copenhagen Bali / 6 branches / 12 competitors" figures below describe the demo dataset, not a fixed product model.
+
 1. **gbp-monitor** — a Python scraper that uses Playwright (headless Chromium) to scrape Google Business Profile reviews from competitor listings, detects new reviews via delta-computation against the last snapshot, and is triggered daily via GitHub Actions cron.
 2. **Next.js Dashboard** — a feature-rich React dashboard that reads the JSON files produced by the scraper and visualizes KPIs, charts, branch comparisons, review tables, run history, and scrape health.
 

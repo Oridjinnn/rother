@@ -24,8 +24,8 @@ export function appName(mode: AppMode): string {
 }
 
 /** The version string. */
-export function appVersion(mode: AppMode): string {
-  return mode === "dev" ? "0.0.1" : "0.0.1";
+export function appVersion(): string {
+  return "0.2.0";
 }
 
 /**
@@ -99,14 +99,14 @@ export function getText(mode: AppMode): TextMap {
     return {
       name: "Rother (Dev)",
       subtitle: "Competitor review insights",
-      version: "0.0.1",
+      version: "0.2.0",
       tagline: "Zero-cost · No AI/LLM",
       runButton: "Run Now",
       runButtonLoading: "Running…",
       runButtonAria: "Run scraper now (fixtures mode)",
       runToastLoading: "Running scraper (fixtures mode)…",
       runToastSuccess: "Scrape complete",
-      runToastDesc: "Spawning python3 -m orchestration.run_all --fixtures",
+      runToastDesc: "This may take a few minutes",
       lastRunLabel: "Last Run",
       healthPanelTitle: "Last Run Health",
       runTooltipTitle: "Run scraper now (fixtures mode)",
@@ -131,7 +131,7 @@ export function getText(mode: AppMode): TextMap {
   return {
     name: "Rother",
     subtitle: "Competitor review insights",
-    version: "0.0.1",
+    version: "0.2.0",
     tagline: "Automated review monitoring",
     runButton: "Update Now",
     runButtonLoading: "Updating…",

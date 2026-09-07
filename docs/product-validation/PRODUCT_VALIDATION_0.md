@@ -7,6 +7,8 @@
 
 > /PITFALLS /KILLCRITIC — No code modifications. Only observation.
 
+> **Historical snapshot:** This report documents the **seed-demo era** UI (the bundled "Copenhagen Bali" demo). The current product scopes to a single **user-provided business** entered at onboarding; see `docs/product/02_INFORMATION_ARCHITECTURE.md` and `docs/product/03_USER_FLOWS.md` for the live model.
+
 ---
 
 ## Scoring

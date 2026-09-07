@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import logging
 import time
 from pathlib import Path
 
 from harness.browser import setup_page_handlers
-from harness.scroll import scroll_review_container
+from harness.instrument import PipelineInstrument
+from harness.scroll import scroll_review_container, collect_visible_review_count
 from harness.selectors import resolve_selectors
 
 logger = logging.getLogger("gbp-monitor.capture")
@@ -88,9 +90,16 @@ def _fallback_click(
     comp_id: str = "",
     phase: str = "",
     settle_ms: int = 0,
+    instrument: PipelineInstrument | None = None,
 ) -> bool:
     candidates = resolve_selectors(selectors, selector_key)
+    primary = candidates[0] if candidates else None
     if not candidates:
+        if instrument:
+            instrument.record_selector(
+                selector_key=selector_key, primary=None, fallback_used=False,
+                matched=False, detail="not configured",
+            )
         if tracker:
             tracker.record(
                 selector_key=selector_key,
@@ -101,31 +110,49 @@ def _fallback_click(
                 error="not configured",
             )
         return False
+    used_fallback = False
     for i, candidate in enumerate(candidates):
-        t0 = time.time() if tracker else None
+        t0 = time.time() if (tracker or instrument) else None
         try:
             page.wait_for_selector(candidate, timeout=_OPTIONAL_ELEMENT_TIMEOUT_MS)
             page.click(candidate, timeout=_OPTIONAL_ELEMENT_TIMEOUT_MS)
             if settle_ms:
                 page.wait_for_timeout(settle_ms)
+            duration_ms = (time.time() - t0) * 1000 if t0 else 0
+            if instrument:
+                instrument.record_selector(
+                    selector_key=selector_key, primary=primary,
+                    fallback_used=used_fallback, matched=True,
+                    match_count=1, candidate=candidate,
+                    duration_ms=duration_ms,
+                )
             if tracker:
                 tracker.record(
                     selector_key=selector_key,
                     selector_value=candidate,
                     found=True,
                     match_count=1,
-                    duration_ms=(time.time() - t0) * 1000,
+                    duration_ms=duration_ms,
                     competitor_id=comp_id,
                     phase=phase,
                 )
             return True
         except Exception as e:
+            used_fallback = True
+            duration_ms = (time.time() - t0) * 1000 if t0 else 0
+            if instrument:
+                instrument.record_selector(
+                    selector_key=selector_key, primary=primary,
+                    fallback_used=True, matched=False,
+                    candidate=candidate, duration_ms=duration_ms,
+                    detail=f"fallback {i + 1}/{len(candidates)}: {e}",
+                )
             if tracker:
                 tracker.record(
                     selector_key=selector_key,
                     selector_value=candidate,
                     found=False,
-                    duration_ms=(time.time() - t0) * 1000,
+                    duration_ms=duration_ms,
                     error=str(e),
                     expected_missing=True,
                     competitor_id=comp_id,
@@ -138,6 +165,187 @@ def _fallback_click(
     return False
 
 
+_BUSINESS_META_SELECTORS = [
+    "h1.fontHeadlineLarge",
+    "div.fontHeadlineLarge",
+    "span.fontHeadlineLarge",
+    "div.aMPvhf-fI6EEc-KVuj8d",
+]
+
+_BUSINESS_RATING_SELECTORS = [
+    "div.fontBodyMedium span[aria-label*='star']",
+    "span.kvMYJc",
+    "div.aMPvhf-fI6EEc-KVuj8d span[aria-label*='star']",
+]
+
+
+def _capture_business_metadata(page, instrument: PipelineInstrument | None = None) -> dict | None:
+    """Extract business name, displayed rating, and displayed review count.
+
+    Uses multiple extraction strategies in priority order:
+    1. Structured JSON-LD data (most reliable)
+    2. Page title + body text regex
+    3. Known Google Maps CSS selectors
+    """
+    import json as json_mod
+    import re
+
+    metadata: dict = {}
+
+    # Strategy 1: JSON-LD structured data
+    try:
+        jsonld = page.evaluate("""() => {
+            const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+            for (const s of scripts) {
+                try {
+                    const data = JSON.parse(s.textContent);
+                    if (data.name || (data.itemListElement && data.itemListElement[0])) {
+                        return JSON.stringify(data);
+                    }
+                } catch(e) {}
+            }
+            return null;
+        }""")
+        if jsonld:
+            parsed = json_mod.loads(jsonld)
+            ld = parsed
+            if not metadata.get("business_name"):
+                name = ld.get("name") or (ld.get("itemListElement") and ld["itemListElement"][0].get("name"))
+                if name:
+                    metadata["business_name"] = str(name)[:200]
+            if not metadata.get("google_rating"):
+                agg = ld.get("aggregateRating") or {}
+                rating = agg.get("ratingValue")
+                if rating is not None:
+                    metadata["google_rating"] = str(rating)
+                count = agg.get("reviewCount")
+                if count is not None:
+                    metadata["google_review_count"] = str(count)
+    except Exception:
+        pass
+
+    # Strategy 2: page title
+    if not metadata.get("business_name"):
+        try:
+            title = page.title()
+            if title:
+                clean = re.sub(r"\s*[-–|].*$", "", title).strip()
+                if clean:
+                    metadata["business_name"] = clean[:200]
+        except Exception:
+            pass
+
+    # Strategy 3: Google Maps h1 / header selectors
+    try:
+        name_selectors = [
+            "h1.fontHeadlineLarge",
+            "h1",
+            "[itemprop='name']",
+            "div[role='main'] h1",
+        ]
+        for sel in name_selectors:
+            el = page.query_selector(sel)
+            if el:
+                text = el.inner_text()
+                if text and text.strip():
+                    metadata["business_name"] = text.strip()[:200]
+                    break
+    except Exception:
+        pass
+
+    # Strategy 4: body text regex for review count + rating
+    try:
+        body_text = page.locator("body").inner_text(timeout=3000)[:8000]
+
+        if not metadata.get("google_review_count"):
+            review_matches = list(re.finditer(r"(\d[\d,.]*)\s*reviews?", body_text[:5000], re.IGNORECASE))
+            if review_matches:
+                metadata["google_review_count"] = review_matches[0].group(1)
+
+        if not metadata.get("google_rating"):
+            rating_match = re.search(r"(\d[.,]?\d*)\s*stars?", body_text[:3000], re.IGNORECASE)
+            if not rating_match:
+                rating_match = re.search(r"(\d[.,]?\d*)\s*[(][\d,]+[)]", body_text[:3000])
+            if not rating_match:
+                rating_match = re.search(r"(\d[.,]?\d*)\s*out\s*of\s*5", body_text[:3000], re.IGNORECASE)
+            if rating_match:
+                metadata["google_rating"] = rating_match.group(1)
+    except Exception:
+        pass
+
+    result = metadata if metadata else None
+    if instrument and result:
+        instrument.set_business_metadata(result)
+    return result
+
+
+def _safe_screenshot(page, spath: Path, name: str) -> str | None:
+    try:
+        full = spath / name
+        page.screenshot(path=str(full), full_page=False)
+        return str(full)
+    except Exception as e:
+        logger.warning("screenshot %s failed: %s", name, e)
+        return None
+
+
+def _path_traversal_check(spath: Path) -> bool:
+    resolved = spath.resolve()
+    if ".." in str(spath) or ".." in str(resolved):
+        logger.error("Path traversal detected in %r — skipping evidence save", str(spath))
+        return False
+    return True
+
+
+def _verify_reviews_dialog(page, selectors: dict, comp_id: str, instrument: PipelineInstrument | None = None) -> bool:
+    """Prove the Reviews dialog opened after clicking the Reviews tab.
+
+    Tries selectors from config (review_dialog, review_container) and known
+    Google Maps patterns. Logs a WARNING if none match — this is the early
+    warning that the Reviews tab click may not have worked.
+    """
+    from harness.selectors import resolve_selectors
+    candidates = []
+    for key in ("review_dialog", "review_container"):
+        candidates.extend(resolve_selectors(selectors, key))
+    candidates.extend([
+        "div[role='dialog'] div.m6QErb",
+        "div.m6QErb.DxyBCb",
+        "div[aria-label*='review' i]",
+    ])
+    for candidate in candidates:
+        try:
+            el = page.wait_for_selector(candidate, timeout=3000)
+            if el:
+                logger.info(
+                    "REVIEWS_DIALOG[%s] detected via %r",
+                    comp_id, candidate,
+                )
+                if instrument:
+                    instrument.record_selector(
+                        selector_key="review_dialog", primary=candidate,
+                        fallback_used=False, matched=True,
+                        match_count=1, candidate=candidate,
+                        detail="Reviews dialog confirmed open",
+                    )
+                return True
+        except Exception:
+            continue
+    logger.warning(
+        "REVIEWS_DIALOG[%s] NOT detected — Reviews tab click may have "
+        "failed or the DOM has changed. Proceeding with scroll anyway; "
+        "the parser will report 0 reviews if none are found.",
+        comp_id,
+    )
+    if instrument:
+        instrument.record_selector(
+            selector_key="review_dialog", primary=None,
+            fallback_used=True, matched=False,
+            detail="No candidate selector matched — Reviews dialog may not be open",
+        )
+    return False
+
+
 def capture_listing_html(
     context,
     url: str,
@@ -146,6 +354,7 @@ def capture_listing_html(
     tracker=None,
     comp_id: str = "",
     total_timeout_s: int = 90,
+    instrument: PipelineInstrument | None = None,
 ) -> str:
     phase_timings = {}
     page = context.new_page()
@@ -160,63 +369,126 @@ def capture_listing_html(
         page.set_default_navigation_timeout(30000)
         page.set_default_timeout(10000)
 
+        if instrument:
+            instrument.start_phase("navigation")
+
         t0 = time.time()
         try:
             page.goto(url, timeout=30000)
         except Exception as e:
+            if instrument:
+                instrument.end_phase("fail", detail=str(e))
             raise _classify_navigation_error(url, e)
         phase_timings["goto"] = round(time.time() - t0, 2)
-        if time.time() > deadline:
-            raise CaptureTimeoutError("goto", time.time() - start, total_timeout_s)
+        if instrument:
+            instrument.end_phase("success", detail=f"loaded {url[:80]}...")
 
+        if screenshot_dir:
+            spath = Path(screenshot_dir)
+            if not _path_traversal_check(spath):
+                spath = None
+            if spath:
+                spath.mkdir(parents=True, exist_ok=True)
+                shot = _safe_screenshot(page, spath, "01-business-loaded.png")
+                if shot and instrument:
+                    instrument.record_screenshot("business_loaded", shot)
+
+        if instrument:
+            instrument.start_phase("cookie_dialog")
         t0 = time.time()
-        _fallback_click(page, "cookie_reject_button", selectors, tracker=tracker, comp_id=comp_id, phase="dismiss_cookie")
+        _fallback_click(page, "cookie_reject_button", selectors, tracker=tracker, comp_id=comp_id, phase="dismiss_cookie", instrument=instrument)
         phase_timings["cookie"] = round(time.time() - t0, 2)
+        if instrument:
+            instrument.end_phase()
         if time.time() > deadline:
             raise CaptureTimeoutError("cookie", time.time() - start, total_timeout_s)
 
+        if instrument:
+            instrument.start_phase("reviews_tab_click")
         t0 = time.time()
-        _fallback_click(page, "reviews_tab_button", selectors, tracker=tracker, comp_id=comp_id, phase="click_reviews_tab", settle_ms=1500)
+        reviews_clicked = _fallback_click(page, "reviews_tab_button", selectors, tracker=tracker, comp_id=comp_id, phase="click_reviews_tab", settle_ms=1500, instrument=instrument)
         phase_timings["reviews_tab"] = round(time.time() - t0, 2)
+        if instrument:
+            status = "success" if reviews_clicked else "fail"
+            instrument.end_phase(status, detail="Reviews button clicked" if reviews_clicked else "Reviews button not found")
+
+        if screenshot_dir and spath:
+            shot = _safe_screenshot(page, spath, f"02-reviews-{'opened' if reviews_clicked else 'not-found'}.png")
+            if shot and instrument:
+                instrument.record_screenshot("after_reviews_click", shot)
+
+        if instrument:
+            instrument.start_phase("reviews_dialog_verify")
+        _verify_reviews_dialog(page, selectors, comp_id, instrument)
+        if instrument:
+            instrument.end_phase()
+
         if time.time() > deadline:
             raise CaptureTimeoutError("reviews_tab", time.time() - start, total_timeout_s)
 
+        if instrument:
+            instrument.start_phase("scroll")
         t0 = time.time()
-        scroll_review_container(page, selectors, tracker=tracker, comp_id=comp_id, deadline=deadline)
+        scroll_result = scroll_review_container(page, selectors, tracker=tracker, comp_id=comp_id, deadline=deadline, instrument=instrument)
         phase_timings["scroll"] = round(time.time() - t0, 2)
+        if instrument:
+            instrument.end_phase()
+            if scroll_result:
+                for entry in scroll_result.get("scroll_progress", []):
+                    instrument.record_scroll_iteration(
+                        iteration=entry["iteration"],
+                        height=entry["height"],
+                        visible_cards=entry["visible_cards"],
+                        dom_nodes=entry["dom_nodes"],
+                        stable=entry["stable"],
+                        bottom_reason=entry.get("bottom_reason"),
+                    )
 
+        if screenshot_dir and spath:
+            shot = _safe_screenshot(page, spath, "03-after-scroll.png")
+            if shot and instrument:
+                instrument.record_screenshot("after_scroll", shot)
+
+            final_shot = _safe_screenshot(page, spath, "04-final-state.png")
+            if final_shot and instrument:
+                instrument.record_screenshot("final_state", final_shot)
+
+        if instrument:
+            instrument.start_phase("expand_reviews")
         t0 = time.time()
-        _fallback_expand(page, selectors, tracker=tracker, comp_id=comp_id)
+        _fallback_expand(page, selectors, tracker=tracker, comp_id=comp_id, instrument=instrument)
         phase_timings["expand"] = round(time.time() - t0, 2)
+        if instrument:
+            instrument.end_phase()
 
+        if instrument:
+            instrument.start_phase("html_capture")
         html = page.content()
 
-        # Validate captured HTML is non-trivial.
         _validate_capture_output(html, comp_id, logger)
+        if instrument:
+            instrument.end_phase("success", detail=f"{len(html)} bytes captured")
 
-        if screenshot_dir:
-            # M13B: Defense-in-depth — verify screenshot_dir does not escape
-            # its expected parent. The caller (run_all.py) already sanitizes
-            # competitor_id, but this catches any future mis-use.
-            spath = Path(screenshot_dir)
-            resolved = spath.resolve()
-            # Check the resolved path doesn't contain path traversal artifacts
-            # (the caller constructs paths under data/verify/{ts}/{comp_id}/).
-            if ".." in str(spath) or ".." in str(resolved):
-                logger.error(
-                    "Path traversal detected in screenshot_dir %r — skipping evidence save",
-                    screenshot_dir,
-                )
-            else:
-                spath.mkdir(parents=True, exist_ok=True)
-                page.screenshot(path=str(spath / "page.png"), full_page=True)
-                spath.joinpath("page.html").write_text(html, encoding="utf-8")
+        if instrument:
+            instrument.start_phase("business_metadata")
+        _capture_business_metadata(page, instrument)
+        if instrument:
+            instrument.end_phase()
+
+        if spath:
+            spath.mkdir(parents=True, exist_ok=True)
+            page.screenshot(path=str(spath / "page.png"), full_page=True)
+            spath.joinpath("page.html").write_text(html, encoding="utf-8")
 
         logger.info("capture[%s] phases: %s", comp_id, ", ".join(f"{k}={v}s" for k, v in phase_timings.items()))
         return html
     except NavigationError:
+        if instrument:
+            instrument.phase_result("navigation", "fail")
         raise
     except CaptureTimeoutError:
+        if instrument:
+            instrument.phase_result("capture_timeout", "fail")
         raise
     finally:
         try:
@@ -236,10 +508,17 @@ def _validate_capture_output(html: str, comp_id: str, log: logging.Logger) -> No
 
 
 def _fallback_expand(
-    page, selectors: dict, tracker=None, comp_id: str = ""
+    page, selectors: dict, tracker=None, comp_id: str = "",
+    instrument: PipelineInstrument | None = None,
 ) -> None:
     candidates = resolve_selectors(selectors, "expand_text_button")
+    primary = candidates[0] if candidates else None
     if not candidates:
+        if instrument:
+            instrument.record_selector(
+                selector_key="expand_text_button", primary=None,
+                fallback_used=False, matched=False, detail="not configured",
+            )
         if tracker:
             tracker.record(
                 selector_key="expand_text_button",
@@ -252,8 +531,9 @@ def _fallback_expand(
         return
     total_clicked = 0
     best_candidate = None
+    used_fallback = False
     for i, candidate in enumerate(candidates):
-        t0 = time.time() if tracker else None
+        t0 = time.time() if (tracker or instrument) else None
         try:
             buttons = page.query_selector_all(candidate)
             clicked = 0
@@ -266,7 +546,25 @@ def _fallback_expand(
             if clicked > total_clicked:
                 total_clicked = clicked
                 best_candidate = candidate
+            duration_ms = (time.time() - t0) * 1000 if t0 else 0
+            if instrument:
+                instrument.record_selector(
+                    selector_key="expand_text_button", primary=primary,
+                    fallback_used=used_fallback, matched=clicked > 0,
+                    match_count=clicked, candidate=candidate,
+                    duration_ms=duration_ms,
+                    detail=f"{clicked} button(s) clicked" if clicked else "no buttons found",
+                )
         except Exception as e:
+            used_fallback = True
+            duration_ms = (time.time() - t0) * 1000 if t0 else 0
+            if instrument:
+                instrument.record_selector(
+                    selector_key="expand_text_button", primary=primary,
+                    fallback_used=True, matched=False,
+                    candidate=candidate, duration_ms=duration_ms,
+                    detail=f"fallback {i + 1}/{len(candidates)}: {e}",
+                )
             logger.debug("expand fallback %d/%d query failed: %s", i + 1, len(candidates), e)
         if tracker:
             tracker.record(
@@ -279,22 +577,25 @@ def _fallback_expand(
                 phase="expand",
             )
     if total_clicked > 0:
-        logger.debug("expanded %d truncated review(s) via %s", total_clicked, best_candidate)
+        logger.info("EXPAND[%s] expanded %d truncated review(s) via %s", comp_id, total_clicked, best_candidate)
 
 
 def _dismiss_cookie_banner(
-    page, selectors: dict, tracker=None, comp_id: str = ""
+    page, selectors: dict, tracker=None, comp_id: str = "",
+    instrument: PipelineInstrument | None = None,
 ) -> None:
-    _fallback_click(page, "cookie_reject_button", selectors, tracker=tracker, comp_id=comp_id, phase="dismiss_cookie")
+    _fallback_click(page, "cookie_reject_button", selectors, tracker=tracker, comp_id=comp_id, phase="dismiss_cookie", instrument=instrument)
 
 
 def _click_reviews_tab_if_present(
-    page, selectors: dict, tracker=None, comp_id: str = ""
+    page, selectors: dict, tracker=None, comp_id: str = "",
+    instrument: PipelineInstrument | None = None,
 ) -> None:
-    _fallback_click(page, "reviews_tab_button", selectors, tracker=tracker, comp_id=comp_id, phase="click_reviews_tab", settle_ms=1500)
+    _fallback_click(page, "reviews_tab_button", selectors, tracker=tracker, comp_id=comp_id, phase="click_reviews_tab", settle_ms=1500, instrument=instrument)
 
 
 def _expand_truncated_reviews(
-    page, selectors: dict, tracker=None, comp_id: str = ""
+    page, selectors: dict, tracker=None, comp_id: str = "",
+    instrument: PipelineInstrument | None = None,
 ) -> None:
-    _fallback_expand(page, selectors, tracker=tracker, comp_id=comp_id)
+    _fallback_expand(page, selectors, tracker=tracker, comp_id=comp_id, instrument=instrument)

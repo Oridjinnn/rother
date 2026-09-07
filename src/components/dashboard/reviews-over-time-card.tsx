@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { ReviewsOverTimeChart } from "./charts";
+import { ReviewsOverTimeChart } from "@/components/dashboard/charts/reviews-over-time";
 import { EmptyState } from "./empty-state";
 import type { ReviewsOverTimeResponse } from "@/lib/gbp/types";
 

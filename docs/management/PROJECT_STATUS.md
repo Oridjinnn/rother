@@ -11,6 +11,8 @@
 
 The system has undergone comprehensive architecture audit across all 7 subsystems. The next phase is triaging findings and implementing critical fixes before live-mode verification.
 
+> **Note — current product model:** This status was captured against the bundled **seed demo** ("Copenhagen Bali", 6 branches / 12 competitors). The product now scopes to a **single user-provided business** entered at onboarding (name, location, category) and revealed only after a Run (live scrape). The seed demo is hidden from the UI once a user business is active, so the "no real competitor URLs from client" blocker below is superseded by the user supplying their own business.
+
 ---
 
 ## Overall Completion Estimate
@@ -60,7 +62,7 @@ The system has undergone comprehensive architecture audit across all 7 subsystem
 
 | Blocker | Severity | Impact | Depends On |
 |---|---|---|---|
-| No real competitor URLs from client | Critical | Scraper cannot run in live mode. All development is against 3 synthetic fixture files. | Client communication (external) |
+| No real competitor URLs from client (seed demo) | Critical *(seed demo only)* | The bundled demo cannot run live without real URLs. The shipped product no longer depends on this: the user supplies their own business at onboarding, and the scraper is pointed at it via `POST /api/scrape/trigger`. Live acquisition of arbitrary businesses remains a separate follow-up. | Live scrape backend |
 | CSS selectors UNPROVEN against live Google Maps | Critical | The scraper will likely fail on first live run. Selectors may need days/weeks of iterative tuning. | Real URLs, live test access |
 | Hardcoded `GBP_ROOT` path | Critical | Dashboard cannot find data on any production machine. | Implementation of env var config |
 | Empty-parse-wipes-snapshot bug | Critical | Any transient parse failure destroys all accumulated reviews. | Implementation of guard logic |

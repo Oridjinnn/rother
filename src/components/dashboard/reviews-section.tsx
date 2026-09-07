@@ -61,11 +61,11 @@ import { ExportButtons } from "./export-buttons";
 import { CopyButton } from "./copy-button";
 import { cleanReviewerName } from "@/lib/gbp/format";
 import type {
-  BranchesResponse,
   BranchWithStats,
   Review,
   ReviewsResponse,
 } from "@/lib/gbp/types";
+import { useBranches } from "@/lib/gbp/use-branches";
 
 interface ReviewsSectionProps {
   /** Bump to force a refetch (e.g. after a manual scrape). */
@@ -104,7 +104,7 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
   const [columnVisibility] = React.useState<VisibilityState>({});
 
   // ── Data ────────────────────────────────────────────────────────────────
-  const [branches, setBranches] = React.useState<BranchesResponse | null>(null);
+  const { data: branches } = useBranches();
   const [rows, setRows] = React.useState<ReviewRow[]>([]);
   const [total, setTotal] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
@@ -120,23 +120,6 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(t);
   }, [search]);
-
-  // Fetch branches tree once (for branch/competitor select options + name lookup).
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/branches")
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const json = (await r.json()) as BranchesResponse;
-        if (!cancelled) setBranches(json);
-      })
-      .catch(() => {
-        /* best-effort — names will just be IDs */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
 
   // Build a lookup map for competitor_id → {competitor_name, branch_name}.
   const nameLookup = React.useMemo(() => {
@@ -575,7 +558,7 @@ export function ReviewsSection({ refreshKey }: ReviewsSectionProps) {
       {/* Table */}
       <Card className="gbp-card-hover">
         <CardContent className="p-0">
-          <div className="max-h-[70vh] overflow-y-auto gbp-scrollbar-lg">
+          <div className="max-h-[70dvh] overflow-y-auto gbp-scrollbar-lg">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
                 {table.getHeaderGroups().map((hg) => (

@@ -8,7 +8,9 @@
 
 ## Project Description
 
-Rother is a **zero-cost competitor review monitoring system** built for a coffee shop chain with 6 branches in Bali. It monitors Google Business Profile reviews for 12 competitor businesses (2 per branch), detects new reviews via daily delta computation, and visualizes results in a rich Next.js dashboard.
+Rother is a **zero-cost, self-hosted competitor review monitoring system** for Google Business Profiles. The user supplies their own business (name, location, category) at first-run onboarding; the dashboard then scopes exclusively to that business and its competitors. The repo ships a bundled **seed demo** (a single "Copenhagen Bali" coffee-shop business with 6 branches / 12 competitors) used only for local development and fixtures — it is hidden from the UI once a user business is active.
+
+> **Note — current product model:** This summary was written against the seed demo during the architecture audits. The product today is **single-business, user-provided**: Login → Onboarding (your business + category) → Run (live scrape) → Hubs (Insights, Reputation, Competitors, Tools). The "12 competitors (2 per branch)" figure describes the bundled demo dataset, not a fixed product limit.
 
 The system operates across two independent subsystems connected by JSON files on disk:
 

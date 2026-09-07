@@ -9,9 +9,59 @@
 
 Complete inventory of every screen, panel, dialog, and overlay in the Rother dashboard. Each entry documents the screen's purpose, data dependencies, interaction model, and accessibility notes.
 
+> **Seed-demo scale is illustrative only.** The "6 branches / 2 competitors per
+> branch / #1–6 rank" figures below are the *Copenhagen Bali demo seed* used for
+> local development. The product is single-business by design: after onboarding
+> the dashboard scopes to the user's own business, and competitor/branch counts
+> are data-driven (see `02_INFORMATION_ARCHITECTURE.md`). Do not treat the demo
+> topology as a spec limit.
+
 ---
 
 ## Screen Inventory
+
+### S00 — Pre-Dashboard Screens (Login → Onboarding → Run)
+
+These run **before** the dashboard. The 4 hubs (Insights, Reputation,
+Competitors, Tools) are **hidden** until the Run gate completes. Implemented in
+`src/components/shell/` and gated by `src/lib/app-state.tsx` (`user`,
+`business`, `runStarted`).
+
+#### S00-A — Login Screen (`login-screen.tsx`)
+
+| Property | Value |
+|----------|-------|
+| Route | `/` (when `user` is null) |
+| Purpose | Mock "Sign in with Gmail" (no real auth yet) |
+| Data deps | none (local user stored in localStorage) |
+| Empty state | n/a (first screen) |
+
+#### S00-B — Onboarding Screen (`onboarding.tsx`)
+
+| Property | Value |
+|----------|-------|
+| Route | `/` (when `user` set but `business` null) |
+| Purpose | Capture THE USER'S OWN business (never the seeded demo) |
+| Fields | Business name, Business location (full), **Category** (searchable picker from `src/lib/categories.ts`) |
+| Data deps | none (stored locally via `setBusiness`) |
+| Validation | Name length > 1, location length > 3 |
+
+**Note:** This is the **category step** added in Execution Prompt B. The
+category is persisted with the business (id + label) and forwarded to the Run
+screen and to `POST /api/scrape/trigger`.
+
+#### S00-C — Run Screen (`run-screen.tsx`)
+
+| Property | Value |
+|----------|-------|
+| Route | `/` (when `business` set but `runStarted` false) |
+| Purpose | Run gate — attempt a LIVE scrape of THE USER'S OWN business |
+| Trigger | "Run" button → `POST /api/scrape/trigger` with `{ name, location, category, categoryId }` |
+| Data deps | `/api/scrape/trigger` |
+| Loading | Centered "Scanning…" state (no page scroll) |
+| Post-run | Hubs reveal **whether or not** the scrape succeeded (failure shows empty states, never blocks navigation) |
+
+---
 
 ### S01 — Overview Tab (Default Landing)
 

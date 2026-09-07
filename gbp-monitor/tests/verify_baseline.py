@@ -25,9 +25,12 @@ SNAPSHOTS_DIR = DATA_DIR / "snapshots"
 REVIEWS_NEW_DIR = DATA_DIR / "reviews_new"
 SUMMARY_PATH = DATA_DIR / "run_summary.json"
 LOG_PATH = DATA_DIR / "run.log"
+CONFIG_LISTINGS_PATH = REPO_ROOT / "config" / "listings.json"
+# E3 / RISK-025: regression baselines live in the project-root golden-datasets dir.
+GOLDEN_DIR = REPO_ROOT.parent / "golden-datasets"
 
 EXPECTED_SNAPSHOTS = {"comp-canggu-01", "comp-seminyak-01", "comp-ubud-01"}
-EXPECTED_TOTAL_REVIEWS = 10
+EXPECTED_TOTAL_REVIEWS = 20  # ubud=7 (8 items - 1 skip), seminyak=7, canggu=6
 
 PASS = 0
 FAIL = 0
@@ -115,8 +118,8 @@ def verify_artifacts() -> None:
             f"got {summary.get('skipped')}",
         )
         check(
-            "total_reviews is 10",
-            summary.get("total_reviews") == 10,
+            "total_reviews is 20",
+            summary.get("total_reviews") == 20,
             f"got {summary.get('total_reviews')}",
         )
 
@@ -306,9 +309,99 @@ def _verify_security() -> None:
         capture_output=True,
         text=True,
     )
-    # Our real config may have place_id issues — the important thing is the
-    # CLI runs without crashing and returns either 0 or 1.
-    check("sec: --validate-config exits cleanly", result.returncode in (0, 1))
+    # E2 / RISK-025: a config-validation failure (exit 1) or a crash (exit 2 /
+    # traceback) must NOT be masked as a pass. We still allow exit 1 because the
+    # known unverified place_ids (RISK-002) legitimately fail validation, but a
+    # crash is always a failure.
+    crashed = result.returncode not in (0, 1) or "Traceback" in result.stderr
+    check("sec: --validate-config exits cleanly", not crashed)
+
+
+def compare_golden() -> None:
+    """E3 / RISK-025 — diff the fixtures run output against the golden baselines.
+
+    Provides an honest regression signal: if the topology, run-summary shape, or
+    parsed-review counts drift from the committed baselines, the test fails. Only
+    runs when golden-datasets/ is populated.
+    """
+    if not GOLDEN_DIR.exists():
+        return
+    golden_files = list(GOLDEN_DIR.glob("*.golden.json"))
+    if not golden_files:
+        return
+
+    print("\n[Phase 5] Golden-dataset regression comparison...")
+
+    # 5a  Topology baseline (listings.golden.json).
+    listings_golden = GOLDEN_DIR / "listings.golden.json"
+    if listings_golden.exists() and CONFIG_LISTINGS_PATH.exists():
+        golden = json.loads(listings_golden.read_text(encoding="utf-8"))
+        actual_cfg = json.loads(CONFIG_LISTINGS_PATH.read_text(encoding="utf-8"))
+        actual_ids: list[str] = []
+        actual_branches = 0
+        for biz in actual_cfg.get("businesses", []):
+            for branch in biz.get("branches", []):
+                actual_branches += 1
+                for comp in branch.get("competitors", []):
+                    actual_ids.append(comp["competitor_id"])
+        check(
+            "golden: branch count matches config",
+            actual_branches == golden.get("branches", -1),
+            f"config={actual_branches}, golden={golden.get('branches')}",
+        )
+        check(
+            "golden: competitor count matches config",
+            len(actual_ids) == golden.get("competitors", -1),
+            f"config={len(actual_ids)}, golden={golden.get('competitors')}",
+        )
+        missing = set(golden.get("competitor_ids", [])) - set(actual_ids)
+        check(
+            "golden: all expected competitor_ids present",
+            not missing,
+            f"missing: {missing}",
+        )
+
+    # 5b  Run-summary shape baseline (run_summary.golden.json).
+    summary_golden = GOLDEN_DIR / "run_summary.golden.json"
+    if summary_golden.exists() and SUMMARY_PATH.exists():
+        golden = json.loads(summary_golden.read_text(encoding="utf-8"))
+        actual = json.loads(SUMMARY_PATH.read_text(encoding="utf-8"))
+        for key in ("success", "failed", "skipped", "new_reviews", "total_reviews"):
+            check(
+                f"golden: run_summary.{key} matches baseline",
+                actual.get(key) == golden.get(key),
+                f"got {actual.get(key)}, golden {golden.get(key)}",
+            )
+
+    # 5c  Review-count baseline (reviews.golden.json).
+    reviews_golden = GOLDEN_DIR / "reviews.golden.json"
+    if reviews_golden.exists() and SNAPSHOTS_DIR.exists():
+        golden = json.loads(reviews_golden.read_text(encoding="utf-8"))
+        per = golden.get("per_competitor", {})
+        actual_total = 0
+        for comp_id, expected in per.items():
+            comp_dir = SNAPSHOTS_DIR / comp_id
+            latest_pointer = comp_dir / "latest.json"
+            count = 0
+            if latest_pointer.exists():
+                try:
+                    latest_filename = json.loads(latest_pointer.read_text(encoding="utf-8"))
+                    snapshot_path = comp_dir / latest_filename
+                    if snapshot_path.exists():
+                        count = len(json.loads(snapshot_path.read_text(encoding="utf-8")))
+                except (json.JSONDecodeError, OSError):
+                    count = 0
+            actual_total += count
+            check(
+                f"golden: {comp_id} review count matches baseline",
+                count == expected,
+                f"got {count}, golden {expected}",
+            )
+        check(
+            "golden: total review count matches baseline",
+            actual_total == golden.get("expected_total_reviews", -1),
+            f"got {actual_total}, golden {golden.get('expected_total_reviews')}",
+        )
 
 
 def main() -> int:
@@ -335,6 +428,9 @@ def main() -> int:
 
     # M13B: Security regression tests.
     _verify_security()
+
+    # E3 / RISK-025: golden-dataset regression comparison.
+    compare_golden()
 
     print("\n" + "=" * 60)
     print(f"Results: {PASS} passed, {FAIL} failed")

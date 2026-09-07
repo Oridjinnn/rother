@@ -77,6 +77,11 @@ export function middleware(request: NextRequest) {
 
   // If no API key is configured, allow mutating requests in dev mode
   if (!API_KEY) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn(
+        "[middleware] API_KEY is not set in production — mutating /api/* requests are UNAUTHENTICATED.",
+      );
+    }
     return NextResponse.next();
   }
 

@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 
 import { sanitizeError } from "@/lib/gbp/sanitize";
 import type { BranchesResponse, BranchWithStats, CompetitorStats } from "@/lib/gbp/types";
-import { readAllSnapshots, readLatestDelta, readAllDeltas, readListings } from "@/lib/gbp/server-data";
+import {
+  assessDataStatus,
+  readActiveBusiness,
+  readAllSnapshots,
+  readLatestDelta,
+  readAllDeltas,
+  readListings,
+} from "@/lib/gbp/server-data";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,10 +25,16 @@ export const revalidate = 0;
  */
 export async function GET() {
   try {
-    const [listings, snapshots, allDeltas] = await Promise.all([
-      readListings(),
-      readAllSnapshots(),
-      readAllDeltas(),
+    // P2 / tenant scoping: prefer the active business's OWN branch config;
+    // fall back to the seed demo listings when no business is selected.
+    const active = await readActiveBusiness();
+    const id = active?.id;
+    const branchConfig = active?.branches ?? (await readListings()).branches;
+
+    const [snapshots, allDeltas, dataStatus] = await Promise.all([
+      readAllSnapshots(id),
+      readAllDeltas(id),
+      assessDataStatus(id),
     ]);
 
     const deltasByComp = new Map<string, typeof allDeltas>();
@@ -35,7 +48,7 @@ export async function GET() {
     let totalCompetitors = 0;
     let totalReviews = 0;
 
-    for (const branch of listings.branches) {
+    for (const branch of branchConfig) {
       const competitors: CompetitorStats[] = [];
       let branchTotal = 0;
       let branchNew = 0;
@@ -61,7 +74,7 @@ export async function GET() {
         if (last_scraped_at && (!branchLastScrape || last_scraped_at > branchLastScrape)) {
           branchLastScrape = last_scraped_at;
         }
-        const delta = await readLatestDelta(comp.competitor_id);
+        const delta = await readLatestDelta(comp.competitor_id, id);
 
         branchTotal += reviews.length;
         branchNew += delta.length;
@@ -107,6 +120,7 @@ export async function GET() {
             : null,
           average_review_length: avgLen,
           trend_indicator: trend,
+          verified: comp.verified,
         });
       }
 
@@ -132,6 +146,7 @@ export async function GET() {
       branches,
       totalCompetitors,
       totalReviews,
+      dataStatus,
     };
 
     return NextResponse.json(body, {

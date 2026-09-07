@@ -48,7 +48,16 @@ export async function GET(request: Request) {
     }
 
     if (format === "json") {
-      return NextResponse.json(rows);
+      const json = JSON.stringify(rows, null, 2);
+      const stamp = new Date().toISOString().slice(0, 10);
+      return new NextResponse(json, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Content-Disposition": `attachment; filename="rother-branches-${stamp}.json"`,
+          "Cache-Control": "no-store",
+        },
+      });
     }
 
     const headers = ["branch_id", "branch_name", "competitor_count", "total_reviews", "new_reviews_count", "last_scrape"];
