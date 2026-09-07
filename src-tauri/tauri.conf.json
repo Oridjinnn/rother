@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Rother",
+  "version": "0.4.2",
+  "identifier": "com.rother.desktop",
+  "build": {
+    "frontendDist": "../src-tauri/frontend-dist",
+    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": "node node_modules/next/dist/bin/next dev -p 3000",
+    "beforeBuildCommand": "node .zscripts/build.mjs"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Rother",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 960,
+        "minHeight": 600,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+        "csp": "default-src 'self' customprotocol: asset:; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:4632; img-src 'self' asset: data: https://www.gstatic.com https://*.tile.openstreetmap.org https://*.openstreetmap.org; style-src 'self' 'unsafe-inline'; script-src 'self'",
+        "freezePrototype": false,
+      "devCsp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:3000 http://127.0.0.1:3000; connect-src 'self' ipc: http://ipc.localhost ws://localhost:3000 wss://localhost:3000 http://localhost:3000; img-src 'self' data: https://www.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:3000; style-src 'self' 'unsafe-inline' http://localhost:3000"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": [
+      "binaries/node"
+    ],
+    "resources": {
+      "../.next/standalone": "standalone",
+      "../dist-data": "rother-data"
+    },
+    "category": "Business",
+    "shortDescription": "Rother business intelligence desktop app",
+    "longDescription": "Local-first business intelligence hub with insights, reputation, competitor, and tools modules."
+  }
+}

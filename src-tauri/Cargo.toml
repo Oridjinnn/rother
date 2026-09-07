@@ -1,0 +1,19 @@
+[package]
+name = "rother-desktop"
+version = "0.4.2"
+description = "Rother desktop app (Tauri v2 shell around the Next.js + SQLite app)"
+authors = ["Rother"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(not(any(target_os = "macos", windows)))'.dependencies]
+# Linux webview system deps are required at build time via tauri-build;
+# nothing extra needed here for the sidecar approach.

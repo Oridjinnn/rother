@@ -22,6 +22,10 @@ node_modules
 
 # misc
 .DS_Store
+Thumbs.db
+
+# build output (covered by vitest exclude; safeguard for git)
+/dist
 *.pem
 
 # debug
@@ -29,6 +33,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# lockfile — standardised on npm
+bun.lock
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -64,6 +71,17 @@ _audit_reviews_*.json
 
 # Nested or accidental git artifacts
 Rother - *
+
+# Stray desktop-app binaries (no extension) and huge generated text dumps that
+# crash Tailwind v4's native content scanner (oxide) when it walks the project.
+/Rother
+tree.txt
+project-manifest.txt
+worklog.md
+CHANGELOG.md
+RELEASE_NOTES.md
+KNOWN_LIMITATIONS.md
+RELEASE_CHECKLIST.md
 
 # Prisma migrations (generate on deploy)
 prisma/migrations/
