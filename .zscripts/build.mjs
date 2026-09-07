@@ -1,5 +1,5 @@
 import { execSync } from "child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "fs";
 import { resolve } from "path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -89,3 +89,48 @@ for (const f of readdirSync(resolve(root, "gbp-monitor/data"))) {
 }
 
 console.log("Build complete — standalone at", standalone, "| data bundle at", dataBundle);
+
+// --- Populate the Tauri frontendDist ----------------------------------------
+// The webview navigates to the Node sidecar's HTTP server (main.rs), so this
+// is only a fallback when the sidecar fails to start. Tauri requires the dir
+// to exist and be non-empty at build time, and it is gitignored, so generate
+// it here from the Next.js client output (static bundles + public assets).
+const frontendDist = resolve(root, "src-tauri", "frontend-dist");
+rmSync(frontendDist, { recursive: true, force: true });
+mkdirSync(frontendDist, { recursive: true });
+cpSync(resolve(dotNext, "static"), resolve(frontendDist, "_next", "static"), {
+  recursive: true,
+  force: true,
+});
+if (existsSync(pub)) {
+  cpSync(pub, frontendDist, { recursive: true, force: true });
+}
+writeFileSync(
+  resolve(frontendDist, "index.html"),
+  `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rother</title>
+    <style>
+      body { font-family: system-ui, sans-serif; display: flex; align-items: center;
+             justify-content: center; height: 100vh; margin: 0; color: #111; }
+      .box { text-align: center; }
+      .spinner { width: 28px; height: 28px; border: 3px solid #ddd;
+                border-top-color: #2563eb; border-radius: 50%; margin: 0 auto 16px;
+                animation: spin 0.9s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="spinner"></div>
+      <p>Rother desktop is starting…</p>
+      <p style="color:#666;font-size:14px">If this persists, restart the app.</p>
+    </div>
+  </body>
+</html>
+`,
+);
+console.log("Populated frontendDist at", frontendDist);
